@@ -2570,7 +2570,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - CHANGELOG 원문: "Fixed a prompt cache miss when a tool added mid-session was loaded again through ToolSearch or after compaction"
   (302) 세션 도중 추가된 도구(원문 "a tool added mid-session")가 ToolSearch로 다시 로드되거나 compaction 후에 다시 로드될 때 prompt cache miss가 나던 결함이 수정되었습니다. 원문은 어떤 도구가 세션 도중 추가되는지 예를 들지 않습니다. 작성자 예시로, 이 저장소는 `.mcp.json`에 MCP 서버 2개를 두므로(`git cat-file -p HEAD:.mcp.json`) 그 서버가 세션 중에 늦게 연결된 경우 그 도구가 원문 범위에 들 수 있습니다 [가설 — 서버 연결 시점과 재로드 전후 `prompt_cache` 필드로 판정]. 이 저장소의 룰은 `SendMessage` 같은 지연 내장 도구를 `ToolSearch`로 로드하는 절차를 기록하지만(`.claude/rules/MUST-agent-teams.md:492`), 지연 내장 도구가 원문의 "a tool added mid-session"에 해당하는지는 원문에 없어 판정하지 못했습니다 [가설 — 지연 내장 도구 재로드 전후 `prompt_cache` 필드로 판정]. R012는 상태줄의 `prompt_cache` 필드가 cache miss의 가능한 원인을 표시한다고 기록합니다(`.claude/rules/SHOULD-hud-statusline.md:65`).
 - CHANGELOG 원문: "Fixed the Read tool loading an image file of any size, or a pipe or device named like an image, entirely into memory; image sources over 128 MB are now refused"
-  (302) Read 도구가 크기와 무관하게 이미지 파일, 또는 이미지처럼 이름 붙은 파이프·장치를 통째로 메모리에 올리던 결함이 수정되어, 이제 128 MB를 넘는 이미지 소스는 거부됩니다. 이 저장소의 추적 이미지 14개 중 가장 큰 파일은 1,294,475바이트입니다(`git ls-files -z -- '*.png' '*.jpg' '*.jpeg' '*.gif' '*.webp' '*.svg' | xargs -0 stat -f '%z %N' | sort -n | tail -1` → `assets/diagrams/03-routing-architecture.png`). 따라서 추적 이미지 범위에서는 거부 대상이 관측되지 않았습니다.
+  (302) Read 도구가 크기와 무관하게 이미지 파일, 또는 이미지처럼 이름 붙은 파이프·장치를 통째로 메모리에 올리던 결함이 수정되어, 이제 128 MB를 넘는 이미지 소스는 거부됩니다. 이 저장소의 추적 이미지 18개 중 가장 큰 파일은 743,283바이트입니다(`git ls-files -z -- '*.png' '*.jpg' '*.jpeg' '*.gif' '*.webp' '*.svg' | xargs -0 stat -f '%z %N' | sort -n | tail -1` → `assets/diagrams/09-workflow-engine.png`). 따라서 추적 이미지 범위에서는 거부 대상이 관측되지 않았습니다.
 
 ### MCP · 설정 쓰기 · 텔레메트리
 

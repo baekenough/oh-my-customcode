@@ -184,11 +184,13 @@
 
 				<!-- Context Fork toggle -->
 				<div>
-					<p class="text-xs text-zinc-500 mb-2">Context Fork</p>
-					<label class="flex items-center gap-3 cursor-pointer">
+					<p id="skill-context-fork-heading" class="text-xs text-zinc-500 mb-2">Context Fork</p>
+					<div class="flex items-center gap-3 cursor-pointer">
 						<div
 							role="checkbox"
 							aria-checked={skillContextFork}
+							aria-labelledby="skill-context-fork-heading"
+							aria-describedby="skill-context-fork-state"
 							tabindex="0"
 							onclick={() => (skillContextFork = !skillContextFork)}
 							onkeydown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); skillContextFork = !skillContextFork; } }}
@@ -196,10 +198,10 @@
 						>
 							<span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform {skillContextFork ? 'translate-x-5' : 'translate-x-0'}"></span>
 						</div>
-						<span class="text-xs {skillContextFork ? 'text-emerald-400' : 'text-zinc-500'}">
+						<span id="skill-context-fork-state" class="text-xs {skillContextFork ? 'text-emerald-400' : 'text-zinc-500'}">
 							{skillContextFork ? 'Enabled — for routing / orchestration skills' : 'Disabled — standard skill'}
 						</span>
-					</label>
+					</div>
 					<p class="text-xs text-zinc-700 mt-1">Enable only for skills that spawn multiple agents (cap: 12)</p>
 				</div>
 

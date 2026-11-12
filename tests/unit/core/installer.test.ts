@@ -7,6 +7,7 @@ import {
   createDirectoryStructure,
   getTemplateDir,
   getTemplateManifest,
+  type InstallComponent,
   install,
 } from '../../../src/core/installer.js';
 import { getComponentPath } from '../../../src/core/layout.js';
@@ -128,26 +129,8 @@ describe('installer', () => {
       expect(componentNames).not.toContain('pipelines'); // pipelines removed
     });
 
-    it('should have manifest file counts matching actual template directories', async () => {
-      const { readdir } = await import('node:fs/promises');
-      const manifest = await getTemplateManifest();
-      const templateDir = getTemplateDir();
-
-      for (const component of manifest.components) {
-        const resolvedPath = join(templateDir, component.path);
-
-        try {
-          const entries = await readdir(resolvedPath);
-          const count = entries.filter((e) => !e.startsWith('.')).length;
-          expect(count).toBe(
-            component.files,
-            `${component.name}: manifest says ${component.files} files but found ${count}`
-          );
-        } catch {
-          // Skip if directory doesn't exist (handled by other tests)
-        }
-      }
-    });
+    // Manifest file counts vs actual template directories: covered per component by the
+    // 'Manifest consistency' tests in tests/unit/core/template-validation.test.ts.
   });
 
   describe('install', () => {
@@ -354,13 +337,14 @@ describe('installer', () => {
     it('should handle non-existent component gracefully', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: ['non-existent-component'],
+        // Deliberately invalid input: the runtime must skip unknown components, not throw.
+        components: ['non-existent-component'] as unknown as InstallComponent[],
         skipConfirm: true,
       });
 
       expect(result).toBeDefined();
       // Component should be in skipped list (template not found)
-      expect(result.skippedComponents).toContain('non-existent-component');
+      expect(result.skippedComponents as string[]).toContain('non-existent-component');
     });
 
     it('should handle install with force and backup together', async () => {

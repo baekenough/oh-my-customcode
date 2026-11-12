@@ -79,7 +79,10 @@ export interface ScanOptions {
  * @param roots   Absolute paths to scan recursively (e.g. `~/.claude/agent-memory/`).
  * @param opts    Scan options — must supply `deviceId`.
  */
-export async function scanNativeMemory(roots: string[], opts: ScanOptions): Promise<MemoryRecord[]> {
+export async function scanNativeMemory(
+  roots: string[],
+  opts: ScanOptions
+): Promise<MemoryRecord[]> {
   const records: MemoryRecord[] = [];
 
   for (const root of roots) {
@@ -134,7 +137,7 @@ async function scanRoot(root: string, deviceId: string): Promise<MemoryRecord[]>
 
     if (entryStat.isDirectory()) {
       // Recurse into sub-directories.
-      const sub = await scanDirectory(entryPath, root, deviceId);
+      const sub = await scanDirectory(entryPath, deviceId);
       records.push(...sub);
     } else if (entryStat.isFile() && shouldProcess(entry)) {
       // Top-level file in the root (e.g. project memory root).
@@ -152,7 +155,7 @@ async function scanRoot(root: string, deviceId: string): Promise<MemoryRecord[]>
  * Scan a single sub-directory (e.g. `.claude/agent-memory/<agent-name>/`).
  * The directory name is used as the agent name.
  */
-async function scanDirectory(dir: string, root: string, deviceId: string): Promise<MemoryRecord[]> {
+async function scanDirectory(dir: string, deviceId: string): Promise<MemoryRecord[]> {
   const records: MemoryRecord[] = [];
   const agentName = basename(dir);
 

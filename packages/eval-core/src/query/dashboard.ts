@@ -112,10 +112,7 @@ export function getAgentStats(db: EvalDb): AgentStat[] {
       .select({ total: count(agentInvocations.id) })
       .from(agentInvocations)
       .where(
-        and(
-          eq(agentInvocations.agentType, row.agentType),
-          eq(agentInvocations.outcome, 'success')
-        )
+        and(eq(agentInvocations.agentType, row.agentType), eq(agentInvocations.outcome, 'success'))
       )
       .get();
 
@@ -134,13 +131,22 @@ export function getAgentStats(db: EvalDb): AgentStat[] {
 }
 
 export function getDashboardStats(db: EvalDb): DashboardStats {
-  const totalSessionsRow = db.select({ total: count(sessions.id) }).from(sessions).get();
-  const totalTurnsRow = db.select({ total: count(turns.id) }).from(turns).get();
+  const totalSessionsRow = db
+    .select({ total: count(sessions.id) })
+    .from(sessions)
+    .get();
+  const totalTurnsRow = db
+    .select({ total: count(turns.id) })
+    .from(turns)
+    .get();
   const totalInvocationsRow = db
     .select({ total: count(agentInvocations.id) })
     .from(agentInvocations)
     .get();
-  const totalProjectsRow = db.select({ total: count(projects.id) }).from(projects).get();
+  const totalProjectsRow = db
+    .select({ total: count(projects.id) })
+    .from(projects)
+    .get();
 
   return {
     totalSessions: totalSessionsRow?.total ?? 0,

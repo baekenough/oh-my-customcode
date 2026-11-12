@@ -12,7 +12,7 @@
  */
 
 import type { MemoryRecord, MemorySource } from './adapters/claude-mem.js';
-import { type SensitivityTier } from './adapters/sensitivity.js';
+import type { SensitivityTier } from './adapters/sensitivity.js';
 
 // Re-export MemoryRecord and MemorySource so callers can import from one place.
 export type { MemoryRecord, MemorySource };
@@ -142,10 +142,7 @@ export function aggregateMemoryRecords(opts: AggregateOptions): AggregateResult 
     const mergedSensitivity = escalateSensitivity(group.map((r) => r.sensitivity));
 
     // 6. Union tags
-    const mergedTags = group.reduce<string[]>(
-      (acc, r) => mergeTags(acc, r.tags),
-      []
-    );
+    const mergedTags = group.reduce<string[]>((acc, r) => mergeTags(acc, r.tags), []);
 
     // 7. Prefer non-null agent
     const mergedAgent = group.find((r) => r.agent != null)?.agent ?? winner.agent;

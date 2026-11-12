@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-11-10
+updated: 2026-11-12
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:
@@ -23,6 +23,7 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 - **Anchor-based code locations in issue bodies (#1652 #3-2)**: an issue's `## 컨텍스트` section cites code locations by **function name or a unique anchor string**, not by line number — line numbers go stale by the next release commit. In the v1.1.60 session, `#1647`'s cited lines 346-348 reflected the v1.1.59 state; the script had grown 608→733 lines by the time two implementation agents tried to use them, forcing a re-search. If a line number is included as a convenience, it must be paired with the base commit SHA and marked "reference only" — downstream delegations are written assuming line numbers are stale and re-location is anchor-based (cross-ref [[pipeline]] auto-dev.yaml substitution condition 4).
 - **User Confirmation (A–C menu)**: Required only for "즉시 실행" (immediate, code-changing) items — actions that modify source code, configs, or other files in the current session. The A–C menu presents: (A) execute now, (B) register as issue instead, (C) skip.
 - **Excluded from auto-registration**: Pure cosmetic notes and personal preference observations that carry no actionable defect signal.
+- **Proposals checked against cited code (#1966 #3)**: the `{권장 사항}` under `## 권장 조치` is written only after reading the code cited as its basis (file:line or anchor) and confirming the proposal does not contradict it (comments included); otherwise it is omitted or marked `[가설]` with the contradicting code's file:line.
 - **`[가설]` tag required for unverified fixes in `## 권장 조치` (v1.1.81)**: When the proposed fix written into `{권장 사항}` has not been verified by execution/testing, the sentence must be prefixed with a `[가설]` tag and state what would confirm it. Tagging only the root-cause diagnosis while leaving the proposed fix asserted as settled fact carries the risk that applying that fix as-is fails into a later session ([[r020]] Diagnostic Hypothesis Verification, Origin: #1725).
 
 The skill's three byte-dump snippets clean up its `mktemp` file with `trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0`: no `-f` and no `command rm`, so a safety-wrapped `rm` (such as `trash`) is used as is (#1947).
@@ -55,3 +56,4 @@ Results written to `.claude/outputs/sessions/{date}/`. Auto-registered GitHub is
 - Content-drift resync 2026-09-03 (v1.1.60, #1652 #3-2): added the anchor-based code-location convention for auto-registered issue bodies — cite function names/unique strings instead of line numbers, since line numbers went stale by the next release commit and cost two implementation agents a re-search.
 - Content-drift resync 2026-09-24 (v1.1.81, #1725): added the `[가설]` tag requirement for unverified proposed fixes in `## 권장 조치` — tagging only the root-cause diagnosis while leaving the proposed fix stated as settled fact was found to carry forward unverified-fix risk into a later session.
 - Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.
+- Content-drift resync 2026-11-12 (v2.0.25, #1966 #3): SKILL.md added a clause that the `{권장 사항}` under `## 권장 조치` is written only after reading the code cited as its basis (file:line or anchor) and checking the proposal does not contradict it (comments included); if it does, the proposal is omitted or marked `[가설]` with the contradicting code's file:line. It precedes the existing `[가설]` tag requirement.

@@ -15,13 +15,13 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import type { SensitivityTier } from '../adapters/sensitivity.js';
 import {
   aggregateMemoryRecords,
   escalateSensitivity,
-  mergeTags,
   type MemoryRecord,
+  mergeTags,
 } from '../memory-aggregator.js';
-import type { SensitivityTier } from '../adapters/sensitivity.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -278,9 +278,7 @@ describe('aggregateMemoryRecords: secret-tier auto-rejection', () => {
 
   it('does not reject project, sensitive, or public tiers', () => {
     const tiers: SensitivityTier[] = ['public', 'project', 'sensitive'];
-    const records = tiers.map((sensitivity, i) =>
-      makeRecord({ hash: `h-${i}`, sensitivity })
-    );
+    const records = tiers.map((sensitivity, i) => makeRecord({ hash: `h-${i}`, sensitivity }));
 
     const result = aggregateMemoryRecords({ records: [records] });
 
@@ -419,7 +417,7 @@ describe('aggregateMemoryRecords: stats accuracy', () => {
 
     const result = aggregateMemoryRecords({ records: [records] });
 
-    expect(result.stats.bySource['native']).toBe(2);
+    expect(result.stats.bySource.native).toBe(2);
     expect(result.stats.bySource['claude-mem']).toBe(1);
     expect(result.stats.bySource['episodic-memory']).toBe(1);
     expect(result.stats.bySource['llm-memory']).toBeUndefined();

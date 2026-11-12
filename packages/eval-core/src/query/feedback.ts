@@ -70,11 +70,7 @@ export async function getAgentFailurePatterns(
   db: EvalDb,
   options: FeedbackQueryOptions = {}
 ): Promise<AgentFailurePattern[]> {
-  const {
-    since,
-    minSessions = 5,
-    failureRateThreshold = 0.3,
-  } = options;
+  const { since, minSessions = 5, failureRateThreshold = 0.3 } = options;
 
   const conditions = [];
   if (since) {
@@ -85,9 +81,10 @@ export async function getAgentFailurePatterns(
     .select({
       agentType: agentInvocations.agentType,
       total: sql<number>`count(*)`.as('total'),
-      failures: sql<number>`sum(case when ${agentInvocations.outcome} = 'failure' then 1 else 0 end)`.as(
-        'failures'
-      ),
+      failures:
+        sql<number>`sum(case when ${agentInvocations.outcome} = 'failure' then 1 else 0 end)`.as(
+          'failures'
+        ),
       errorSummaries: since
         ? sql<string>`(
             SELECT json_group_array(sub_es) FROM (
@@ -112,7 +109,9 @@ export async function getAgentFailurePatterns(
               LIMIT 5
             )
           )`.as('error_summaries'),
-      lastFailureAt: sql<string | null>`max(case when ${agentInvocations.outcome} = 'failure' then ${agentInvocations.timestamp} end)`.as(
+      lastFailureAt: sql<
+        string | null
+      >`max(case when ${agentInvocations.outcome} = 'failure' then ${agentInvocations.timestamp} end)`.as(
         'last_failure_at'
       ),
     })
@@ -132,9 +131,7 @@ export async function getAgentFailurePatterns(
     const rawErrors = row.errorSummaries ?? '[]';
     let commonErrors: string[];
     try {
-      commonErrors = (JSON.parse(rawErrors) as string[]).filter(
-        (e) => e != null && e !== 'null'
-      );
+      commonErrors = (JSON.parse(rawErrors) as string[]).filter((e) => e != null && e !== 'null');
     } catch {
       commonErrors = [];
     }
@@ -160,11 +157,7 @@ export async function getSkillEffectiveness(
   db: EvalDb,
   options: FeedbackQueryOptions = {}
 ): Promise<SkillEffectivenessRecord[]> {
-  const {
-    since,
-    skillMinInvocations = 10,
-    skillSuccessRateThreshold = 0.5,
-  } = options;
+  const { since, skillMinInvocations = 10, skillSuccessRateThreshold = 0.5 } = options;
 
   const conditions = [sql`${agentInvocations.skillName} is not null`];
   if (since) {
@@ -175,9 +168,10 @@ export async function getSkillEffectiveness(
     .select({
       skillName: agentInvocations.skillName,
       total: sql<number>`count(*)`.as('total'),
-      successes: sql<number>`sum(case when ${agentInvocations.outcome} = 'success' then 1 else 0 end)`.as(
-        'successes'
-      ),
+      successes:
+        sql<number>`sum(case when ${agentInvocations.outcome} = 'success' then 1 else 0 end)`.as(
+          'successes'
+        ),
       agentTypes: sql<string>`(
         SELECT json_group_array(sub_at) FROM (
           SELECT DISTINCT ai3.agent_type as sub_at
@@ -421,7 +415,9 @@ export function userFeedbackToSuggestions(entries: UserFeedbackEntry[]): Improve
     .filter((e) => e.targetType !== 'general' && e.sentiment === 'negative')
     .map((e) => ({
       target: e.target,
-      targetType: (e.targetType === 'general' ? 'agent' : e.targetType) as ImprovementSuggestion['targetType'],
+      targetType: (e.targetType === 'general'
+        ? 'agent'
+        : e.targetType) as ImprovementSuggestion['targetType'],
       actionType: 'revise' as const,
       description: `User feedback (issue #${e.issueNumber}): "${e.title}"`,
       confidence: 'medium' as const,
@@ -439,9 +435,8 @@ export function userFeedbackToSuggestions(entries: UserFeedbackEntry[]): Improve
  * Groups suggestions by target, then checks all pairs for conflicts.
  * When a conflict is found, keeps the higher-confidence entry; on tie, keeps the earlier one.
  */
-export function filterConflicts(
-  suggestions: ImprovementSuggestion[]
-): ImprovementSuggestion[] {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 32 measured by biome 2.3.12; pairwise conflict resolution, splitting it is a behaviour-bearing refactor outside this lint-wiring change
+export function filterConflicts(suggestions: ImprovementSuggestion[]): ImprovementSuggestion[] {
   const confidenceOrder: Record<string, number> = { high: 2, medium: 1, low: 0 };
   const byTarget = new Map<string, ImprovementSuggestion[]>();
 
@@ -537,11 +532,7 @@ export function updateImprovementActionStatus(
   newStatus: 'approved' | 'applied' | 'rejected',
   metadata?: { appliedAt?: string }
 ): void {
-  const existing = db
-    .select()
-    .from(improvementActions)
-    .where(eq(improvementActions.id, id))
-    .get();
+  const existing = db.select().from(improvementActions).where(eq(improvementActions.id, id)).get();
   if (!existing) {
     throw new Error(`ImprovementAction #${id} not found`);
   }
@@ -611,10 +602,7 @@ export async function saveImprovementActions(
     for (const name of targetNames) {
       tx.delete(improvementActions)
         .where(
-          and(
-            eq(improvementActions.targetName, name),
-            eq(improvementActions.status, 'proposed')
-          )
+          and(eq(improvementActions.targetName, name), eq(improvementActions.status, 'proposed'))
         )
         .run();
     }

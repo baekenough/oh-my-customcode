@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { eq } from 'drizzle-orm';
 import { createDb } from '../db/client.js';
-import { agentInvocations, sessions, turns } from '../db/schema.js';
 import { runMigrations } from '../db/migrate.js';
+import { agentInvocations, sessions, turns } from '../db/schema.js';
 import { getDefaultConfig } from '../types/config.js';
 
 interface ShowCliOptions {
@@ -15,6 +15,7 @@ export const showCommand = new Command('show')
   .argument('<session-id>', 'Session ID or prefix')
   .option('--db-path <path>', 'Database file path')
   .option('--format <format>', 'Output format: text | json', 'text')
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 27 measured by biome 2.3.12; single commander action handler, splitting it is a behaviour-bearing refactor outside this lint-wiring change
   .action((sessionIdArg: string, options: ShowCliOptions) => {
     const config = getDefaultConfig();
     const dbPath = options.dbPath ?? config.sqlitePath;
@@ -57,11 +58,9 @@ export const showCommand = new Command('show')
 
     // Text format
     const durationMs = session.durationMs;
-    const durationStr = durationMs != null
-      ? `${Math.floor(durationMs / 1000)}s`
-      : 'ongoing';
+    const durationStr = durationMs != null ? `${Math.floor(durationMs / 1000)}s` : 'ongoing';
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`Session: ${session.sessionId}`);
     console.log('='.repeat(60));
     console.log(`Started:   ${session.startedAt}`);
@@ -69,7 +68,9 @@ export const showCommand = new Command('show')
     console.log(`Duration:  ${durationStr}`);
     console.log(`CWD:       ${session.cwd ?? '-'}`);
     console.log(`PID:       ${session.pid ?? '-'}`);
-    console.log(`Cost:      ${session.estimatedCostUsd != null ? `$${session.estimatedCostUsd.toFixed(4)}` : '-'}`);
+    console.log(
+      `Cost:      ${session.estimatedCostUsd != null ? `$${session.estimatedCostUsd.toFixed(4)}` : '-'}`
+    );
     console.log('');
 
     console.log(`Turns (${sessionTurns.length})`);

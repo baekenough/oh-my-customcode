@@ -88,9 +88,9 @@ export const evaluations = sqliteTable('evaluations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   turnId: text('turn_id').references(() => turns.turnId),
   sessionId: text('session_id').references(() => sessions.sessionId),
-  score: integer('score'),              // 1-5
-  verdict: text('verdict'),             // pass | fail | needs_refinement
-  tags: text('tags'),                   // JSON array string: ["good_prompt", "wrong_routing"]
+  score: integer('score'), // 1-5
+  verdict: text('verdict'), // pass | fail | needs_refinement
+  tags: text('tags'), // JSON array string: ["good_prompt", "wrong_routing"]
   comment: text('comment'),
   evaluatedAt: text('evaluated_at').notNull(),
   createdAt: text('created_at')
@@ -103,8 +103,8 @@ export const sessionFeedback = sqliteTable('session_feedback', {
   sessionId: text('session_id')
     .notNull()
     .references(() => sessions.sessionId),
-  rating: integer('rating'),            // 1-5
-  tags: text('tags'),                   // JSON array string
+  rating: integer('rating'), // 1-5
+  tags: text('tags'), // JSON array string
   comment: text('comment'),
   createdAt: text('created_at')
     .notNull()
@@ -159,7 +159,7 @@ export const agentTrajectories = sqliteTable('agent_trajectories', {
   observedToolCalls: integer('observed_tool_calls').notNull(),
   observedLatencyMs: integer('observed_latency_ms').notNull(),
   correctness: integer('correctness', { mode: 'boolean' }).notNull(),
-  stepRatio: real('step_ratio'),       // observed / ideal
+  stepRatio: real('step_ratio'), // observed / ideal
   toolCallRatio: real('tool_call_ratio'),
   latencyRatio: real('latency_ratio'),
   sessionId: text('session_id'),

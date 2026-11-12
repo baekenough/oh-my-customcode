@@ -10,10 +10,10 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
-  normalizeEpisodicMemory,
-  SecretContentError,
   type EpisodicMemoryRecord,
   type NormalizeOptions,
+  normalizeEpisodicMemory,
+  SecretContentError,
 } from '../../adapters/episodic-memory.js';
 import { containsSecret, detectSensitivity } from '../../adapters/sensitivity.js';
 
@@ -77,16 +77,16 @@ describe('normalizeEpisodicMemory: valid record', () => {
   });
 
   it('falls back to process.env.HOSTNAME when deviceId is not supplied', () => {
-    const original = process.env['HOSTNAME'];
-    process.env['HOSTNAME'] = 'env-host-test';
+    const original = process.env.HOSTNAME;
+    process.env.HOSTNAME = 'env-host-test';
     try {
       const record = normalizeEpisodicMemory(makeRaw(), { project: '/proj' });
       expect(record.deviceId).toBe('env-host-test');
     } finally {
       if (original === undefined) {
-        delete process.env['HOSTNAME'];
+        delete process.env.HOSTNAME;
       } else {
-        process.env['HOSTNAME'] = original;
+        process.env.HOSTNAME = original;
       }
     }
   });
@@ -221,7 +221,7 @@ describe('normalizeEpisodicMemory: timestamp resolution', () => {
         endedAt: '2026-04-27T10:30:00Z',
         startedAt: '2026-04-27T09:00:00Z',
       }),
-      makeOpts(),
+      makeOpts()
     );
     expect(record.timestamp).toBe('2026-04-27T10:30:00Z');
   });
@@ -229,7 +229,7 @@ describe('normalizeEpisodicMemory: timestamp resolution', () => {
   it('falls back to startedAt when endedAt is absent', () => {
     const record = normalizeEpisodicMemory(
       makeRaw({ endedAt: undefined, startedAt: '2026-04-27T09:00:00Z' }),
-      makeOpts(),
+      makeOpts()
     );
     expect(record.timestamp).toBe('2026-04-27T09:00:00Z');
   });
@@ -237,7 +237,7 @@ describe('normalizeEpisodicMemory: timestamp resolution', () => {
   it('falls back to startedAt when endedAt is empty string', () => {
     const record = normalizeEpisodicMemory(
       makeRaw({ endedAt: '', startedAt: '2026-04-27T09:00:00Z' }),
-      makeOpts(),
+      makeOpts()
     );
     expect(record.timestamp).toBe('2026-04-27T09:00:00Z');
   });
@@ -246,7 +246,7 @@ describe('normalizeEpisodicMemory: timestamp resolution', () => {
     const before = new Date().toISOString();
     const record = normalizeEpisodicMemory(
       makeRaw({ endedAt: undefined, startedAt: undefined }),
-      makeOpts(),
+      makeOpts()
     );
     const after = new Date().toISOString();
     // Should be a valid ISO string between before and after
@@ -318,7 +318,7 @@ describe('normalizeEpisodicMemory: secret content rejection', () => {
     // Secret content still throws even if caller explicitly sets 'secret'
     const raw = makeRaw({ content: `token=ghp_${'b'.repeat(36)}` });
     expect(() => normalizeEpisodicMemory(raw, makeOpts({ sensitivity: 'secret' }))).toThrow(
-      SecretContentError,
+      SecretContentError
     );
   });
 });
@@ -345,14 +345,13 @@ describe('sensitivity module: containsSecret', () => {
   });
 
   it('detects JWT token', () => {
-    const jwt =
-      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123_def456-ghi789';
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123_def456-ghi789';
     expect(containsSecret(jwt)).toBe(true);
   });
 
   it('returns false for clean content', () => {
     expect(
-      containsSecret('Normal session discussing release v0.116.1 and TypeScript adapters.'),
+      containsSecret('Normal session discussing release v0.116.1 and TypeScript adapters.')
     ).toBe(false);
   });
 
@@ -361,7 +360,9 @@ describe('sensitivity module: containsSecret', () => {
     // SHA-1 hex (40 chars) in content is allowed unless field name is key-context
     // The sensitivity.ts in place only checks SECRET_PATTERNS, and sha1 is pattern-based —
     // depending on the implementation it may or may not fire; this test validates the module is importable
-    const result = containsSecret('Regular message: commit hash 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b');
+    const result = containsSecret(
+      'Regular message: commit hash 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b'
+    );
     expect(typeof result).toBe('boolean');
   });
 });

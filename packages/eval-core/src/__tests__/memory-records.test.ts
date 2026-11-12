@@ -3,12 +3,12 @@
  * Uses in-memory SQLite for isolation.
  */
 
-import { describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
+import { describe, expect, it } from 'bun:test';
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { eq, and } from 'drizzle-orm';
-import * as schema from '../db/schema.js';
 import type { EvalDb } from '../db/client.js';
+import * as schema from '../db/schema.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,8 +37,12 @@ function makeDb(): { db: EvalDb; sqlite: Database } {
     )
   `);
   sqlite.run('CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source)');
-  sqlite.run('CREATE INDEX IF NOT EXISTS idx_memory_records_device_project ON memory_records(device_id, project)');
-  sqlite.run("CREATE INDEX IF NOT EXISTS idx_memory_records_timestamp ON memory_records(timestamp DESC)");
+  sqlite.run(
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_device_project ON memory_records(device_id, project)'
+  );
+  sqlite.run(
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_timestamp ON memory_records(timestamp DESC)'
+  );
   return { db, sqlite };
 }
 
@@ -319,7 +323,9 @@ describe('memory_records: query by device_id + project composite', () => {
       .all();
 
     expect(rows).toHaveLength(2);
-    expect(rows.every((r) => r.deviceId === targetDevice && r.project === targetProject)).toBe(true);
+    expect(rows.every((r) => r.deviceId === targetDevice && r.project === targetProject)).toBe(
+      true
+    );
   });
 
   it('returns empty when device_id matches but project does not', () => {

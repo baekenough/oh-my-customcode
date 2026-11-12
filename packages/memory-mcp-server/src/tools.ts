@@ -11,7 +11,8 @@
  * via the sensitivity filter, and in get/stats via explicit filtering here).
  */
 
-import type { MemoryService, MemoryRecord, MemoryQueryFilter } from '@omcustom/eval-core/memory-service';
+import type { MemoryRecord } from '@omcustom/eval-core/memory-aggregator';
+import type { MemoryQueryFilter, MemoryService } from '@omcustom/eval-core/memory-service';
 
 // ---------------------------------------------------------------------------
 // Input schema types (validated at runtime via JSON Schema in MCP server)
@@ -30,14 +31,6 @@ export interface QueryInput {
 export interface GetInput {
   id?: string;
   hash?: string;
-}
-
-export interface ListSourcesInput {
-  // intentionally empty — no parameters
-}
-
-export interface StatsInput {
-  // intentionally empty — no parameters
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +78,7 @@ function excludeSecrets(records: MemoryRecord[]): MemoryRecord[] {
 
 export async function handleQuery(
   service: MemoryService,
-  input: QueryInput,
+  input: QueryInput
 ): Promise<MemoryRecord[]> {
   const filter = buildFilter(input);
   const records = await service.query(filter);
@@ -94,7 +87,7 @@ export async function handleQuery(
 
 export async function handleGet(
   service: MemoryService,
-  input: GetInput,
+  input: GetInput
 ): Promise<MemoryRecord | null> {
   if (input.id === undefined && input.hash === undefined) {
     throw new Error('Either id or hash must be provided');
@@ -115,9 +108,7 @@ export async function handleGet(
   return record;
 }
 
-export async function handleListSources(
-  service: MemoryService,
-): Promise<SourceCount[]> {
+export async function handleListSources(service: MemoryService): Promise<SourceCount[]> {
   // Query all non-secret records and aggregate by source
   const records = await service.query({ limit: 10000 });
   const nonSecret = excludeSecrets(records);
@@ -132,9 +123,7 @@ export async function handleListSources(
     .sort((a, b) => b.count - a.count);
 }
 
-export async function handleStats(
-  service: MemoryService,
-): Promise<MemoryStats> {
+export async function handleStats(service: MemoryService): Promise<MemoryStats> {
   const records = await service.query({ limit: 100000 });
   const nonSecret = excludeSecrets(records);
 

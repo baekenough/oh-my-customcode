@@ -1,6 +1,8 @@
 [install]
 # Faster installs
 auto-install-peers = true
+# Explicit isolated linker (bun.lock configVersion 1 default) — packages/serve relies on per-package dependency isolation
+linker = "isolated"
 
 [test]
 # Coverage configuration

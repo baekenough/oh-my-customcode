@@ -149,7 +149,7 @@ describe('projectsCommand() — json format', () => {
     expect(result.success).toBe(true);
 
     // Find the JSON console.log call (should contain '{')
-    const jsonCall = consoleLogSpy.mock.calls.find((c) => String(c[0]).startsWith('{'));
+    const jsonCall = consoleLogSpy.mock.calls.find((c: unknown[]) => String(c[0]).startsWith('{'));
     expect(jsonCall).toBeDefined();
     const parsed = JSON.parse(String(jsonCall?.[0]));
     expect(parsed).toHaveProperty('currentVersion');

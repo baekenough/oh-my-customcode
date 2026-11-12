@@ -13,10 +13,10 @@ import { join } from 'node:path';
 import {
   deriveAgent,
   deriveProject,
-  parseMemoryFile,
-  scanNativeMemory,
   type MemoryRecord,
   type NativeMemoryFile,
+  parseMemoryFile,
+  scanNativeMemory,
 } from '../../adapters/native-memory.js';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,10 @@ function sha256(content: string): string {
 
 /** Create a unique temp directory for each test. */
 async function makeTempDir(): Promise<string> {
-  const dir = join(tmpdir(), `native-memory-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const dir = join(
+    tmpdir(),
+    `native-memory-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
   await mkdir(dir, { recursive: true });
   return dir;
 }
@@ -200,8 +203,7 @@ describe('deriveProject', () => {
 
 describe('deriveAgent', () => {
   it('extracts agent name from project agent-memory path', () => {
-    const path =
-      '/proj/.claude/agent-memory/lang-typescript-expert/MEMORY.md';
+    const path = '/proj/.claude/agent-memory/lang-typescript-expert/MEMORY.md';
     expect(deriveAgent(path)).toBe('lang-typescript-expert');
   });
 
@@ -432,10 +434,7 @@ describe('scanNativeMemory: end-to-end in tmpdir', () => {
   it('tags include "index" for MEMORY.md files', async () => {
     const agentDir = join(tempRoot, 'agent-mem');
     await mkdir(agentDir);
-    await writeFile(
-      join(agentDir, 'MEMORY.md'),
-      '### Only Section\nBody.\n'
-    );
+    await writeFile(join(agentDir, 'MEMORY.md'), '### Only Section\nBody.\n');
 
     const records = await scanNativeMemory([tempRoot], { deviceId: 'host' });
     const tags: string[] = JSON.parse(records[0]?.tags ?? '[]');

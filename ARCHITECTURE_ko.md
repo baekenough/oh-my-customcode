@@ -28,6 +28,8 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
   <img src="assets/diagrams/01-system-architecture.png" alt="System Architecture" width="800" />
 </p>
 
+다이어그램 01, 03, 04, 07의 SVG 원본은 `assets/diagrams/src/`에 있으며, 해당 PNG는 이 원본으로 렌더링됩니다.
+
 ---
 
 ## 3. 컴포넌트 인벤토리
@@ -193,8 +195,6 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
   <img src="assets/diagrams/03-routing-architecture.png" alt="Routing Architecture" width="800" />
 </p>
 
-> 참고: 이 다이어그램은 v2.0.24 이전 상태이며, 제거된 "Ontology RAG MCP R019" 노드(ontology-rag는 v2.0.24에서 제거됨)가 아직 표시됩니다. 후속 이슈(#1961)에서 다시 생성할 예정입니다.
-
 ### 4.3 동적 에이전트 생성
 
 라우팅에서 매칭되는 전문가를 찾지 못할 경우:
@@ -356,15 +356,15 @@ MEMORY.md는 선택적 `## Behaviors` 섹션을 지원하여 사용자 상호작
 
 ### 6.4 MCP 메모리 (보조) — Superseded
 
-> **현재 소스와 상충함 (R011, `.claude/rules/SHOULD-memory-integration.md`)**: #1253(v0.157.0) 기준으로 이 프로젝트는 **네이티브 자동 메모리만** 사용합니다. claude-mem과 agentmemory MCP 백엔드는 **영구 제거**되었습니다 — `memory-recall`, `memory-save`, `memory-management` 스킬이 삭제되었고, `.mcp.json`은 더 이상 두 서버 중 어느 것도 등록하지 않습니다. R011은 명시적으로 규정합니다: *"claude-mem and agentmemory MCP are NOT used in this project."* 아래의 `memory-mcp-server` 패키지 및 native/episodic-memory/llm-memory 어댑터 서술은 그 제거 이전 시점의 서술이며, 역사적 기록으로만 유지됩니다 — 이 절을 현행 가이드로 취급하지 마십시오. 현행 유일한 메모리 메커니즘은 §6.1(네이티브 자동 메모리)을 참조하십시오.
+> **현재 소스와 상충함 (R011, `.claude/rules/SHOULD-memory-integration.md`)**: #1253(v0.157.0) 기준으로 이 프로젝트는 **네이티브 자동 메모리만** 사용합니다. claude-mem과 agentmemory MCP 백엔드는 **영구 제거**되었습니다 — `memory-recall`, `memory-save`, `memory-management` 스킬이 삭제되었고, `.mcp.json`은 더 이상 두 서버 중 어느 것도 등록하지 않습니다. R011은 명시적으로 규정합니다: *"claude-mem and agentmemory MCP are NOT used in this project."* 아래의 `memory-mcp-server` 패키지 및 메모리 어댑터 서술은 그 제거 이전 시점의 서술이며, 역사적 기록으로만 유지됩니다 — 이 절을 현행 가이드로 취급하지 마십시오. 현행 유일한 메모리 메커니즘은 §6.1(네이티브 자동 메모리)을 참조하십시오.
 
 MCP 도구는 오케스트레이터 스코프이며, 서브에이전트는 접근할 수 없습니다.
 
 | 시스템 | 도구 | 사용 사례 |
 |--------|------|-----------|
-| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4개 MCP 도구) | 어댑터 전반의 통합 메모리 액세스 (v0.123.0+; #1253 이전) |
+| memory-mcp-server | `memory.query`, `memory.get`, `memory.list_sources`, `memory.stats` (4개 MCP 도구) | 어댑터 전반의 통합 메모리 액세스 (v0.123.0+; #1253 이전) |
 
-`packages/memory-mcp-server/`는 메모리 통합 계층(native/episodic-memory/llm-memory 어댑터) 위에 통합 MCP 인터페이스를 제공**했습니다**. 오케스트레이터에서의 접근을 위해 `.mcp.json`으로 등록했습니다.
+`packages/memory-mcp-server/`는 메모리 통합 계층(native, episodic-memory 등의 어댑터) 위에 통합 MCP 인터페이스를 제공**했습니다**. 오케스트레이터에서의 접근을 위해 `.mcp.json`으로 등록했습니다.
 
 ### 6.5 세션 종료 흐름
 
@@ -437,7 +437,7 @@ haiku -> sonnet -> opus (에스컬레이션 경로)
 | Test | ci.yml | bun test 커버리지 임계값 포함 |
 | Version Sync | ci.yml | manifest.json과 package.json 일치 여부 (+ lockfile 3-way 검사) |
 | Template Sync | ci.yml | 템플릿 파일과 소스 일치 검증, 스킬 스크립트 파일 패리티 |
-| Dependency Security Audit | security-audit.yml | 자동 취약점 스캔 |
+| Dependency Security Audit | security-audit.yml | 자동 취약점 스캔 (`bun audit`, high 또는 critical 시 실패) |
 | Wiki Sync | wiki-sync.yml | PR에서 위키 페이지 부재/stale 여부 확인 (R022) |
 | Docs Sync | docs-sync.yml | 문서 drift 검사 (validate-docs.ts programmatic 모드) |
 | Issue Triage Dispatch | triage-dispatch.yml | `issues` 이벤트에 대한 라벨/코멘트 자동화(idempotent) |
@@ -486,7 +486,7 @@ packages/eval-core/
   src/query/    — 집계 및 리포팅 쿼리
 ```
 
-`packages/memory-mcp-server/`는 v0.123.0에서 추가된 내장 메모리 MCP 서버입니다. 4개의 MCP 도구(save_memory, recall_memory, list_memories, delete_memory)를 통해 여러 메모리 백엔드를 통합 인터페이스로 노출합니다.
+`packages/memory-mcp-server/`는 v0.123.0에서 추가된 내장 메모리 MCP 서버입니다. 4개의 MCP 도구(`memory.query`, `memory.get`, `memory.list_sources`, `memory.stats`)를 통해 여러 메모리 백엔드를 통합 인터페이스로 노출합니다.
 
 ```
 packages/memory-mcp-server/

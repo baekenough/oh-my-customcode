@@ -7,9 +7,9 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
+  type ClaudeMemRecord,
   detectSensitivity,
   normalizeClaudeMem,
-  type ClaudeMemRecord,
 } from '../../adapters/claude-mem.js';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,9 @@ describe('normalizeClaudeMem', () => {
     expect(record.project).toBe(OPTS.project);
     expect(record.agent).toBe('sys-memory-keeper');
     expect(record.timestamp).toBe('2026-04-27T10:30:00.000Z');
-    expect(record.content).toBe(raw.content);
+    expect(record.content).toBe(
+      'Session 88: v0.116.1 bootstrap hotfix shipped. Decisions: general-purpose fallback.'
+    );
     expect(record.tags).toEqual(['session-summary', 'hotfix']);
     expect(record.sensitivity).toBe('project');
     expect(typeof record.hash).toBe('string');
@@ -65,9 +67,7 @@ describe('normalizeClaudeMem', () => {
     const record = normalizeClaudeMem(raw, OPTS);
 
     // UUID v4 pattern
-    expect(record.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(record.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
   it('omits agent when metadata.agent is absent', () => {

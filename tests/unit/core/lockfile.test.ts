@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
@@ -15,7 +16,6 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   computeFileHash,
   diffLockfiles,

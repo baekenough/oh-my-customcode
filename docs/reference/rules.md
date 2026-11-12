@@ -170,12 +170,12 @@ Error handling patterns:
 
 **ID**: R011
 
-Memory integration with claude-mem:
+Memory integration using native auto memory only (`memory/MEMORY.md` + agent frontmatter `memory:`):
 
-- Save before compaction
-- Restore on session start
-- Project isolation
-- Query patterns
+- Mid-session immediate save
+- Session-end auto-save
+- Memory scopes (`user` / `project` / `local`)
+- Consult memory before starting work
 
 ### SHOULD-hud-statusline
 

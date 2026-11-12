@@ -15,13 +15,13 @@
  *  - SyncResult counts are accurate
  */
 
-import { describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
+import { describe, expect, it } from 'bun:test';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as schema from '../db/schema.js';
 import type { EvalDb } from '../db/client.js';
-import { MemoryService } from '../memory-service.js';
+import * as schema from '../db/schema.js';
 import type { MemoryRecord } from '../memory-aggregator.js';
+import { MemoryService } from '../memory-service.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,14 +50,12 @@ function makeDb(): EvalDb {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
-  sqlite.run(
-    'CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source)'
-  );
+  sqlite.run('CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source)');
   sqlite.run(
     'CREATE INDEX IF NOT EXISTS idx_memory_records_device_project ON memory_records(device_id, project)'
   );
   sqlite.run(
-    "CREATE INDEX IF NOT EXISTS idx_memory_records_timestamp ON memory_records(timestamp DESC)"
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_timestamp ON memory_records(timestamp DESC)'
   );
   return db;
 }
@@ -106,8 +104,16 @@ describe('MemoryService.sync()', () => {
     const service = new MemoryService(db);
 
     const sharedHash = `sha256-${'a'.repeat(64)}`;
-    const r1 = makeRecord({ hash: sharedHash, source: 'native', timestamp: '2026-04-01T10:00:00.000Z' });
-    const r2 = makeRecord({ hash: sharedHash, source: 'claude-mem', timestamp: '2026-04-01T11:00:00.000Z' });
+    const r1 = makeRecord({
+      hash: sharedHash,
+      source: 'native',
+      timestamp: '2026-04-01T10:00:00.000Z',
+    });
+    const r2 = makeRecord({
+      hash: sharedHash,
+      source: 'claude-mem',
+      timestamp: '2026-04-01T11:00:00.000Z',
+    });
     const r3 = makeRecord(); // unique
 
     // Aggregator collapses r1+r2 into one (newest wins), so 2 unique records reach DB
@@ -146,6 +152,74 @@ describe('MemoryService.sync()', () => {
     expect(second.inserted).toBe(0);
     expect(second.skippedDuplicates).toBe(2);
     expect(second.rejected).toBe(0);
+  });
+
+  it('reports a record whose id already exists under a different hash as an error — inserted 0, skippedDuplicates 0, errors 1, existing row kept', async () => {
+    const db = makeDb();
+    const service = new MemoryService(db);
+
+    const original = makeRecord({ summary: 'original' });
+    const sameIdOtherHash = makeRecord({ id: original.id, summary: 'collision' });
+
+    await service.sync([[original]]);
+    const result = await service.sync([[sameIdOtherHash]]);
+
+    expect(result.inserted).toBe(0);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].record.id).toBe(original.id);
+    expect(result.errors[0].error.message).toContain(original.id);
+    expect((await service.getById(original.id))?.summary).toBe('original');
+  });
+
+  it('inserts a batch larger than the SQLite bind-parameter limit — 5000 records, inserted 5000', async () => {
+    const db = makeDb();
+    const service = new MemoryService(db);
+
+    const records = Array.from({ length: 5000 }, () => makeRecord());
+    const result = await service.sync([records]);
+
+    expect(result.inserted).toBe(5000);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('reports an id conflict between records in different insert chunks — inserted 4999, skippedDuplicates 0, errors 1', async () => {
+    const db = makeDb();
+    const service = new MemoryService(db);
+
+    const records = Array.from({ length: 5000 }, () => makeRecord());
+    records[4999] = makeRecord({ id: records[0].id });
+    const result = await service.sync([records]);
+
+    expect(result.inserted).toBe(4999);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].record.hash).toBe(records[4999].hash);
+  });
+
+  it('collapses a hash shared by records far apart in one batch — inserted 4999, skippedDuplicates 0, errors 0', async () => {
+    const db = makeDb();
+    const service = new MemoryService(db);
+
+    const records = Array.from({ length: 5000 }, () => makeRecord());
+    records[4999] = makeRecord({ hash: records[0].hash });
+    const result = await service.sync([records]);
+
+    expect(result.inserted).toBe(4999);
+    expect(result.skippedDuplicates).toBe(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('is all-or-nothing when a late record violates NOT NULL — sync rejects and no row is stored', async () => {
+    const db = makeDb();
+    const service = new MemoryService(db);
+
+    const records = Array.from({ length: 5000 }, () => makeRecord());
+    records[4999] = makeRecord({ summary: null as unknown as string });
+
+    await expect(service.sync([records])).rejects.toThrow('NOT NULL constraint failed');
+    expect(await service.query({ limit: 10 })).toHaveLength(0);
   });
 
   it('handles empty adapter arrays without error', async () => {
@@ -221,13 +295,13 @@ describe('MemoryService.query()', () => {
     const service = new MemoryService(db);
 
     const early = makeRecord({ timestamp: '2026-01-01T00:00:00.000Z' });
-    const mid   = makeRecord({ timestamp: '2026-04-01T00:00:00.000Z' });
-    const late  = makeRecord({ timestamp: '2026-12-31T00:00:00.000Z' });
+    const mid = makeRecord({ timestamp: '2026-04-01T00:00:00.000Z' });
+    const late = makeRecord({ timestamp: '2026-12-31T00:00:00.000Z' });
     await service.sync([[early, mid, late]]);
 
     const results = await service.query({
       fromTimestamp: '2026-03-01T00:00:00.000Z',
-      toTimestamp:   '2026-06-01T00:00:00.000Z',
+      toTimestamp: '2026-06-01T00:00:00.000Z',
     });
 
     expect(results).toHaveLength(1);

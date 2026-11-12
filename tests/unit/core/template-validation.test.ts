@@ -296,7 +296,7 @@ describe('Template Validation', () => {
       expect(rulesComponent).toBeDefined();
 
       const actualCount = await countActualFiles(rulesComponent?.path ?? '', 'rules');
-      expect(actualCount).toBe(rulesComponent?.files);
+      expect<number | undefined>(actualCount).toBe(rulesComponent?.files);
     });
 
     it('should have files count matching actual agents directory', async () => {
@@ -308,7 +308,7 @@ describe('Template Validation', () => {
       expect(agentsComponent).toBeDefined();
 
       const actualCount = await countActualFiles(agentsComponent?.path ?? '', 'agents');
-      expect(actualCount).toBe(agentsComponent?.files);
+      expect<number | undefined>(actualCount).toBe(agentsComponent?.files);
     });
 
     it('should have files count matching actual skills directory', async () => {
@@ -320,7 +320,7 @@ describe('Template Validation', () => {
       expect(skillsComponent).toBeDefined();
 
       const actualCount = await countActualFiles(skillsComponent?.path ?? '', 'skills');
-      expect(actualCount).toBe(skillsComponent?.files);
+      expect<number | undefined>(actualCount).toBe(skillsComponent?.files);
     });
 
     it('should have files count matching actual guides directory', async () => {
@@ -332,7 +332,7 @@ describe('Template Validation', () => {
       expect(guidesComponent).toBeDefined();
 
       const actualCount = await countActualFiles(guidesComponent?.path ?? '', 'guides');
-      expect(actualCount).toBe(guidesComponent?.files);
+      expect<number | undefined>(actualCount).toBe(guidesComponent?.files);
     });
 
     it('should have files count matching actual hooks directory', async () => {
@@ -344,7 +344,7 @@ describe('Template Validation', () => {
       expect(hooksComponent).toBeDefined();
 
       const actualCount = await countActualFiles(hooksComponent?.path ?? '', 'hooks');
-      expect(actualCount).toBe(hooksComponent?.files);
+      expect<number | undefined>(actualCount).toBe(hooksComponent?.files);
     });
 
     it('should have files count matching actual contexts directory', async () => {
@@ -356,7 +356,7 @@ describe('Template Validation', () => {
       expect(contextsComponent).toBeDefined();
 
       const actualCount = await countActualFiles(contextsComponent?.path ?? '', 'contexts');
-      expect(actualCount).toBe(contextsComponent?.files);
+      expect<number | undefined>(actualCount).toBe(contextsComponent?.files);
     });
 
     it('each manifest component should have required fields', async () => {

@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-11-11
+updated: 2026-11-12
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -129,3 +129,4 @@ See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[a
 - Content-drift resync 2026-11-09 (v2.0.18, #1917): `15-version-compatibility.md` added the colon-block fixture example to one measurement sentence in the v2.1.318 section; this page does not summarize that sentence, so no body change (`updated` already 2026-11-09).
 - Content-drift resync 2026-11-11 (v2.0.23, #1952, #1953): `15-version-compatibility.md` gained the v2.1.321 and v2.1.322 sections (summarized above); `16-fable5-prompting.md` overview now names Fable 5.2 as the default Fable model (previous default Fable 5.1).
 - Content-drift resync 2026-11-11 (v2.0.24, #1960): `15-version-compatibility.md` gained a top note that ontology-rag (package, MCP server, `.claude/ontology` data, R019 Layer 1) was removed in v2.0.24; the dated ontology-rag mentions in the guide (including the v2.1.307 `.mcp.json` server note summarized above) are historical records.
+- Content-drift resync 2026-11-12 (v2.0.25): `15-version-compatibility.md` changed one measurement sentence in the (302) Read-image-limit item: the repository's tracked images are now 18 (was 14) and the largest is 743,283 bytes, `assets/diagrams/09-workflow-engine.png` (was 1,294,475 bytes, `03-routing-architecture.png`), from the same `git ls-files ... | stat | sort -n | tail -1` command; the conclusion (no tracked image is near the 128 MB refusal limit) is unchanged. This page does not summarize that item.

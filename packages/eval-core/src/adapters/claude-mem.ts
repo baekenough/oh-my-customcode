@@ -89,7 +89,9 @@ export interface ClaudeMemRecord {
  * Matches the hash derivation rule in schema.md: `sha256("claude-mem" + content)`.
  */
 function computeHash(source: string, content: string): string {
-  return createHash('sha256').update(source + content).digest('hex');
+  return createHash('sha256')
+    .update(source + content)
+    .digest('hex');
 }
 
 /**
@@ -198,9 +200,7 @@ export function normalizeClaudeMem(raw: ClaudeMemRecord, opts: NormalizeOptions)
 
   const id = raw.id ?? crypto.randomUUID();
   const agent =
-    typeof metadata.agent === 'string' && metadata.agent.length > 0
-      ? metadata.agent
-      : undefined;
+    typeof metadata.agent === 'string' && metadata.agent.length > 0 ? metadata.agent : undefined;
 
   const rawTimestamp = raw.created_at ?? metadata.created_at;
   const timestamp = parseTimestamp(rawTimestamp);

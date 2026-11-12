@@ -25,7 +25,7 @@
  *   - Sensitivity: docs/memory-unification/sensitivity.md
  */
 
-import { type SensitivityTier } from './sensitivity.js';
+import type { SensitivityTier } from './sensitivity.js';
 
 // ---------------------------------------------------------------------------
 // MemoryRecord — 5-source unified schema
@@ -95,7 +95,7 @@ export class AgentMemoryNotActivatedError extends Error {
   constructor(method: string) {
     super(
       `[AgentMemory] STUB: ${method} not yet activated — see #1169 Phase 1 (COEXIST). ` +
-        'This adapter is registered in the schema but not operationally active.',
+        'This adapter is registered in the schema but not operationally active.'
     );
     this.name = 'AgentMemoryNotActivatedError';
   }
@@ -160,9 +160,7 @@ export class AgentMemoryAdapter {
  *
  * @returns [] always, without reading any AgentMemory MCP endpoint
  */
-export function fetchAgentMemoryRecords(
-  _opts: NormalizeOptions,
-): Promise<AgentMemoryRecord[]> {
+export function fetchAgentMemoryRecords(_opts: NormalizeOptions): Promise<AgentMemoryRecord[]> {
   // STUB: Full implementation pending #1169 Phase 1 (COEXIST)
   return Promise.resolve([]);
 }

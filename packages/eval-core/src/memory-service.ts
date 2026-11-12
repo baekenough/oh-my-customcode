@@ -2,8 +2,10 @@
  * Memory persistence service — ties adapters, aggregator, and drizzle table together.
  *
  * sync() accepts pre-fetched MemoryRecord arrays from any combination of adapters,
- * runs aggregation+dedup, then bulk-inserts with onConflictDoNothing on the hash
- * UNIQUE constraint.  query() provides filtered reads over memory_records.
+ * runs aggregation+dedup, then bulk-inserts with onConflictDoNothing (hash UNIQUE
+ * and id PRIMARY KEY conflicts); rows not inserted because the hash is stored are
+ * duplicates, rows not inserted because only the id is stored are reported in
+ * errors.  query() provides filtered reads over memory_records.
  *
  * Spec: #1047 (Unified Memory System), sub-issue #1077 (persistence service).
  *
@@ -11,11 +13,11 @@
  * responsibility — sync() accepts already-fetched arrays, not adapter instances.
  */
 
-import { and, eq, gte, lte, type SQL } from 'drizzle-orm';
+import { and, eq, getTableColumns, gte, inArray, lte, type SQL } from 'drizzle-orm';
+import type { SensitivityTier } from './adapters/sensitivity.js';
 import type { EvalDb } from './db/client.js';
 import { memoryRecords } from './db/schema.js';
 import { aggregateMemoryRecords, type MemoryRecord } from './memory-aggregator.js';
-import type { SensitivityTier } from './adapters/sensitivity.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -36,11 +38,11 @@ export interface MemoryServiceOptions {
 export interface SyncResult {
   /** Number of records inserted into the DB. */
   inserted: number;
-  /** Records skipped because the hash already existed (onConflictDoNothing). */
+  /** Records skipped because the hash already existed; id-only conflicts are in errors, not counted here. */
   skippedDuplicates: number;
   /** Records rejected at the aggregation stage (sensitivity === 'secret'). */
   rejected: number;
-  /** Non-fatal per-record insert errors (only populated if individual insert mode is used). */
+  /** Non-fatal per-record errors: records not inserted because their id already exists under a different hash. */
   errors: Array<{ record: MemoryRecord; error: Error }>;
 }
 
@@ -64,12 +66,25 @@ export interface MemoryQueryFilter {
 // ---------------------------------------------------------------------------
 
 /**
+ * Bind-parameter budget per statement. Every measurement below was taken with bun 1.3.14
+ * on macOS; other platforms not measured. bun:sqlite throws once a statement binds 65536
+ * values (measured: IN list of 65535 ok, 65536 fails). 32766 stays below that ceiling
+ * (IN list of 32766 measured ok) and equals SQLite's documented default
+ * SQLITE_MAX_VARIABLE_NUMBER since 3.32 (documented, not measured); PRAGMA
+ * compile_options reports MAX_VARIABLE_NUMBER=500000 (sqlite 3.51.0). Each inserted row
+ * binds one value per table column (measured: 5000 rows -> "received 70000", 14
+ * columns), so rows per INSERT = budget / column count.
+ */
+const MAX_BIND_PARAMS = 32766;
+const ROWS_PER_INSERT = Math.floor(
+  MAX_BIND_PARAMS / Object.keys(getTableColumns(memoryRecords)).length
+);
+
+/**
  * Maps a MemoryRecord (adapter-schema, snake_case) to a DB insert row
  * (drizzle schema, camelCase + JSON-serialised tags).
  */
-function toDbRow(
-  record: MemoryRecord
-): typeof memoryRecords.$inferInsert {
+function toDbRow(record: MemoryRecord): typeof memoryRecords.$inferInsert {
   return {
     id: record.id,
     source: record.source,
@@ -84,6 +99,61 @@ function toDbRow(
     hash: record.hash,
     embeddingRef: record.embedding_ref ?? null,
   };
+}
+
+type SyncTx = Parameters<Parameters<EvalDb['transaction']>[0]>[0];
+
+/**
+ * Inserts one chunk and classifies every row that was not inserted: hash already
+ * stored -> skippedDuplicates; otherwise an id conflict -> errors.
+ */
+function insertChunk(
+  tx: SyncTx,
+  records: MemoryRecord[],
+  rows: (typeof memoryRecords.$inferInsert)[]
+): Pick<SyncResult, 'inserted' | 'skippedDuplicates' | 'errors'> {
+  // Bulk insert with onConflictDoNothing() and no target — any uniqueness
+  // conflict (PRIMARY KEY `id` or UNIQUE `hash`) drops that row; the split
+  // below tells the two cases apart.
+  const result = tx
+    .insert(memoryRecords)
+    .values(rows)
+    .onConflictDoNothing()
+    .returning({ hash: memoryRecords.hash })
+    .all();
+
+  // Aggregation dedups by hash, so a record is inserted iff its hash was returned.
+  const insertedHashes = new Set(result.map((r) => r.hash));
+  const notInserted = records.filter((r) => !insertedHashes.has(r.hash));
+  const errors: SyncResult['errors'] = [];
+  let skippedDuplicates = 0;
+  if (notInserted.length > 0) {
+    const storedHashes = new Set(
+      tx
+        .select({ hash: memoryRecords.hash })
+        .from(memoryRecords)
+        .where(
+          inArray(
+            memoryRecords.hash,
+            notInserted.map((r) => r.hash)
+          )
+        )
+        .all()
+        .map((r) => r.hash)
+    );
+    for (const record of notInserted) {
+      if (storedHashes.has(record.hash)) {
+        skippedDuplicates++;
+      } else {
+        errors.push({
+          record,
+          error: new Error(`id ${record.id} already exists with a different hash`),
+        });
+      }
+    }
+  }
+  // RETURNING yields only rows actually inserted (conflicts excluded).
+  return { inserted: result.length, skippedDuplicates, errors };
 }
 
 /**
@@ -151,8 +221,10 @@ export class MemoryService {
    * the memory_records table.
    *
    * Secret-tier records are rejected at the aggregation stage and never
-   * reach the DB.  Duplicate hashes are silently skipped
-   * (onConflictDoNothing on the UNIQUE hash constraint).
+   * reach the DB.  Records whose hash is already stored are skipped and counted in
+   * skippedDuplicates (duplicate hashes within one batch are collapsed by aggregation);
+   * a record whose id is stored under a different hash is not inserted and is
+   * reported in errors (no throw, stored row unchanged).
    *
    * @param adapterResults - One array per adapter, as returned by each adapter.
    * @returns SyncResult with counts for inserted, skipped, rejected, and errors.
@@ -166,24 +238,26 @@ export class MemoryService {
 
     const errors: SyncResult['errors'] = [];
     let inserted = 0;
+    let skippedDuplicates = 0;
 
     if (records.length > 0) {
-      // Bulk insert with onConflictDoNothing — the UNIQUE constraint on `hash`
-      // silently drops any row whose hash already exists.
       const rows = records.map(toDbRow);
-      // drizzle-orm/bun-sqlite: onConflictDoNothing() requires a target column
-      // when the conflict arises from a named UNIQUE constraint.
-      const result = this.db
-        .insert(memoryRecords)
-        .values(rows)
-        .onConflictDoNothing({ target: memoryRecords.hash })
-        .run();
-
-      // SQLite `changes` reflects rows actually inserted (duplicates excluded).
-      inserted = result.changes;
+      // One transaction keeps sync() all-or-nothing as the former single INSERT was
+      // (measured: 3000 rows, NOT NULL violation in the last row -> throws, 0 rows stored);
+      // without it an earlier chunk would stay committed when a later chunk throws.
+      this.db.transaction((tx) => {
+        for (let start = 0; start < records.length; start += ROWS_PER_INSERT) {
+          const chunk = insertChunk(
+            tx,
+            records.slice(start, start + ROWS_PER_INSERT),
+            rows.slice(start, start + ROWS_PER_INSERT)
+          );
+          inserted += chunk.inserted;
+          skippedDuplicates += chunk.skippedDuplicates;
+          errors.push(...chunk.errors);
+        }
+      });
     }
-
-    const skippedDuplicates = records.length - inserted;
 
     return {
       inserted,
@@ -247,11 +321,7 @@ export class MemoryService {
    * Returns the memory record with the given primary key, or null if not found.
    */
   async getById(id: string): Promise<MemoryRecord | null> {
-    const row = this.db
-      .select()
-      .from(memoryRecords)
-      .where(eq(memoryRecords.id, id))
-      .get();
+    const row = this.db.select().from(memoryRecords).where(eq(memoryRecords.id, id)).get();
 
     return row != null ? fromDbRow(row) : null;
   }
@@ -260,11 +330,7 @@ export class MemoryService {
    * Returns the memory record with the given SHA-256 hash, or null if not found.
    */
   async getByHash(hash: string): Promise<MemoryRecord | null> {
-    const row = this.db
-      .select()
-      .from(memoryRecords)
-      .where(eq(memoryRecords.hash, hash))
-      .get();
+    const row = this.db.select().from(memoryRecords).where(eq(memoryRecords.hash, hash)).get();
 
     return row != null ? fromDbRow(row) : null;
   }

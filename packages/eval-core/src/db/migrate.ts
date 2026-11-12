@@ -14,6 +14,7 @@ export function runMigrations(dbPath: string): void {
   db.close();
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 22 measured by biome 2.3.12; sequential per-table DDL/migration guards, splitting it is a behaviour-bearing refactor outside this lint-wiring change
 function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
   db.run('PRAGMA journal_mode = WAL');
   db.run('PRAGMA foreign_keys = ON');

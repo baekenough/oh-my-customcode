@@ -4,21 +4,21 @@
  * Uses in-memory SQLite for isolation.
  */
 
-import { describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
+import { describe, expect, it } from 'bun:test';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as schema from '../db/schema.js';
 import type { EvalDb } from '../db/client.js';
+import * as schema from '../db/schema.js';
 import {
+  type FeedbackQueryOptions,
   getAgentFailurePatterns,
   getImprovementSuggestions as getImprovementSuggestionsWithFetcher,
   getPendingImprovementActions,
   getRoutingMissPatterns,
   getSkillEffectiveness,
+  type ImprovementSuggestion,
   saveImprovementActions,
   updateImprovementActionStatus,
-  type FeedbackQueryOptions,
-  type ImprovementSuggestion,
 } from '../query/feedback.js';
 import type { UserFeedbackEntry } from '../query/user-feedback.js';
 
@@ -433,9 +433,7 @@ describe('getImprovementSuggestions', () => {
     seedInvocation(db, 'failing-agent', 'success');
 
     const result = await getImprovementSuggestions(db, { minSessions: 5 });
-    const augment = result.find(
-      (s) => s.targetType === 'agent' && s.actionType === 'augment'
-    );
+    const augment = result.find((s) => s.targetType === 'agent' && s.actionType === 'augment');
     expect(augment).toBeDefined();
     expect(augment?.target).toBe('failing-agent');
     // 4/5 = 80% failure rate > 50% → high confidence
@@ -449,7 +447,9 @@ describe('getImprovementSuggestions', () => {
     for (let i = 0; i < 4; i++) seedInvocation(db, 'high-fail-agent', 'success');
 
     const result = await getImprovementSuggestions(db, { minSessions: 5 });
-    const augment = result.find((s) => s.target === 'high-fail-agent' && s.actionType === 'augment');
+    const augment = result.find(
+      (s) => s.target === 'high-fail-agent' && s.actionType === 'augment'
+    );
     expect(augment?.confidence).toBe('high');
   });
 
@@ -473,9 +473,7 @@ describe('getImprovementSuggestions', () => {
     seedInvocation(db, 'small-agent', 'success');
 
     const result = await getImprovementSuggestions(db, { minSessions: 5 });
-    const escalate = result.find(
-      (s) => s.target === 'small-agent' && s.actionType === 'escalate'
-    );
+    const escalate = result.find((s) => s.target === 'small-agent' && s.actionType === 'escalate');
     expect(escalate).toBeUndefined();
   });
 
@@ -869,9 +867,7 @@ describe('saveImprovementActions', () => {
     await saveImprovementActions(db, [suggestion]);
 
     const row = sqlite
-      .prepare<{ feedback_source: string }, []>(
-        'SELECT feedback_source FROM improvement_actions'
-      )
+      .prepare<{ feedback_source: string }, []>('SELECT feedback_source FROM improvement_actions')
       .get();
     expect(row?.feedback_source).toBe('auto_analysis');
   });
@@ -943,10 +939,7 @@ describe('saveImprovementActions', () => {
 
     // Verify only the new suggestion exists — old proposed row was replaced
     const afterSecond = sqlite
-      .prepare<
-        { count: number; action_type: string; confidence: string },
-        [string]
-      >(
+      .prepare<{ count: number; action_type: string; confidence: string }, [string]>(
         'SELECT count(*) as count, action_type, confidence FROM improvement_actions WHERE target_name = ?'
       )
       .get('agent-1');
@@ -972,22 +965,19 @@ function seedAction(
   overrides: Record<string, string> = {}
 ): number {
   const result = sqlite
-    .prepare<
-      { id: number },
-      [string, string, string, string, string, string, string]
-    >(
+    .prepare<{ id: number }, [string, string, string, string, string, string, string]>(
       `INSERT INTO improvement_actions
         (feedback_source, target_type, target_name, action_type, description, confidence, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)
        RETURNING id`
     )
     .get(
-      overrides['feedback_source'] ?? 'auto_analysis',
-      overrides['target_type'] ?? 'agent',
-      overrides['target_name'] ?? 'test-agent',
-      overrides['action_type'] ?? 'augment',
-      overrides['description'] ?? 'Test',
-      overrides['confidence'] ?? 'medium',
+      overrides.feedback_source ?? 'auto_analysis',
+      overrides.target_type ?? 'agent',
+      overrides.target_name ?? 'test-agent',
+      overrides.action_type ?? 'augment',
+      overrides.description ?? 'Test',
+      overrides.confidence ?? 'medium',
       status
     );
   return result!.id;
@@ -1001,9 +991,7 @@ describe('updateImprovementActionStatus', () => {
     updateImprovementActionStatus(db, id, 'approved');
 
     const row = sqlite
-      .prepare<{ status: string }, [number]>(
-        'SELECT status FROM improvement_actions WHERE id = ?'
-      )
+      .prepare<{ status: string }, [number]>('SELECT status FROM improvement_actions WHERE id = ?')
       .get(id);
     expect(row?.status).toBe('approved');
   });
@@ -1049,9 +1037,7 @@ describe('updateImprovementActionStatus', () => {
     updateImprovementActionStatus(db, id, 'rejected');
 
     const row = sqlite
-      .prepare<{ status: string }, [number]>(
-        'SELECT status FROM improvement_actions WHERE id = ?'
-      )
+      .prepare<{ status: string }, [number]>('SELECT status FROM improvement_actions WHERE id = ?')
       .get(id);
     expect(row?.status).toBe('rejected');
   });

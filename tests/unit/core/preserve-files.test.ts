@@ -182,12 +182,11 @@ describe('preserveFiles feature', () => {
         '.claude/rules/custom-rule.md': 'Custom rule content',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -219,12 +218,11 @@ describe('preserveFiles feature', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -252,12 +250,11 @@ describe('preserveFiles feature', () => {
         '.claude/rules/custom/file2.md': 'Custom file 2',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -288,12 +285,11 @@ describe('preserveFiles feature', () => {
         '.claude/agents/custom-agent.md': 'Custom agent content',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['agents'],
       });
 
@@ -325,12 +321,11 @@ describe('preserveFiles feature', () => {
         '.claude/skills/custom-skill/script.sh': 'Custom script',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['skills'],
       });
 
@@ -356,12 +351,11 @@ describe('preserveFiles feature', () => {
         '.claude/rules/custom.md': 'Custom content',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         preserveCustomizations: false,
       });
