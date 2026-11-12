@@ -107,7 +107,11 @@ describe('E2E: omcustom init self-update wiring', () => {
   });
 
   it('OMCUSTOM_SKIP_SELF_UPDATE=true and CI=1 skip it', async () => {
-    for (const env of [{ OMCUSTOM_SKIP_SELF_UPDATE: 'true' }, { CI: '1' }]) {
+    const overrides: Array<Record<string, string>> = [
+      { OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+      { CI: '1' },
+    ];
+    for (const env of overrides) {
       const { exitCode, stdout } = await runCli(['init', '--yes', '--lang', 'en'], env);
 
       expect(exitCode).toBe(0);

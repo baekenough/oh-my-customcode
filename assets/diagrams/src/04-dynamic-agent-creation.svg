@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1224" height="2520" viewBox="0 0 1224 2520" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="#f2f2f2" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <rect width="1224" height="2520" fill="#141414"/>
+
+  <g fill="none" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)">
+    <path d="M460 140 V220"/>
+    <path d="M460 320 V430"/>
+    <path d="M310 520 H170 V800"/>
+    <path d="M610 520 H700 V780"/>
+    <path d="M540 880 H430 V1200"/>
+    <path d="M860 880 H870 V1260"/>
+    <path d="M870 1370 V1450"/>
+    <path d="M870 1560 V1640"/>
+    <path d="M870 1760 V1900"/>
+    <path d="M870 2020 V2100"/>
+    <path d="M170 920 V2290 H380 V2340"/>
+    <path d="M430 1320 V2340"/>
+    <path d="M870 2200 V2270 H540 V2340"/>
+  </g>
+
+  <g font-size="30" fill="#f2f2f2" text-anchor="middle">
+    <!-- start / end pills -->
+    <rect x="340" y="40" width="240" height="100" rx="50" fill="#36606f" stroke="#f2f2f2" stroke-width="2"/>
+    <text x="460" y="102">User Request</text>
+    <rect x="340" y="220" width="240" height="100" rx="10" fill="#1f3a63" stroke="#7aa2e0" stroke-width="2"/>
+    <text x="460" y="282">Orchestrator</text>
+
+    <!-- diamonds -->
+    <polygon points="460,430 610,520 460,610 310,520" fill="#634027" stroke="#f2f2f2" stroke-width="2"/>
+    <text x="460" y="510">Specialist</text><text x="460" y="548">exists?</text>
+    <polygon points="700,780 860,880 700,980 540,880" fill="#634027" stroke="#f2f2f2" stroke-width="2"/>
+    <g font-size="26"><text x="700" y="858">Specialized</text><text x="700" y="890">domain</text><text x="700" y="922">task?</text></g>
+
+    <!-- branch labels -->
+    <text x="240" y="506" font-size="26">Yes</text>
+    <text x="655" y="506" font-size="26">No</text>
+    <text x="485" y="866" font-size="26">No</text>
+    <text x="922" y="1010" font-size="26">Yes</text>
+
+    <!-- left boxes -->
+    <rect x="50" y="800" width="240" height="120" rx="8" fill="#2a5c33" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="170" y="848">Spawn Existing</text><text x="170" y="886">Agent</text>
+    <rect x="310" y="1200" width="240" height="120" rx="8" fill="#2a5c33" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="430" y="1248">Use General</text><text x="430" y="1286">Purpose Agent</text>
+
+    <!-- creation panel -->
+    <rect x="640" y="1180" width="460" height="640" rx="16" fill="#2e2330" stroke="#d946ef" stroke-width="2"/>
+    <text x="660" y="1222" font-size="22" text-anchor="start">CREATION PROCESS</text>
+    <rect x="700" y="1260" width="340" height="110" rx="8" fill="#5a2a63" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="870" y="1308">mgr-creator receives</text><text x="870" y="1346">detected context</text>
+    <rect x="700" y="1450" width="340" height="110" rx="8" fill="#5a2a63" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="870" y="1498">Auto-discover skills</text><text x="870" y="1536">and guides</text>
+    <rect x="700" y="1640" width="340" height="120" rx="8" fill="#5a2a63" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="870" y="1688">Write agent file</text><text x="870" y="1726" font-size="26">.claude/agents/{name}.md</text>
+
+    <!-- after creation -->
+    <rect x="700" y="1900" width="340" height="120" rx="8" fill="#1f3a63" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="870" y="1948" font-size="28">Agent auto-discovered</text><text x="870" y="1986" font-size="26">(no registry update)</text>
+    <rect x="700" y="2100" width="340" height="100" rx="8" fill="#2a5c33" stroke="#e0e0e0" stroke-width="2"/>
+    <text x="870" y="2150" font-size="28">Execute with New Agent</text>
+
+    <!-- result -->
+    <rect x="300" y="2340" width="320" height="110" rx="55" fill="#2a8a33" stroke="#f2f2f2" stroke-width="2"/>
+    <text x="460" y="2405">Result to User</text>
+  </g>
+</svg>

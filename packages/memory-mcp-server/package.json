@@ -15,9 +15,9 @@
     "lint": "biome check src/"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@omcustom/eval-core": "workspace:*",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.12",

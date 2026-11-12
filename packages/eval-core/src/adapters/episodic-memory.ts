@@ -13,7 +13,7 @@
  * handle the rejection and NOT persist the record.
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { containsSecret, detectSensitivity, type SensitivityTier } from './sensitivity.js';
 
 // ---------------------------------------------------------------------------
@@ -125,7 +125,7 @@ export interface MemoryRecord {
 export class SecretContentError extends Error {
   constructor(public readonly field: string) {
     super(
-      `[Memory] REJECTED: secret-tier content detected in field '${field}'. Record not stored.`,
+      `[Memory] REJECTED: secret-tier content detected in field '${field}'. Record not stored.`
     );
     this.name = 'SecretContentError';
   }
@@ -189,9 +189,7 @@ function deriveSummary(raw: EpisodicMemoryRecord): string {
  * Format: sha256("episodic-memory" + content)
  */
 function computeHash(content: string): string {
-  return createHash('sha256')
-    .update('episodic-memory' + content)
-    .digest('hex');
+  return createHash('sha256').update(`episodic-memory${content}`).digest('hex');
 }
 
 /**
@@ -225,7 +223,7 @@ function mergeTags(rawTags: string[] | undefined): string[] {
  */
 export function normalizeEpisodicMemory(
   raw: EpisodicMemoryRecord,
-  opts: NormalizeOptions,
+  opts: NormalizeOptions
 ): MemoryRecord {
   const content = raw.content ?? '';
   const summary = deriveSummary(raw);
@@ -238,11 +236,12 @@ export function normalizeEpisodicMemory(
     throw new SecretContentError('summary');
   }
 
-  const sensitivity = detectSensitivity(content) === 'secret'
-    ? 'secret' // should have been caught above, but belt-and-suspenders
-    : (opts.sensitivity ?? 'project');
+  const sensitivity =
+    detectSensitivity(content) === 'secret'
+      ? 'secret' // should have been caught above, but belt-and-suspenders
+      : (opts.sensitivity ?? 'project');
 
-  const deviceId = opts.deviceId ?? process.env['HOSTNAME'] ?? 'unknown';
+  const deviceId = opts.deviceId ?? process.env.HOSTNAME ?? 'unknown';
 
   return {
     id: deriveId(raw),

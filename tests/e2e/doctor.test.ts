@@ -9,8 +9,10 @@ import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { spawn } from 'bun';
 
-// Set 30s timeout for E2E tests (CI environments are slower)
-describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
+// Bun's describe() has no timeout parameter: the previous `{ timeout: 30000 }` second argument was
+// not typed and, measured on bun 1.3.14, never applied to the tests inside (a 400ms test passed
+// under a 50ms describe-level value). Tests here run under the default per-test timeout.
+describe('E2E: omcustom doctor', () => {
   let tempDir: string;
   let cliPath: string;
   // #1795: doctor's Codex check runs `codex --version`; the user's real codex
@@ -289,7 +291,7 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
       ).toBe(true);
     });
 
-    it('should detect broken symlinks', { timeout: 15000 }, async () => {
+    it('should detect broken symlinks', async () => {
       await initProject();
 
       // Create a broken symlink in skills (agents are now flat .md files in .claude/agents)
@@ -310,7 +312,7 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
       expect(
         output.includes('[FAIL]') || output.includes('fail') || output.includes('broken')
       ).toBe(true);
-    });
+    }, 15000);
 
     it('should detect invalid frontmatter in agent files', async () => {
       await initProject();

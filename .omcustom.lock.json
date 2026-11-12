@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.24",
-  "generatedAt": "2026-11-11T07:47:22.809Z",
-  "templateVersion": "2.0.24",
+  "generatorVersion": "2.0.25",
+  "generatedAt": "2026-11-12T06:54:44.498Z",
+  "templateVersion": "2.0.25",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -390,8 +390,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "809975faa7c2cc3b0d9b28b9db21d653169deba21a997081a181a5b128b9ad00",
-      "size": 34370,
+      "templateHash": "473ba2e34d3638153259d6130009db8a81586725b19eea9bbe577bbf7a5e1cbc",
+      "size": 34717,
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
@@ -505,8 +505,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "a21b64f68d8a54aa749026f1af8b13c5e66e316d010bd388d3b8cb0dbbd9e55c",
-      "size": 72971,
+      "templateHash": "da49c0ca5d40db57b04b619884fc00b176cbd113abec17e732585817aa01b35c",
+      "size": 73159,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -1015,8 +1015,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "ff2a29bcb2f8241e802fe57066931471e88dfafbb81046c7981b24712556dbd2",
-      "size": 188004,
+      "templateHash": "d080a3d28905b145619e1895f6f5a8e46d718b48ce1007506fa72b216ca8314f",
+      "size": 192199,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1025,8 +1025,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "0ff61bd479d10787fb45698dfba1fdeb340dadcc8b92ff6ebaaba6bdf8df2d15",
-      "size": 15871,
+      "templateHash": "a54bd2fe01eb387242128f09413920f1cccdeab901b70f5a0722242efc333bb7",
+      "size": 16333,
       "component": "skills"
     },
     ".claude/skills/postgres-best-practices/SKILL.md": {
@@ -1495,8 +1495,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "d0690ca6e4687b89409ccb793a56cc45472ddcdcc7b483b4f0d81f499d1d89b1",
-      "size": 761244,
+      "templateHash": "5d8221711c87ef594dacbdf4c124cb9917e8c890d542ab424583b44262c41257",
+      "size": 761237,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

@@ -13,18 +13,13 @@
  *   - memory.stats: total, bySource, bySensitivity aggregation
  */
 
-import { describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as schema from '@omcustom/eval-core/schema';
-import { MemoryService } from '@omcustom/eval-core/memory-service';
+import { describe, expect, it } from 'bun:test';
 import type { EvalDb } from '@omcustom/eval-core';
-import {
-  handleGet,
-  handleListSources,
-  handleQuery,
-  handleStats,
-} from '../tools.js';
+import { MemoryService } from '@omcustom/eval-core/memory-service';
+import * as schema from '@omcustom/eval-core/schema';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { handleGet, handleListSources, handleQuery, handleStats } from '../tools.js';
 
 // ---------------------------------------------------------------------------
 // In-memory DB helpers (mirrors eval-core/__tests__/memory-service.test.ts)
@@ -131,9 +126,7 @@ describe('handleQuery', () => {
     const db = makeDb();
     const service = makeService(db);
     // Seed via sync which already rejects secret — but double-test the handler guard
-    await seedService(service, [
-      makeRecord({ id: 'r1', hash: 'h1', sensitivity: 'project' }),
-    ]);
+    await seedService(service, [makeRecord({ id: 'r1', hash: 'h1', sensitivity: 'project' })]);
 
     // Simulate a leaked secret reaching the handler layer
     const secretRecord = makeRecord({ id: 'r-secret', hash: 'h-secret', sensitivity: 'secret' });
@@ -304,11 +297,11 @@ describe('handleStats', () => {
 
     const stats = await handleStats(service);
     expect(stats.total).toBe(3);
-    expect(stats.bySource['native']).toBe(2);
+    expect(stats.bySource.native).toBe(2);
     expect(stats.bySource['claude-mem']).toBe(1);
-    expect(stats.bySensitivity['public']).toBe(1);
-    expect(stats.bySensitivity['project']).toBe(1);
-    expect(stats.bySensitivity['sensitive']).toBe(1);
+    expect(stats.bySensitivity.public).toBe(1);
+    expect(stats.bySensitivity.project).toBe(1);
+    expect(stats.bySensitivity.sensitive).toBe(1);
   });
 
   it('returns zero counts for empty DB', async () => {

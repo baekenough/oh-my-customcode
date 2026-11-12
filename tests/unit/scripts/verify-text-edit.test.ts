@@ -240,7 +240,8 @@ describe('Korean checks via --stdin', () => {
 
   test('grep and python3 agree on all four sets, also under LC_ALL=C', () => {
     for (const set of [POS_PLAIN, NEG_HAP, POS_NOUN, NEG_NOUN_HAP]) {
-      for (const env of [{}, { LC_ALL: 'C' }]) {
+      const envs: Record<string, string>[] = [{}, { LC_ALL: 'C' }];
+      for (const env of envs) {
         const r = script(['--stdin'], linesOf(set), env);
         expect(parseGrep(r.stdout)).toEqual(parsePython(r.stdout));
         expect(r.code).not.toBe(3);

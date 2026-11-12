@@ -22,8 +22,8 @@ afterAll(() => {
   mock.module('node:child_process', () => realChildProcess);
 });
 
-import { fetchUserFeedbackIssues, parseIssueToFeedback } from '../query/user-feedback.js';
 import { userFeedbackToSuggestions } from '../query/feedback.js';
+import { fetchUserFeedbackIssues, parseIssueToFeedback } from '../query/user-feedback.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,9 +100,7 @@ describe('parseIssueToFeedback', () => {
     });
 
     it('rule overrides skill (rule has highest precedence)', () => {
-      const entry = parseIssueToFeedback(
-        makeIssue({ title: 'skill: dev-review violates R010' })
-      );
+      const entry = parseIssueToFeedback(makeIssue({ title: 'skill: dev-review violates R010' }));
       expect(entry.targetType).toBe('rule');
       expect(entry.target).toBe('R010');
     });
@@ -182,7 +180,12 @@ describe('parseIssueToFeedback', () => {
     });
 
     it('handles null/undefined body gracefully', () => {
-      const entry = parseIssueToFeedback({ number: 1, title: 'test', body: '', createdAt: '2026-01-01T00:00:00Z' });
+      const entry = parseIssueToFeedback({
+        number: 1,
+        title: 'test',
+        body: '',
+        createdAt: '2026-01-01T00:00:00Z',
+      });
       expect(entry.body).toBe('');
       expect(entry.targetType).toBe('general');
     });

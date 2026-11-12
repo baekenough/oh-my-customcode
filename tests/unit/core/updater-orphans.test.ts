@@ -1236,7 +1236,7 @@ describe('preserve entry forms in deletion decisions (review P1)', () => {
             type: 'skill' as const,
             name: 'x',
             path: './.claude/skills/old-skill/',
-            managed: false,
+            managed: false as const,
           },
         ],
       };
@@ -1510,7 +1510,9 @@ describe('confirmation before orphan removal (#1941)', () => {
     });
 
     const callsFor = (key: string): unknown[] =>
-      infoSpy.mock.calls.filter((call: unknown[]) => call[0] === key).map((call) => call[1]);
+      infoSpy.mock.calls
+        .filter((call: unknown[]) => call[0] === key)
+        .map((call: unknown[]) => call[1]);
 
     it('orphans and deprecated-files.json have their own move log keys', async () => {
       await seedOldInstall();

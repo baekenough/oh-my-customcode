@@ -18,6 +18,7 @@
 import { describe, expect, it } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { parse } from 'yaml';
 
 const CI_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/ci.yml');
 
@@ -28,6 +29,77 @@ const CI_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/ci.yml'
 async function readWorkflow(): Promise<string> {
   return readFile(CI_WORKFLOW, 'utf-8');
 }
+
+interface WorkflowStep {
+  name?: string;
+  if?: string;
+  uses?: string;
+  run?: string;
+}
+
+interface WorkflowJob {
+  if?: string;
+  outputs?: Record<string, string>;
+  steps?: WorkflowStep[];
+}
+
+async function loadJobs(): Promise<Record<string, WorkflowJob>> {
+  const doc = parse(await readWorkflow()) as { jobs: Record<string, WorkflowJob> };
+  return doc.jobs;
+}
+
+const RUN_GATE = "needs.changes.outputs.merge_commit != 'true'";
+const SKIP_GATE = "needs.changes.outputs.merge_commit == 'true'";
+const PR_ONLY_RUN_GATE = `github.event_name == 'pull_request' && ${RUN_GATE}`;
+const PR_ONLY_SKIP_GATE = `github.event_name != 'pull_request' || ${SKIP_GATE}`;
+
+interface JobGateSpec {
+  /** The step that does the job's real work: required by name, on the exact run gate, with this `run` fragment. */
+  keyStep: string;
+  keyRun: string;
+  noticeName: string;
+  skipGate: string;
+  runGate: string;
+}
+
+const MERGE_NOTICE = 'PR-merge skip notice';
+const mergeGated = (keyStep: string, keyRun: string): JobGateSpec => ({
+  keyStep,
+  keyRun,
+  noticeName: MERGE_NOTICE,
+  skipGate: SKIP_GATE,
+  runGate: RUN_GATE,
+});
+
+/**
+ * Every job except `changes` (the job that computes merge_commit), each gated on merge_commit.
+ * `retired-paths-fresh` additionally runs on pull requests only. Adding a job to ci.yml without
+ * listing it here fails the completeness assertion below.
+ */
+const MERGE_GATED_JOBS: Record<string, JobGateSpec> = {
+  'lockfile-sync': mergeGated('Verify lockfile consistency', 'bun install --frozen-lockfile'),
+  lint: mergeGated('Run Biome lint', 'bun run lint'),
+  'validate-docs': mergeGated('Validate documentation', 'validate-docs.ts --programmatic-only'),
+  test: mergeGated(
+    'Run tests with coverage and check threshold',
+    'bun test --coverage 2>&1 | tee /tmp/coverage-output.txt'
+  ),
+  'version-sync': mergeGated(
+    'Verify package.json / manifest.json / lockfile versions match',
+    'verify-version-sync.sh'
+  ),
+  'retired-paths-fresh': {
+    keyStep: 'Verify templates/retired-template-paths.json is up to date',
+    keyRun: 'generate-retired-template-paths.ts --check',
+    noticeName: 'Skip notice',
+    skipGate: PR_ONLY_SKIP_GATE,
+    runGate: PR_ONLY_RUN_GATE,
+  },
+  'template-sync': mergeGated(
+    'Verify .claude/ and templates/.claude/ are in sync',
+    'src_skills=$(find .claude/skills'
+  ),
+};
 
 /** Extract the top-level `on:` trigger block (between `on:` and `jobs:`). */
 function extractTriggerBlock(content: string): string {
@@ -146,6 +218,11 @@ describe('ci.yml — structural safeguards', () => {
     const jobLevelIfPattern = /^ {4}if:/m;
     const matches = content.match(jobLevelIfPattern);
     expect(matches).toBeNull();
+    // Parsed check too: a re-indented job body (valid YAML) can evade the text pattern above.
+    const jobs = await loadJobs();
+    for (const [jobId, job] of Object.entries(jobs)) {
+      expect([jobId, 'if' in job]).toEqual([jobId, false]);
+    }
   });
 
   it('should preserve the exact job names used as required status checks', async () => {
@@ -176,22 +253,61 @@ describe('ci.yml — structural safeguards', () => {
 // E. Gate application scope
 // ---------------------------------------------------------------------------
 
+// Scope: this block pins the gates (exact `if` strings), the set of jobs, each skip notice's position and
+// keys, the presence of each key step, and that its `run` contains its real command fragment. It does not
+// check step order, other step keys (e.g. `continue-on-error`), or the shell semantics of a `run`
+// (e.g. `|| true`, or the fragment placed inside an echo or a comment).
 describe('ci.yml — gate application scope', () => {
-  it('should apply the merge_commit gate to the execution steps of all 3 code-gated jobs', async () => {
-    const content = await readWorkflow();
-    // rust-test was the 4th code-gated job; it was removed with ontology-rag (#1960).
-    const codeGatedJobs = ['lockfile-sync:', 'lint:', 'test:'];
-    for (const jobId of codeGatedJobs) {
-      const jobIndex = content.indexOf(`\n  ${jobId}`);
-      expect(jobIndex).toBeGreaterThan(-1);
-      // Slice up to the following job header (next line starting with exactly 2-space job id)
-      const rest = content.slice(jobIndex + 1);
-      const nextJobMatch = rest.slice(1).match(/\n {2}[a-z-]+:\n/);
-      const jobBlock = nextJobMatch ? rest.slice(0, (nextJobMatch.index ?? rest.length) + 1) : rest;
-      expect(jobBlock).toMatch(
-        /needs\.changes\.outputs\.code == 'true' && needs\.changes\.outputs\.merge_commit != 'true'/
+  it('should list every job except changes in the merge-gated set (no unchecked job)', async () => {
+    const jobs = await loadJobs();
+    const checked = Object.keys(MERGE_GATED_JOBS).sort();
+    const actual = Object.keys(jobs)
+      .filter((id) => id !== 'changes')
+      .sort();
+    expect(actual).toEqual(checked);
+  });
+
+  it('should gate every step of every merge-gated job on exactly its gate and nothing else', async () => {
+    const jobs = await loadJobs();
+    // rust-test was a merge-gated job too; it was removed with ontology-rag (#1960).
+    for (const [jobId, spec] of Object.entries(MERGE_GATED_JOBS)) {
+      const steps = jobs[jobId]?.steps ?? [];
+      // Each job must keep its real work step: on the exact run gate, with the fragment of its real command
+      // in `run`. This is a presence check only; it does not evaluate shell semantics (e.g. `|| true`).
+      const keyStep = steps.find((st) => st.name === spec.keyStep);
+      expect(`${jobId} / ${spec.keyStep}: ${keyStep?.if}`).toBe(
+        `${jobId} / ${spec.keyStep}: ${spec.runGate}`
       );
+      expect(keyStep?.run ?? '').toContain(spec.keyRun);
+      // Exactly one skip notice, first, with the exact skip gate and only the keys if/name/run; its `run` must
+      // be a single `echo "..."` with no `$`, backtick, backslash or inner double quote.
+      const notices = steps.filter((st) => st.name === spec.noticeName);
+      expect(notices.length).toBe(1);
+      const notice = steps[0] ?? {};
+      expect(notice.name).toBe(spec.noticeName);
+      expect(notice.if).toBe(spec.skipGate);
+      expect(Object.keys(notice).sort()).toEqual(['if', 'name', 'run']);
+      expect(notice.run ?? '').toMatch(/^echo "[^"$`\\]*"$/);
+      // Every other step runs on the exact run gate: no extra term, other output, or missing `if`.
+      for (const step of steps.slice(1)) {
+        expect(`${jobId} / ${step.name ?? step.uses ?? step.run}: ${step.if}`).toBe(
+          `${jobId} / ${step.name ?? step.uses ?? step.run}: ${spec.runGate}`
+        );
+      }
     }
+  });
+
+  it('should expose only merge_commit as an output of the changes job', async () => {
+    const jobs = await loadJobs();
+    expect(Object.keys(jobs.changes?.outputs ?? {})).toEqual(['merge_commit']);
+  });
+
+  it('should have no docs-only path classification: the changes job only computes merge_commit', async () => {
+    const content = await readWorkflow();
+    expect(content).not.toContain('outputs.code');
+    expect(content).not.toMatch(/Docs-only skip notice/i);
+    expect(content).not.toContain('id: filter');
+    expect(content).not.toContain('pkg_version_only');
   });
 
   it('should have validate-docs, version-sync, and template-sync depend on the changes job', async () => {

@@ -328,6 +328,8 @@ v{version} 릴리즈 워크플로우에서 발견.
 
 Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-registered items: `P3` (escalate to `P2` for MEDIUM+ severity).
 
+**`## 권장 조치`의 `{권장 사항}`은 인용 코드와 대조 후 기재 (#1966 #3)**: 이슈 본문에 제안(proposal)을 쓸 때는 근거로 인용한 코드(file:line 또는 앵커)를 먼저 읽고, 제안 문장이 그 코드(주석 포함)와 모순되지 않는지 확인한 뒤 적으십시오. 모순되면 그 제안을 적지 않거나, 아래 규칙대로 `[가설]`로 표시하고 모순되는 코드의 file:line을 함께 적습니다.
+
 **`## 권장 조치`의 미검증 제안은 `[가설]` 태그 필수**: `{권장 사항}`에 적는 수정안이 실행·테스트 등으로 검증되지 않았다면, 문장 앞에 `[가설]` 태그를 붙이고 무엇을 확인하면 검증되는지 함께 적으십시오. 원인 진단에만 `[가설]`을 붙이고 제안 수정안은 확정형으로 적으면, 그 제안을 그대로 적용했을 때 실패할 위험이 후속 세션으로 이월됩니다(R020 Diagnostic Hypothesis Verification, Origin: #1725 찐빠 #1).
 
 ## Notes

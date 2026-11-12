@@ -18,6 +18,8 @@ Distributed as `oh-my-customcode` on npm, CLI: `omcustom`. Current version: see 
   <img src="assets/diagrams/01-system-architecture.png" alt="System Architecture" width="800" />
 </p>
 
+The SVG sources of diagrams 01, 03, 04 and 07 are in `assets/diagrams/src/`, and those PNGs are rendered from them.
+
 ### 2.1 Compilation Metaphor
 
 oh-my-customcode treats agent harness authoring as a compilation problem. Skills, rules, and guides are "source code" that compiles into agent behavior at runtime. This metaphor drives several design decisions:
@@ -204,8 +206,6 @@ The main conversation is the **sole orchestrator**. It coordinates via routing s
 <p align="center">
   <img src="assets/diagrams/03-routing-architecture.png" alt="Routing Architecture" width="800" />
 </p>
-
-> Note: this diagram predates v2.0.24 and still shows the removed "Ontology RAG MCP R019" node (ontology-rag was removed in v2.0.24). It will be regenerated in a follow-up issue (#1961).
 
 ### 4.3 Wiki-RAG Enrichment (R019)
 
@@ -433,15 +433,15 @@ This structured model enables agents to anticipate user preferences rather than 
 
 ### 6.6 MCP Memory (Supplementary) — Superseded
 
-> **Contradicted by current source (R011, `.claude/rules/SHOULD-memory-integration.md`)**: as of #1253 (v0.157.0), this project uses **native auto-memory ONLY**. claude-mem and agentmemory MCP backends were **permanently removed** — the `memory-recall`, `memory-save`, and `memory-management` skills were deleted, and `.mcp.json` no longer registers either server. R011 explicitly states: *"claude-mem and agentmemory MCP are NOT used in this project."* The `memory-mcp-server` package and its native/episodic-memory/llm-memory adapter description below predate that removal and are retained here as historical record — do not treat this section as current guidance. See §6.1 (Native Auto-Memory) for the current, sole memory mechanism.
+> **Contradicted by current source (R011, `.claude/rules/SHOULD-memory-integration.md`)**: as of #1253 (v0.157.0), this project uses **native auto-memory ONLY**. claude-mem and agentmemory MCP backends were **permanently removed** — the `memory-recall`, `memory-save`, and `memory-management` skills were deleted, and `.mcp.json` no longer registers either server. R011 explicitly states: *"claude-mem and agentmemory MCP are NOT used in this project."* The `memory-mcp-server` package and its memory adapter description below predate that removal and are retained here as historical record — do not treat this section as current guidance. See §6.1 (Native Auto-Memory) for the current, sole memory mechanism.
 
 MCP tools are orchestrator-scoped — subagents cannot access them.
 
 | System | Tool | Use Case |
 |--------|------|----------|
-| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4 tools) | Unified memory access across adapters (v0.123.0+; pre-#1253) |
+| memory-mcp-server | `memory.query`, `memory.get`, `memory.list_sources`, `memory.stats` (4 tools) | Unified memory access across adapters (v0.123.0+; pre-#1253) |
 
-`packages/memory-mcp-server/` provided a unified MCP interface over the memory unification layer (native/episodic-memory/llm-memory adapters). Register via `.mcp.json` for access from the orchestrator.
+`packages/memory-mcp-server/` provided a unified MCP interface over the memory unification layer (adapters such as native and episodic-memory). Register via `.mcp.json` for access from the orchestrator.
 
 ### 6.7 Session-End Flow
 
@@ -485,7 +485,7 @@ The task-outcome-recorder hook (wired to SubagentStop only) records each subagen
 | Sauron verification | mgr-sauron (R017) | All 5+3 rounds pass |
 | TypeScript | tsc --noEmit | Zero errors |
 | Lint | biome check | Zero errors |
-| Dependency audit | npm audit / security-audit.yml | No critical/high vulnerabilities |
+| Dependency audit | `bun audit` (security-audit.yml) | Fails on high or critical vulnerabilities |
 
 ### 7.2 CI Jobs
 
@@ -495,7 +495,7 @@ The task-outcome-recorder hook (wired to SubagentStop only) records each subagen
 | Test | ci.yml | bun test with coverage threshold |
 | Version Sync | ci.yml | manifest.json matches package.json (+ lockfile 3-way check) |
 | Template Sync | ci.yml | Verify template files match source, skill script file parity |
-| Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |
+| Dependency Security Audit | security-audit.yml | Automated vulnerability scanning (`bun audit`, fails on high or critical) |
 | Wiki Sync | wiki-sync.yml | Checks for missing/stale wiki pages on PR (R022) |
 | Docs Sync | docs-sync.yml | Doc drift checks (validate-docs.ts programmatic mode) |
 | Issue Triage Dispatch | triage-dispatch.yml | Idempotent label/comment automation on `issues` events |
@@ -544,7 +544,7 @@ packages/eval-core/
   src/query/    — aggregation and reporting queries
 ```
 
-`packages/memory-mcp-server/` (v0.123.0) is a standalone MCP server providing unified memory access across all memory adapters (native/episodic-memory/llm-memory). Exposes 4 MCP tools: `memory_get`, `memory_search`, `memory_stats`, `memory_list`.
+`packages/memory-mcp-server/` (v0.123.0) is a standalone MCP server providing unified memory access across memory adapters (e.g. native, episodic-memory). Exposes 4 MCP tools: `memory.query`, `memory.get`, `memory.list_sources`, `memory.stats`.
 
 ```
 packages/memory-mcp-server/

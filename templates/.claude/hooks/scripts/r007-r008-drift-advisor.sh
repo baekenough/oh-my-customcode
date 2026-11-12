@@ -276,13 +276,15 @@ split("\n")
       (
       [ range($b + 1; $last + 1) | $L[.] | select(.message.role? == "assistant") ] as $turn
     | [ $turn[] | .message.content[]? | select(.type? != "thinking") ] as $blocks
-    | ($turn[0].uuid? // "") as $tuuid
-    | ([ $blocks[] | select(.type? == "text") ][0].text? // "") as $ftext
+    | ($turn[0].uuid? // "" | if type == "array" or type == "object" then "" else . end) as $tuuid
+    # (#1962) A non-string `.text` (number/array/object) counts as an EMPTY text block (same as
+    # text: ""): only string values reach split/join, so one malformed block cannot silence the turn.
+    | ([ $blocks[] | select(.type? == "text") ][0] | ((.text? | strings) // "")) as $ftext
     | (($ftext | split("\n") | .[0]) // "") as $fline
     | (if ($ftext | length) == 0 then 0
        elif ($fline | test("^┌─ Agent:")) or ($fline | test("^\\[.+\\]")) then 0
        else 1 end) as $r007
-    | ([ $blocks[] | select(.type? == "text") | (.text? // "") ] | join("\n") | split("\n")) as $lines
+    | ([ $blocks[] | select(.type? == "text") | ((.text? | strings) // "") ] | join("\n") | split("\n")) as $lines
     # (#1950) TEXT-LESS turn: ZERO non-empty text blocks in the whole turn, while the turn has at
     # least one block that is neither `thinking` nor `redacted_thinking` (a thinking-only stub is not a
     # response). Counted over ALL text blocks, independent of the $r007 predicate (which looks at the
@@ -335,7 +337,7 @@ split("\n")
     # 미접두 도구 이름 (#1687): $ntools와 동일한 필터(non-Skill tool_use)로 순서를 보존한 이름
     # 목록을 뽑는다. $r008(누락 건수)이 어떤 도구인지 shell에서 드러내기 위한 부가 필드 —
     # 판정식($r008 산출) 자체는 건드리지 않는다.
-    | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) | (.name? // "") ]) as $tool_names_list
+    | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) | (.name? // "" | if type == "array" or type == "object" then "" else . end) ]) as $tool_names_list
     # 전체 tool_use(Skill 포함)가 0건인 턴은 forward 판정을 무조건 0으로 고정한다(#1625
     # 찐빠 #3, 이슈 제안 그대로). $ntools(Skill 제외) 기반 산식은 정상 입력에서는 이미
     # 0을 내지만, 명시 가드로 불변식을 코드에 못박아 향후 산식 변경이 이 보장을 조용히

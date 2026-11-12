@@ -1,5 +1,6 @@
-export * from './types/index.js';
+export { type CollectOptions, type CollectResult, collect } from './collect/index.js';
 export { createDb, type EvalDb } from './db/client.js';
+export { runMigrations } from './db/migrate.js';
 export {
   agentInvocations,
   evaluations,
@@ -9,6 +10,5 @@ export {
   sessions,
   turns,
 } from './db/schema.js';
-export { collect, type CollectOptions, type CollectResult } from './collect/index.js';
-export { runMigrations } from './db/migrate.js';
 export * from './query/index.js';
+export * from './types/index.js';

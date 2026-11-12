@@ -17,11 +17,11 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
+  AGENTMEMORY_SOURCE,
   AgentMemoryAdapter,
   AgentMemoryNotActivatedError,
-  AGENTMEMORY_SOURCE,
-  fetchAgentMemoryRecords,
   type AgentMemoryRecord,
+  fetchAgentMemoryRecords,
   type NormalizeOptions,
 } from '../../adapters/agentmemory.js';
 import type { MemorySource } from '../../adapters/claude-mem.js';

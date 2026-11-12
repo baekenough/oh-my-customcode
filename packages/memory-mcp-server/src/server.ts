@@ -11,21 +11,18 @@
  *   memory.stats        — aggregate stats
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { createDb } from '@omcustom/eval-core';
-import { MemoryService } from '@omcustom/eval-core/memory-service';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { createDb } from '@omcustom/eval-core';
+import { MemoryService } from '@omcustom/eval-core/memory-service';
 import {
+  type GetInput,
   handleGet,
   handleListSources,
   handleQuery,
   handleStats,
-  type GetInput,
   type QueryInput,
 } from './tools.js';
 
@@ -35,7 +32,8 @@ import {
 
 const TOOL_QUERY = {
   name: 'memory.query',
-  description: 'Query memory records with optional filters. Secret-tier records are never returned.',
+  description:
+    'Query memory records with optional filters. Secret-tier records are never returned.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -70,8 +68,7 @@ const TOOL_QUERY = {
 
 const TOOL_GET = {
   name: 'memory.get',
-  description:
-    'Get a single memory record by id or hash. Returns null if not found or secret.',
+  description: 'Get a single memory record by id or hash. Returns null if not found or secret.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -113,16 +110,14 @@ export interface MemoryMcpServerOptions {
 
 export function createMemoryMcpServer(opts: MemoryMcpServerOptions = {}): Server {
   const dbPath =
-    opts.dbPath ??
-    process.env['OMCUSTOM_MEMORY_DB'] ??
-    join(homedir(), '.omcustom', 'memory.db');
+    opts.dbPath ?? process.env.OMCUSTOM_MEMORY_DB ?? join(homedir(), '.omcustom', 'memory.db');
 
   const db = createDb(dbPath);
   const service = new MemoryService(db);
 
   const server = new Server(
     { name: 'memory-mcp-server', version: '0.1.0' },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {} } }
   );
 
   // List tools handler

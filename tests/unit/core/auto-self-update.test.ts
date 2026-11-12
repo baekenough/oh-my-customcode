@@ -158,7 +158,7 @@ describe('autoSelfUpdate (#1946)', () => {
         autoSelfUpdate(options({ command: 'update', argv: ['node', ENTRY, 'update', '--all'] }))
       ).toBe('relaunched');
 
-      const args = (spawn.mock.calls[0] as [string, string[]])[1];
+      const args = spawn.mock.calls[0]?.[1];
       expect(args).toEqual([ENTRY, 'update', '--all']);
       expect(logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')).toContain(
         'omcustom update'
@@ -361,7 +361,7 @@ describe('autoSelfUpdate (#1946)', () => {
       ).toBe('relaunched');
 
       expect(install).not.toHaveBeenCalled();
-      expect((spawn.mock.calls[0] as [string])[0]).toBe('npx');
+      expect(spawn.mock.calls[0]?.[0]).toBe('npx');
     });
 
     it('continues when npx cannot be started', () => {
@@ -418,7 +418,7 @@ describe('autoSelfUpdate (#1946)', () => {
     it('npx: probes npx -y <package>@<resolved version> --version first', () => {
       autoSelfUpdate(options({ argv: ['node', '/home/u/.npm/_npx/abc/bin/omcustom', 'init'] }));
 
-      const [command, args] = probe.mock.calls[0] as [string, string[]];
+      const [command, args] = probe.mock.calls[0] ?? [];
       expect(command).toBe('npx');
       expect(args).toEqual(['-y', `${PKG}@1.5.0`, '--version']);
     });
@@ -522,7 +522,7 @@ describe('autoSelfUpdate (#1946)', () => {
       expect(autoSelfUpdate(options({ env: { npm_command: 'exec' } }))).toBe('relaunched');
 
       expect(install).toHaveBeenCalledTimes(1);
-      expect((spawn.mock.calls[0] as [string])[0]).toBe(process.execPath);
+      expect(spawn.mock.calls[0]?.[0]).toBe(process.execPath);
     });
 
     it('isNpxInvocation: env signals count outside the global root, not inside', () => {

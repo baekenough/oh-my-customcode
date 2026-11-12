@@ -24,8 +24,8 @@ import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.
 import { i18n, initI18n } from '../../../src/i18n/index.js';
 
 describe('serve-commands.ts', () => {
-  let consoleLogSpy: ReturnType<typeof spyOn>;
-  let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let consoleLogSpy: ReturnType<typeof spyOn<Console, 'log'>>;
+  let consoleErrorSpy: ReturnType<typeof spyOn<Console, 'error'>>;
   let emptyTempDir: string;
   let fakeHome: string;
   let pidFile: string;
@@ -232,10 +232,10 @@ describe('serve-commands.ts', () => {
     it('should report the generic start failure, not crash, when spawn fails asynchronously', async () => {
       await createBuild();
       const failedChild = Object.assign(new EventEmitter(), { pid: undefined, unref: () => {} });
-      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation(() => {
+      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation((() => {
         process.nextTick(() => failedChild.emit('error', new Error('spawn node ENOENT')));
         return failedChild as unknown as ChildProcess;
-      });
+      }) as unknown as typeof childProcess.spawn);
       const processExitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
         throw new Error(`process.exit(${code})`);
       });
@@ -582,7 +582,7 @@ describe('serve-commands.ts', () => {
       return [...(message ?? '').matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1] ?? '').sort();
     }
 
-    it.each(KEYS)('should use the same placeholders in en and ko for %s', (key) => {
+    it.each([...KEYS])('should use the same placeholders in en and ko for %s', (key) => {
       const en = startMessages('en')[key];
       const ko = startMessages('ko')[key];
       expect(en).toBeDefined();

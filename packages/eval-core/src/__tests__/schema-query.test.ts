@@ -3,22 +3,22 @@
  * Uses in-memory SQLite for isolation.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
-import * as schema from '../db/schema.js';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
 import type { EvalDb } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
+import * as schema from '../db/schema.js';
 import {
   getAgentStats,
   getDashboardStats,
   getProjectStats,
   getRecentSessions,
 } from '../query/dashboard.js';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,9 +49,7 @@ function seedSession(
       startedAt,
       endedAt,
       cwd,
-      durationMs: endedAt
-        ? new Date(endedAt).getTime() - new Date(startedAt).getTime()
-        : null,
+      durationMs: endedAt ? new Date(endedAt).getTime() - new Date(startedAt).getTime() : null,
       tokenSource: 'estimated',
     })
     .run();
@@ -339,9 +337,7 @@ describe('schema FK constraints', () => {
   it('rejects session_feedback referencing non-existent session', () => {
     const { sqlite } = makeDb();
     expect(() => {
-      sqlite.run(
-        `INSERT INTO session_feedback (session_id, rating) VALUES ('ghost-session', 5)`
-      );
+      sqlite.run(`INSERT INTO session_feedback (session_id, rating) VALUES ('ghost-session', 5)`);
     }).toThrow();
   });
 });
@@ -354,13 +350,9 @@ describe('schema uniqueness constraints', () => {
   it('rejects duplicate project cwd', () => {
     const { db } = makeDb();
     const now = new Date().toISOString();
-    db.insert(schema.projects)
-      .values({ name: 'p', cwd: '/home/dup', lastSeenAt: now })
-      .run();
+    db.insert(schema.projects).values({ name: 'p', cwd: '/home/dup', lastSeenAt: now }).run();
     expect(() => {
-      db.insert(schema.projects)
-        .values({ name: 'p2', cwd: '/home/dup', lastSeenAt: now })
-        .run();
+      db.insert(schema.projects).values({ name: 'p2', cwd: '/home/dup', lastSeenAt: now }).run();
     }).toThrow();
   });
 
@@ -420,9 +412,7 @@ describe('project CRUD', () => {
     const { db } = makeDb();
     const first = '2026-01-01T00:00:00.000Z';
     const second = '2026-01-02T00:00:00.000Z';
-    db.insert(schema.projects)
-      .values({ name: 'p', cwd: '/cwd', lastSeenAt: first })
-      .run();
+    db.insert(schema.projects).values({ name: 'p', cwd: '/cwd', lastSeenAt: first }).run();
     db.update(schema.projects)
       .set({ lastSeenAt: second })
       .where(eq(schema.projects.cwd, '/cwd'))
@@ -546,9 +536,7 @@ describe('session_feedback schema', () => {
   it('allows null rating and comment (optional fields)', () => {
     const { db } = makeDb();
     seedSession(db, 'sess-min-fb', null);
-    db.insert(schema.sessionFeedback)
-      .values({ sessionId: 'sess-min-fb' })
-      .run();
+    db.insert(schema.sessionFeedback).values({ sessionId: 'sess-min-fb' }).run();
     const row = db
       .select()
       .from(schema.sessionFeedback)
@@ -565,9 +553,7 @@ describe('session_feedback schema', () => {
     const { db } = makeDb();
     seedSession(db, 'sess-bad-rating', null);
     // Rating = 99 is stored without error — schema has no CHECK constraint yet
-    db.insert(schema.sessionFeedback)
-      .values({ sessionId: 'sess-bad-rating', rating: 99 })
-      .run();
+    db.insert(schema.sessionFeedback).values({ sessionId: 'sess-bad-rating', rating: 99 }).run();
     const row = db
       .select()
       .from(schema.sessionFeedback)
@@ -925,14 +911,8 @@ describe('upsertProject (via collect logic)', () => {
       .where(eq(schema.projects.cwd, '/new/path'))
       .get();
     expect(noExisting).toBeUndefined();
-    db.insert(schema.projects)
-      .values({ name: 'new', cwd: '/new/path', lastSeenAt: now })
-      .run();
-    const row = db
-      .select()
-      .from(schema.projects)
-      .where(eq(schema.projects.cwd, '/new/path'))
-      .get();
+    db.insert(schema.projects).values({ name: 'new', cwd: '/new/path', lastSeenAt: now }).run();
+    const row = db.select().from(schema.projects).where(eq(schema.projects.cwd, '/new/path')).get();
     expect(row?.name).toBe('new');
   });
 });
@@ -975,8 +955,22 @@ describe('evalBaselines schema', () => {
     const now = new Date();
     db.insert(schema.evalBaselines)
       .values([
-        { taskId: 'task-002', capability: 'retrieval', idealSteps: 2, idealToolCalls: 3, idealLatencyMs: 3000, createdAt: now },
-        { taskId: 'task-002', capability: 'retrieval', idealSteps: 3, idealToolCalls: 4, idealLatencyMs: 5000, createdAt: now },
+        {
+          taskId: 'task-002',
+          capability: 'retrieval',
+          idealSteps: 2,
+          idealToolCalls: 3,
+          idealLatencyMs: 3000,
+          createdAt: now,
+        },
+        {
+          taskId: 'task-002',
+          capability: 'retrieval',
+          idealSteps: 3,
+          idealToolCalls: 4,
+          idealLatencyMs: 5000,
+          createdAt: now,
+        },
       ])
       .run();
     const rows = db
@@ -991,7 +985,14 @@ describe('evalBaselines schema', () => {
     const { db } = makeDb();
     const now = new Date();
     db.insert(schema.evalBaselines)
-      .values({ taskId: 'task-003', capability: 'tool_use', idealSteps: 5, idealToolCalls: 6, idealLatencyMs: 10000, createdAt: now })
+      .values({
+        taskId: 'task-003',
+        capability: 'tool_use',
+        idealSteps: 5,
+        idealToolCalls: 6,
+        idealLatencyMs: 10000,
+        createdAt: now,
+      })
       .run();
     const row = db
       .select()
@@ -1028,8 +1029,22 @@ describe('evalBaselines schema', () => {
     const now = new Date();
     db.insert(schema.evalBaselines)
       .values([
-        { taskId: 't-a', capability: 'memory', idealSteps: 1, idealToolCalls: 1, idealLatencyMs: 1000, createdAt: now },
-        { taskId: 't-b', capability: 'conversation', idealSteps: 2, idealToolCalls: 2, idealLatencyMs: 2000, createdAt: now },
+        {
+          taskId: 't-a',
+          capability: 'memory',
+          idealSteps: 1,
+          idealToolCalls: 1,
+          idealLatencyMs: 1000,
+          createdAt: now,
+        },
+        {
+          taskId: 't-b',
+          capability: 'conversation',
+          idealSteps: 2,
+          idealToolCalls: 2,
+          idealLatencyMs: 2000,
+          createdAt: now,
+        },
       ])
       .run();
     const rows = db.select().from(schema.evalBaselines).all();
@@ -1048,9 +1063,20 @@ describe('agentTrajectories schema', () => {
     const now = new Date();
     // Insert baseline first
     db.insert(schema.evalBaselines)
-      .values({ taskId: 'task-traj-001', capability: 'file_operations', idealSteps: 4, idealToolCalls: 4, idealLatencyMs: 8000, createdAt: now })
+      .values({
+        taskId: 'task-traj-001',
+        capability: 'file_operations',
+        idealSteps: 4,
+        idealToolCalls: 4,
+        idealLatencyMs: 8000,
+        createdAt: now,
+      })
       .run();
-    const baseline = db.select().from(schema.evalBaselines).where(eq(schema.evalBaselines.taskId, 'task-traj-001')).get()!;
+    const baseline = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-traj-001'))
+      .get()!;
 
     const start = new Date('2026-04-26T10:00:00Z');
     const end = new Date('2026-04-26T10:00:12Z');
@@ -1154,16 +1180,45 @@ describe('agentTrajectories schema', () => {
     const { db } = makeDb();
     const now = new Date();
     db.insert(schema.evalBaselines)
-      .values({ taskId: 'task-multi', capability: 'tool_use', idealSteps: 3, idealToolCalls: 3, idealLatencyMs: 6000, createdAt: now })
+      .values({
+        taskId: 'task-multi',
+        capability: 'tool_use',
+        idealSteps: 3,
+        idealToolCalls: 3,
+        idealLatencyMs: 6000,
+        createdAt: now,
+      })
       .run();
-    const baseline = db.select().from(schema.evalBaselines).where(eq(schema.evalBaselines.taskId, 'task-multi')).get()!;
+    const baseline = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-multi'))
+      .get()!;
 
     const start = new Date('2026-04-26T10:00:00Z');
     const end = new Date('2026-04-26T10:00:10Z');
     db.insert(schema.agentTrajectories)
       .values([
-        { baselineId: baseline.id, agentName: 'agent-v1', observedSteps: 3, observedToolCalls: 3, observedLatencyMs: 6000, correctness: true, startedAt: start, completedAt: end },
-        { baselineId: baseline.id, agentName: 'agent-v2', observedSteps: 4, observedToolCalls: 4, observedLatencyMs: 8000, correctness: true, startedAt: start, completedAt: end },
+        {
+          baselineId: baseline.id,
+          agentName: 'agent-v1',
+          observedSteps: 3,
+          observedToolCalls: 3,
+          observedLatencyMs: 6000,
+          correctness: true,
+          startedAt: start,
+          completedAt: end,
+        },
+        {
+          baselineId: baseline.id,
+          agentName: 'agent-v2',
+          observedSteps: 4,
+          observedToolCalls: 4,
+          observedLatencyMs: 8000,
+          correctness: true,
+          startedAt: start,
+          completedAt: end,
+        },
       ])
       .run();
 

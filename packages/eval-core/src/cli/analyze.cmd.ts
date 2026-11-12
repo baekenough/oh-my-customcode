@@ -6,9 +6,9 @@ import { runMigrations } from '../db/migrate.js';
 import {
   getImprovementSuggestions,
   getRoutingMissPatterns,
-  saveImprovementActions,
   type ImprovementSuggestion,
   type RoutingMissPattern,
+  saveImprovementActions,
 } from '../query/feedback.js';
 import { getDefaultConfig } from '../types/config.js';
 
@@ -55,6 +55,7 @@ function loadImprovementRules(): ImprovementRulesFile | null {
  * Handles the specific structure used in improvement-rules.yml without
  * requiring an external YAML dependency.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 44 measured by biome 2.3.12; line-oriented YAML-subset parser, splitting it is a behaviour-bearing refactor outside this lint-wiring change
 function parseYaml(content: string): ImprovementRulesFile {
   const rules: ImprovementRule[] = [];
   let currentRule: Partial<ImprovementRule> | null = null;
@@ -74,7 +75,7 @@ function parseYaml(content: string): ImprovementRulesFile {
     }
 
     // New rule entry (starts with "  - name:")
-    const ruleNameMatch = line.match(/^  - name:\s*(.+)$/);
+    const ruleNameMatch = line.match(/^ {2}- name:\s*(.+)$/);
     if (ruleNameMatch) {
       if (currentRule) {
         if (currentAction && currentRule.actions) {
@@ -91,19 +92,19 @@ function parseYaml(content: string): ImprovementRulesFile {
     if (!currentRule) continue;
 
     // Rule-level fields
-    const patternMatch = line.match(/^    pattern:\s*"(.+)"$/);
+    const patternMatch = line.match(/^ {4}pattern:\s*"(.+)"$/);
     if (patternMatch) {
       currentRule.pattern = patternMatch[1];
       continue;
     }
 
-    const minSessionsMatch = line.match(/^    min_sessions:\s*(\d+)$/);
+    const minSessionsMatch = line.match(/^ {4}min_sessions:\s*(\d+)$/);
     if (minSessionsMatch) {
       currentRule.min_sessions = parseInt(minSessionsMatch[1], 10);
       continue;
     }
 
-    const confidenceMatch = line.match(/^    confidence:\s*(\w+)$/);
+    const confidenceMatch = line.match(/^ {4}confidence:\s*(\w+)$/);
     if (confidenceMatch) {
       currentRule.confidence = confidenceMatch[1] as 'low' | 'medium' | 'high';
       continue;
@@ -117,7 +118,7 @@ function parseYaml(content: string): ImprovementRulesFile {
 
     if (inActions) {
       // New action entry
-      const actionTypeMatch = line.match(/^      - type:\s*(.+)$/);
+      const actionTypeMatch = line.match(/^ {6}- type:\s*(.+)$/);
       if (actionTypeMatch) {
         if (currentAction && currentRule.actions) {
           currentRule.actions.push(currentAction as { type: string; description: string });
@@ -126,10 +127,9 @@ function parseYaml(content: string): ImprovementRulesFile {
         continue;
       }
 
-      const actionDescMatch = line.match(/^        description:\s*"(.+)"$/);
+      const actionDescMatch = line.match(/^ {8}description:\s*"(.+)"$/);
       if (actionDescMatch && currentAction) {
         currentAction.description = actionDescMatch[1];
-        continue;
       }
     }
   }
@@ -149,7 +149,10 @@ function countUserFeedbackSuggestions(suggestions: ImprovementSuggestion[]): num
   return suggestions.filter((s) => s.evidence.metric === 'user_feedback').length;
 }
 
-function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
+function formatTable(
+  suggestions: ImprovementSuggestion[],
+  routingMiss: RoutingMissPattern
+): string {
   const lines: string[] = ['Improvement Suggestions', '='.repeat(80), ''];
   const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
   if (userFeedbackCount > 0) {
@@ -157,7 +160,9 @@ function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingM
   }
 
   if (suggestions.length === 0) {
-    lines.push('No improvement suggestions found (insufficient data or all metrics within thresholds).');
+    lines.push(
+      'No improvement suggestions found (insufficient data or all metrics within thresholds).'
+    );
   } else {
     for (let i = 0; i < suggestions.length; i++) {
       const s = suggestions[i];
@@ -187,7 +192,10 @@ function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingM
   return lines.join('\n');
 }
 
-function formatMarkdown(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
+function formatMarkdown(
+  suggestions: ImprovementSuggestion[],
+  routingMiss: RoutingMissPattern
+): string {
   const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
   const lines: string[] = [
     '# Improvement Suggestions',
@@ -284,7 +292,13 @@ export const analyzeCommand = new Command('analyze')
 
     if (format === 'json') {
       const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
-      console.log(JSON.stringify({ suggestions, routingMiss, rules: rulesFile?.rules ?? [], userFeedbackCount }, null, 2));
+      console.log(
+        JSON.stringify(
+          { suggestions, routingMiss, rules: rulesFile?.rules ?? [], userFeedbackCount },
+          null,
+          2
+        )
+      );
     } else if (format === 'markdown') {
       console.log(formatMarkdown(suggestions, routingMiss));
     } else {

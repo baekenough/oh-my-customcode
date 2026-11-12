@@ -58,6 +58,9 @@ jobs:
       - name: Run Biome lint
         run: bun run lint
 
+      - name: Run typecheck
+        run: bun run typecheck
+
       # Skip the duplicate suite ONLY with proof that this exact tree already passed PR CI; any doubt => full suite.
       # Needs: Checkout fetch-depth: 0 (second parent + ancestry), the checks/actions read scopes above.
       # Couples to ci.yml: workflow "CI", job "Test", step "Run tests with coverage and check threshold".
@@ -98,10 +101,10 @@ jobs:
           JOB_ID="$(printf '%s' "$RUNS" | jq -r --arg sha "$P2" '[.check_runs[] | select(.name == "Test" and .app.id == 15368 and .head_sha == $sha and .status == "completed")] | if length == 1 and .[0].conclusion == "success" then .[0].id else empty end')"
           case "$JOB_ID" in ''|*[!0-9]*) run_suite "no single completed successful Test check run on PR head $P2" ;; esac
 
-          # 5) ci.yml reports Test=success on its docs-only fast path without running any test, so require the real test step itself to have succeeded
+          # 5) the Test job can report success without running any test (ci.yml gates every Test step on merge_commit != 'true', leaving only a skip notice; a renamed or removed step also leaves none to run), so require the real test step itself to have succeeded
           JOB="$(gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${JOB_ID}")" || run_suite "job lookup failed for check run $JOB_ID"
           STEP_OK="$(printf '%s' "$JOB" | jq -r --arg sha "$P2" 'select(.workflow_name == "CI" and .name == "Test" and .head_sha == $sha and .conclusion == "success") | [.steps[] | select(.name == "Run tests with coverage and check threshold" and .conclusion == "success")] | length')"
-          [ "$STEP_OK" = "1" ] || run_suite "PR-head Test job $JOB_ID did not run the real test step to success (docs-only fast path, or step renamed in ci.yml)"
+          [ "$STEP_OK" = "1" ] || run_suite "PR-head Test job $JOB_ID did not run the real test step to success (step skipped by the merge_commit gate, or renamed in ci.yml)"
 
           echo "::notice::tree $TREE already passed PR CI (PR head $P2, Test job $JOB_ID) — skipping duplicate test run"
           echo "skip=true" >> "$GITHUB_OUTPUT"

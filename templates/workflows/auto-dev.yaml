@@ -610,7 +610,7 @@ steps:
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시하십시오(#1707 #4). 속도 개선을 주장하는 계획의 계측 요구에는 총 벽시계 하나로 개선 여부를 판정하지 않고 파일별 벽시계 시간을 무변경 파일 대조군과 함께 비교해 실행 순서로 귀속하도록 명시합니다(러너 편차 ±20% 이상 관측 [이슈 서술], #1803 제안 3). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구) 경로 로직을 다루는 계획의 프로브는 심볼릭 링크를 거치는 위치(예: 플랫폼이 임시 디렉터리를 심볼릭 링크 아래에 두는 기본 경로)와 realpath로 해석한 위치 두 곳에서 실행하고, 위임서의 기대값을 형태별로 적습니다(#1811 Q1). 적용 경계 표에는 각 행마다 이 위치를 읽는 위임 유형/단계 열을 두고 결함이 발생한 단계와 일치하는지 표에서 대조합니다(#1781 찐빠 #2). 기본값·출력 리터럴을 바꾸는 계획은 그 리터럴을 단언하는 기존 테스트를 git grep으로 전수 열거해 웨이브 표의 파일 소유권에 포함합니다(git grep은 untracked 파일을 보지 못하므로 git status --porcelain도 확인합니다, #1786 찐빠 #5). 결함 수정 계획(경량 모드 포함)은 그 결함을 우회하려고 실제 환경에 기대는 기존 시험을 결함 API 이름과 우회 패턴(예: 시험 안의 homedir())으로 git grep해 전수 열거하고, 그 결과를 웨이브 표의 파일 소유권에 포함합니다(#1799 찐빠 #2). deep-plan 단계에서 같은 티어 결함을 범위에 편입할 때는 scope-selection Step 2의 rule 7 「Plan-stage admission (same tier only)」을 따릅니다(#1811 Q5). deep-plan 발주자는 Standard delegation-prompt block의 가설 선측정·측정 변수별 대조 조건을 전달하고 그 결과 표를 읽어 계획 근거로 삼으십시오(#1830 P4, #1833 P5)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시하십시오(#1707 #4). 속도 개선을 주장하는 계획의 계측 요구에는 총 벽시계 하나로 개선 여부를 판정하지 않고 파일별 벽시계 시간을 무변경 파일 대조군과 함께 비교해 실행 순서로 귀속하도록 명시합니다(러너 편차 ±20% 이상 관측 [이슈 서술], #1803 제안 3). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구) 경로 로직을 다루는 계획의 프로브는 심볼릭 링크를 거치는 위치(예: 플랫폼이 임시 디렉터리를 심볼릭 링크 아래에 두는 기본 경로)와 realpath로 해석한 위치 두 곳에서 실행하고, 위임서의 기대값을 형태별로 적습니다(#1811 Q1). 적용 경계 표에는 각 행마다 이 위치를 읽는 위임 유형/단계 열을 두고 결함이 발생한 단계와 일치하는지 표에서 대조합니다(#1781 찐빠 #2). 기본값·출력 리터럴을 바꾸는 계획은 그 리터럴을 단언하는 기존 테스트를 git grep으로 전수 열거해 웨이브 표의 파일 소유권에 포함합니다(git grep은 untracked 파일을 보지 못하므로 git status --porcelain도 확인합니다, #1786 찐빠 #5). 결함 수정 계획(경량 모드 포함)은 그 결함을 우회하려고 실제 환경에 기대는 기존 시험을 결함 API 이름과 우회 패턴(예: 시험 안의 homedir())으로 git grep해 전수 열거하고, 그 결과를 웨이브 표의 파일 소유권에 포함합니다(#1799 찐빠 #2). deep-plan 단계에서 같은 티어 결함을 범위에 편입할 때는 scope-selection Step 2의 rule 7 「Plan-stage admission (same tier only)」을 따릅니다(#1811 Q5). deep-plan 발주자는 Standard delegation-prompt block의 가설 선측정·측정 변수별 대조 조건을 전달하고 그 결과 표를 읽어 계획 근거로 삼으십시오(#1830 P4, #1833 P5). 웨이브 표에는 공유 타입/인터페이스 계약(또는 package.json 필드 같은 다른 공유 계약)을 소유하는 lane을 적는 열을 두고, 비소유 lane의 위임서에는 계획 단계에서 확정한 계약 형태를 싣고, 그 계약을 바꾸지 않으며 계약이 부족하면 계약 편집만 멈추고 보고하라고 명시하십시오(#1966 #4). 웨이브가 3개 이상이면 deep-plan이 만든 웨이브 표와 함께 위임 수·리뷰 라운드 수와 소요 시간의 대략적 범위를 계획 시점에 비차단 `[Progress]` 상태 줄(R003)로 항상 출력하고(소요 시간은 측정 근거 없는 추정 [가설]), 응답은 `unattended_mode`(pre-triage Phase 0.6)가 true든 false든 기다리지 않으십시오. 측정 근거가 없는 금액은 적지 않습니다(#1966 #8)."
     depends_on: plan
 
   - name: implement
@@ -707,7 +707,9 @@ steps:
         보고 뒤 읽기 전용 문구 리뷰를 발주하고 주장 근거·인접 heading/ref·원래 결과/주체/인과를
         대조한 결과를 읽으십시오. 이 문구 검사는 코드/변이 검사나 독립 델타 리뷰를 대신하지 않습니다.
         오케스트레이터의 runtime 전제도 실측을 첨부하거나 가설과 판정 방법으로 표시하십시오
-        (#1823 H1).
+        (#1823 H1). 룰·스킬·가이드 본문을 포함해 삭제·제거 위임의 결과로 고쳐 쓴 문장이나 대체
+        문장이 남으면 문구 작성·정정에 해당하므로, 새로 생기는 사실 절마다의 근거 대응표를
+        완료 조건에 넣으십시오 (#1966 #7).
       - 파괴적 결함을 다룰 때는 수정 전 코드 경로를 red·baseline 계수·전체 시험·pre-commit 등
         어떤 목적으로도 실행하지 마십시오. 기준선은 정적 판독이나 읽기 전용 glob 목록으로만
         확인하십시오. implement dispatcher는 각 위임에 이 금지를 넣고 QA/reviewer/commit
@@ -917,13 +919,15 @@ steps:
         지정처럼 실행 환경 대체로만 제한하고 로직·echo 문구는 원문 그대로 유지하며, 완료 보고에는
         요약이 아닌 raw 출력을 포함해야 합니다) (R023 「Sample-Value Assembly」, #1754 찐빠 #2).
       - A delegation that creates or edits TS/JS files located inside biome's configured scope
-        (the `files.includes` globs in `biome.json`, currently `src/**`, `tests/**`, `scripts/**`)
+        (the `files.includes` globs in `biome.json`, currently `src/**`, `tests/**`, `scripts/**`, applied relative to the root and to
+        `packages/eval-core/` and `packages/memory-mcp-server/`, whose `biome.json` extends it)
         MUST include in its completion criteria `bunx biome check <the target files>` (the local
         counterpart of the CI Lint job for those paths, R023 「Delegated Verification Floor」) with
-        the raw exit code reported. For TS/JS files outside that scope (e.g. `packages/**`,
-        `.github/scripts/**`) the same command exits 1 regardless of formatting because the path
-        is ignored, so the agent MUST NOT report that exit as a lint failure and MUST NOT work
-        around it: it reports those files as "outside biome scope" instead. Read-only review
+        the raw exit code reported. For TS/JS files outside that scope (e.g. `packages/serve/**`,
+        `packages/eval-core/drizzle.config.ts`, `.github/scripts/**`) the same command exits 1 regardless of formatting when every target is out of scope (biome
+        silently skips an ignored target mixed with in-scope ones), so the agent MUST check
+        out-of-scope files separately, MUST NOT report that exit as a lint failure and MUST NOT
+        work around it: it reports those files as "outside biome scope" instead. Read-only review
         delegations are excluded (biome 설정 범위 안의 TS/JS 파일을 만들거나 고치는 위임의 완료
         조건에 대상 파일의 `bunx biome check`를 포함합니다. 범위 밖 파일은 실패로 보고하지 않고
         "biome 범위 밖"으로 보고합니다, #1778 찐빠 #3).
@@ -936,7 +940,17 @@ steps:
         that if a guard, classifier, or permission check blocks an action, it MUST NOT route
         around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
         verbatim (R010 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git
-        hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1).
+        hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1). A hard block
+        is something that prevents an action from taking effect — the tool call is refused
+        (PreToolUse exit 2 per R021 Hard Block row, safety-classifier denial, permission denial per
+        R002) or a git hook/gate guarding the action rejects it — and is a stop reason; the
+        agent's own test/lint/typecheck runs are part of its work, not gates. Other hook output
+        (bash-cd-advisor, R007/R008 advisory, context-budget) is noted in the report and the
+        agent continues. cost-cap output is
+        copied verbatim at the top of the report and the agent continues unless the delegation
+        prompt says otherwise (under /fsd, fsd SKILL.md 「advisory 발화는 루프를 멈추는 신호가
+        아니며…」). stuck-detector output ("=== [Stuck Detection] HARD BLOCK ===") means the
+        agent stops repeating the flagged action and reports it (#1966 #5).
       - Every delegation prompt MUST instruct the agent that its first Bash call starts with an
         absolute-path command and that its hand-back ends with the number of top-level `cd` it
         used (so no persistent `cd` is left in the Bash tool; #1922 P3), and the orchestrator
@@ -1122,8 +1136,28 @@ steps:
         failure (e.g. `|| echo "::warning::…"`, a literal `MISS` token) and idempotent bootstrap
         commands (no `||` success masking) such as `gh label create --force 2>/dev/null`.
       - After any delegation that creates temporary files under constraint (h) above, the
-        orchestrator MUST confirm with `git status --short` that no stray file was left in the
-        repo (#1721 찐빠 #7).
+        orchestrator MUST confirm that no stray file was left in the repo by comparing the output
+        of `git status --short --untracked-files=all` taken immediately before dispatching the
+        delegation (shell variables do not persist between Bash calls, so keep it in the
+        conversation, or compare its `| md5`) with the same command after (same mode both times;
+        the pre-triage Phase 0 item 4 baseline is default mode and collapses untracked directories,
+        so it is not comparable) (#1721 찐빠 #7). The orchestrator delegates any live probe (a call
+        made to observe a tool's or MCP server's behaviour that may write state;
+        `--help`/`--version` are not covered) and MUST instruct that delegation to record
+        `git rev-parse HEAD` and save the outputs of `git status --short --untracked-files=all`,
+        `git diff --binary` and `git diff --cached --binary` to scratch files before the probe,
+        then re-run all four after it and compare. If any capture changed in a way the agent cannot
+        explain (a sibling's disclosed scope is not an explanation), the agent stops, does not
+        revert, does not derive paths, and reports verbatim the before/after status,
+        `git diff --name-only`, `git diff --cached --name-only`,
+        `git diff --name-only <saved HEAD> HEAD` when HEAD differs, and the scratch file paths; the
+        orchestrator judges, and any revert goes through the orchestrator under R001. Any further
+        probe runs on a scratch copy, or not at all if the tool cannot target one. The check misses
+        rewrites of existing untracked files, gitignored paths, new empty directories,
+        `git config`, skip-worktree and assume-unchanged files, `.git/` internals, a branch switch
+        at the same SHA, any change (new, rewritten or removed files) inside an untracked nested
+        repository, and writes outside the repo; in a shared worktree a delta is correlation, not
+        proof (#1966 #1).
       - Document mirror/parity delegations (README/ARCHITECTURE/CLAUDE.md ko-en, templates
         mirrors, etc.) MUST be split to ≤3 files per delegation (a companion cap alongside the
         arithmetic below, not a replacement for it); compute turn arithmetic (files × 3 +

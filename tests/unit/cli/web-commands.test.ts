@@ -59,14 +59,14 @@ describe('web-commands.ts', () => {
     it('should print "not running" message when no PID file exists', async () => {
       await webStatusCommand();
 
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(logOutput).toContain('not running');
     });
 
     it('should print the start hint when server is not running', async () => {
       await webStatusCommand();
 
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(logOutput).toContain('omcustom web start');
     });
 
@@ -76,7 +76,7 @@ describe('web-commands.ts', () => {
 
       await webStatusCommand();
 
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(logOutput).toContain('running');
       expect(logOutput).toContain('localhost');
     });
@@ -89,7 +89,7 @@ describe('web-commands.ts', () => {
         await writeFile(pidFile, String(process.pid), 'utf-8');
         await webStatusCommand();
 
-        const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
         expect(logOutput).toContain('9876');
       } finally {
         if (origPort === undefined) {
@@ -124,7 +124,7 @@ describe('web-commands.ts', () => {
     it('should print "not running" message when no PID file exists', async () => {
       await webStopCommand();
 
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(logOutput).toContain('not running');
     });
   });
@@ -142,7 +142,9 @@ describe('web-commands.ts', () => {
       try {
         await expect(webOpenCommand({ port: 'not-a-port' })).rejects.toThrow('process.exit called');
 
-        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        const errorOutput = consoleErrorSpy.mock.calls
+          .map((c: unknown[]) => c.join(' '))
+          .join('\n');
         expect(errorOutput).toContain('not-a-port');
       } finally {
         processExitSpy.mockRestore();
@@ -157,7 +159,9 @@ describe('web-commands.ts', () => {
       try {
         await expect(webOpenCommand({ port: '99999' })).rejects.toThrow('process.exit called');
 
-        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        const errorOutput = consoleErrorSpy.mock.calls
+          .map((c: unknown[]) => c.join(' '))
+          .join('\n');
         expect(errorOutput).toContain('99999');
       } finally {
         processExitSpy.mockRestore();
@@ -180,7 +184,7 @@ describe('web-commands.ts', () => {
       // No PID file → not running
       await webOpenCommand({ port: '4321' });
 
-      const warnOutput = consoleWarnSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const warnOutput = consoleWarnSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(warnOutput).toContain('not');
     });
 
@@ -224,7 +228,9 @@ describe('web-commands.ts', () => {
           'process.exit(1)'
         );
 
-        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        const errorOutput = consoleErrorSpy.mock.calls
+          .map((c: unknown[]) => c.join(' '))
+          .join('\n');
         expect(errorOutput).toContain(i18n.t('cli.web.start.homeUnresolved'));
         expect(spawnSpy).not.toHaveBeenCalled();
       } finally {
@@ -260,7 +266,7 @@ describe('web-commands.ts', () => {
         processExitSpy.mockRestore();
       }
 
-      const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const errorOutput = consoleErrorSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(errorOutput).toContain('Failed');
     });
 
@@ -276,7 +282,7 @@ describe('web-commands.ts', () => {
       }
 
       // serveCommand reports the error — verifies the delegation path ran
-      const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      const errorOutput = consoleErrorSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(errorOutput.length).toBeGreaterThan(0);
     });
   });

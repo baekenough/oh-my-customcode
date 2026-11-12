@@ -508,7 +508,8 @@ describe('checkOrphans', () => {
     const RTK_HOOK = '.claude/hooks/scripts/rtk-intercept.sh';
 
     it('uses the same three paths as the lockfile retirement set', () => {
-      expect([...RETIRED_RTK_PATHS].sort()).toEqual([RTK_SKILL, RTK_WRAPPER, RTK_HOOK].sort());
+      const retiredPaths: string[] = [...RETIRED_RTK_PATHS];
+      expect(retiredPaths.sort()).toEqual([RTK_SKILL, RTK_WRAPPER, RTK_HOOK].sort());
     });
 
     it('does not call a lock-matching non-shipped RTK file "modified"', async () => {

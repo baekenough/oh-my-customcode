@@ -12,6 +12,7 @@ interface CommandHook {
 interface PromptHook {
   type: 'prompt';
   prompt: string;
+  command?: string;
 }
 
 type HookCommand = CommandHook | PromptHook;
@@ -158,7 +159,7 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
 
       const wired = (data.hooks.PostToolUseFailure ?? []).some((entry) =>
-        entry.hooks.some((h) => 'command' in h && h.command.includes('failure-ledger.sh'))
+        entry.hooks.some((h) => h.command?.includes('failure-ledger.sh'))
       );
       expect(wired).toBe(true);
     });
@@ -168,7 +169,7 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
 
       const wired = (data.hooks.UserPromptSubmit ?? []).some((entry) =>
-        entry.hooks.some((h) => 'command' in h && h.command.includes('fail-axis-cause-advisor.sh'))
+        entry.hooks.some((h) => h.command?.includes('fail-axis-cause-advisor.sh'))
       );
       expect(wired).toBe(true);
     });
@@ -360,7 +361,9 @@ describe('Hooks Validation', () => {
         if (hookCmd.type === 'command') expect(hookCmd.command.trim().length).toBeGreaterThan(0);
         if (hookCmd.type === 'prompt') {
           if ('prompt' in hookCmd) expect(hookCmd.prompt.trim().length).toBeGreaterThan(0);
-          if ('command' in hookCmd) expect(hookCmd.command.trim().length).toBeGreaterThan(0);
+          if ('command' in hookCmd) {
+            expect(hookCmd.command?.trim().length).toBeGreaterThan(0);
+          }
         }
       }
     });

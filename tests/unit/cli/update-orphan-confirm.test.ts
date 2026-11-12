@@ -449,7 +449,7 @@ describe('updateCommand orphan confirmation (real update)', () => {
         (line) => line === i18n.t('cli.update.orphanConfirmDeclined')
       );
       expect(declinedLines).toHaveLength(1);
-      const warned = (console.warn as unknown as ReturnType<typeof spyOn>).mock.calls.map(
+      const warned: string[] = (console.warn as unknown as ReturnType<typeof spyOn>).mock.calls.map(
         (call: unknown[]) => String(call[0])
       );
       expect(warned.some((line) => line.includes(LEFTOVER))).toBe(false);
@@ -476,7 +476,7 @@ describe('updateCommand orphan confirmation (real update)', () => {
     expect(logged()).toContain(i18n.t('cli.update.orphanConfirmInterrupted'));
     expect(logged()).not.toContain(i18n.t('cli.update.orphanConfirmDeclined'));
     expect(logged()).toContain(i18n.t('cli.update.summary', { updated: '1', skipped: '0' }));
-    const warned = (console.warn as unknown as ReturnType<typeof spyOn>).mock.calls.map(
+    const warned: string[] = (console.warn as unknown as ReturnType<typeof spyOn>).mock.calls.map(
       (call: unknown[]) => String(call[0])
     );
     expect(warned.some((line) => line.includes(LEFTOVER))).toBe(false);

@@ -44,21 +44,34 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run security audit
+        id: audit
         run: |
-          # Generate package-lock.json for npm audit (bun uses bun.lock)
-          # --workspaces flag needed for monorepo workspace support
-          npm i --package-lock-only --ignore-scripts --workspaces 2>/dev/null || \
-            npm i --package-lock-only --ignore-scripts 2>/dev/null || true
-          # Fallback: if package-lock.json still doesn't exist, skip audit
-          if [ ! -f package-lock.json ]; then
-            echo "::warning::Could not generate package-lock.json for npm audit. Skipping."
-            exit 0
-          fi
-          # Run npm audit (fails on high/critical vulnerabilities)
-          npm audit --audit-level=high
+          # bun audit, not npm audit: npm cannot resolve `workspace:*` dependencies
+          # Ignore GHSA-587h-7wmj-h5pm: vitepress 1 pins vite ^5 and no fixed 5.x exists;
+          # dev-server/Windows-only advisory. Drop the ignore once vitepress moves to a fixed vite.
+          # bun 1.3.14 prints "<Error>: audit request failed" (also "... (status 500)") on request failure
+          # and an "N vulnerabilities (" summary line when it found advisories.
+          for attempt in 1 2 3; do
+            rc=0
+            out=$(bun audit --audit-level=high --ignore=GHSA-587h-7wmj-h5pm 2>&1) || rc=$?
+            echo "$out"
+            [ "$rc" -eq 0 ] && exit 0
+            # strip ANSI colors (FORCE_COLOR=1 wraps "N vulnerabilities" in escapes; NO_COLOR does not override it)
+            out="$(printf '%s' "$out" | LC_ALL=C sed $'s/\033\\[[0-9;]*m//g')"
+            if [[ "$out" == *[0-9]" vulnerabilities ("* ]]; then
+              echo "::error::Security vulnerabilities found. Please update dependencies."
+              exit 1
+            fi
+            if [[ "$out" != *"audit request failed"* ]]; then
+              echo "::error::Security audit did not complete (exit $rc); no audit result."
+              exit 1
+            fi
+            echo "::warning::Audit request failed (attempt $attempt/3)"
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 10))
+          done
+          echo "::error::Audit request failed after 3 attempts (registry unreachable); no audit result."
+          exit 1
 
       - name: Notify on failure
-        if: failure()
-        run: |
-          echo "::error::Security vulnerabilities detected. Please update dependencies."
-          echo "Run 'bun pm audit' locally to see details."
+        if: failure() && steps.audit.outcome == 'failure'
+        run: echo "Security audit step failed; see its log for the cause. Run 'bun audit' locally for details."

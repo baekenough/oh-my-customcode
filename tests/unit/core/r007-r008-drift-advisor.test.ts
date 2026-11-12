@@ -2541,3 +2541,284 @@ describe('r007-r008-drift-advisor.sh — Fixture 16: text-less turn signal (#195
     expect(parseAdvisoryOutput(r2.stdout).hookSpecificOutput.additionalContext).toContain(TEXTLESS);
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 17: #1962 — non-string `.text` must not silence the whole verdict.
+// Semantics: a text block whose `.text` is not a string (number/array/object) counts as an
+// EMPTY text block (same as text: ""), so existing empty-block semantics decide the verdict.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 17: non-string .text (#1962)', () => {
+  const SHAPES: ReadonlyArray<readonly [string, unknown]> = [
+    ['number', 42],
+    ['array', ['x']],
+    ['object', { a: 1 }],
+  ];
+  const TEXTLESS = 'text 블록이 없는 응답 턴 1건';
+  const R007_MISSING = 'R007 에이전트 식별 헤더 누락';
+  const R008_MISSING = 'R008 도구 식별 접두사 누락';
+  const tu = (id: string) => ({ type: 'tool_use', id, name: 'Read', input: {} });
+
+  for (const [shape, bad] of SHAPES) {
+    it(`first block ${shape} + header-less prose: text-less signal still emitted (positive)`, async () => {
+      const sid = `n1962-a-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: bad },
+          { type: 'text', text: 'Sure, working on it.' },
+          tu('t-1962a'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(TEXTLESS);
+      expect(ctx).toContain(R008_MISSING);
+      expect(ctx).not.toContain(R007_MISSING);
+    });
+
+    it(`first block ${shape} + valid header and prefix in a string block: silent (negative)`, async () => {
+      const sid = `n1962-b-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: bad },
+          { type: 'text', text: '[claude] go\n[claude][opus] → Tool: Read' },
+          tu('t-1962b'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+
+    it(`only a ${shape} text block + tool_use: text-less (no text at all) (positive)`, async () => {
+      const sid = `n1962-c-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([{ type: 'text', text: bad }, tu('t-1962c')]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(TEXTLESS);
+      expect(ctx).not.toContain(R007_MISSING);
+    });
+
+    it(`string header first, then ${shape} block, tool_use unprefixed: r008 still reported (positive)`, async () => {
+      const sid = `n1962-d-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '┌─ Agent: claude (default)' },
+          { type: 'text', text: bad },
+          tu('t-1962d'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(R008_MISSING);
+      expect(ctx).not.toContain(TEXTLESS);
+      expect(ctx).not.toContain(R007_MISSING);
+    });
+
+    it(`string header + prefix with a trailing ${shape} block: silent (negative)`, async () => {
+      const sid = `n1962-e-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' },
+          { type: 'text', text: bad },
+          tu('t-1962e'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+
+    it(`empty first block, ${shape} middle block, then headed string block: silent (negative)`, async () => {
+      const sid = `n1962-f-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '' },
+          { type: 'text', text: bad },
+          { type: 'text', text: '[claude] go\n[claude][opus] → Tool: Read' },
+          tu('t-1962f'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+
+    it(`empty first block, ${shape} middle block, then header-less string: text-less (positive)`, async () => {
+      const sid = `n1962-g-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '' },
+          { type: 'text', text: bad },
+          { type: 'text', text: 'Sure, working on it.' },
+          tu('t-1962g'),
+        ]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(TEXTLESS);
+      expect(ctx).not.toContain(R007_MISSING);
+    });
+  }
+
+  it('string first block without header is still r007_missing, next to a non-string block (unchanged semantics)', async () => {
+    const sid = `n1962-h-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: 'plain prose' },
+        { type: 'text', text: 42 },
+        tu('t-1962h'),
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+    expect(ctx).toContain(R007_MISSING);
+    expect(ctx).not.toContain(TEXTLESS);
+  });
+
+  it('all-string turn with header and prefix stays silent (string control)', async () => {
+    const sid = `n1962-i-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' },
+        tu('t-1962i'),
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 18: #1962 correction — non-string tool_use.name / assistant-line uuid (array/object)
+// must not silence the turn's verdicts. Semantics: array/object name or uuid counts as "" (empty);
+// string/number/bool values keep their previous handling.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 18: non-string tool name / uuid (#1962)', () => {
+  const R007_MISSING = 'R007 에이전트 식별 헤더 누락';
+  const R008_MISSING = 'R008 도구 식별 접두사 누락';
+  const HDR = { type: 'text', text: '┌─ Agent: claude (default)' };
+  const HDR_PFX = { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' };
+  const BAD: ReadonlyArray<readonly [string, unknown]> = [
+    ['array', ['a']],
+    ['object', { a: 1 }],
+  ];
+  const withUuid = (lines: string[], uuid: unknown): string[] => {
+    const first = JSON.parse(lines[0]);
+    first.uuid = uuid;
+    return [JSON.stringify(first), ...lines.slice(1)];
+  };
+
+  for (const [shape, bad] of BAD) {
+    it(`${shape} tool_use.name, unprefixed: r008 still reported (positive)`, async () => {
+      const sid = `n1962-n1-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([HDR, { type: 'tool_use', id: 't-n1', name: bad, input: {} }]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
+        R008_MISSING
+      );
+    });
+
+    it(`${shape} tool_use.name next to a valid prefix: silent (negative)`, async () => {
+      const sid = `n1962-n2-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([HDR_PFX, { type: 'tool_use', id: 't-n2', name: bad, input: {} }]),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+
+    it(`${shape} assistant-line uuid + header-less prose: r007 still reported (positive)`, async () => {
+      const sid = `n1962-u1-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...withUuid(assistantTurn([{ type: 'text', text: 'plain prose' }]), bad),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
+        R007_MISSING
+      );
+    });
+
+    it(`${shape} assistant-line uuid + compliant turn: silent (negative)`, async () => {
+      const sid = `n1962-u2-${shape}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...withUuid(
+          assistantTurn([HDR_PFX, { type: 'tool_use', id: 't-u2', name: 'Read', input: {} }]),
+          bad
+        ),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+  }
+
+  it('string tool_use.name unprefixed: r008 reported with the tool name (string control)', async () => {
+    const sid = `n1962-s1-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([HDR, { type: 'tool_use', id: 't-s1', name: 'Read', input: {} }]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+    expect(ctx).toContain(R008_MISSING);
+    expect(ctx).toContain('Read');
+  });
+
+  it('number tool_use.name keeps its previous handling: r008 still reported (control)', async () => {
+    const sid = `n1962-s2-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([HDR, { type: 'tool_use', id: 't-s2', name: 5, input: {} }]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
+      R008_MISSING
+    );
+  });
+
+  it('string and number uuid: unchanged — header-less turn still reported (control)', async () => {
+    for (const [i, u] of [
+      ['str', 'turn-1962-str'],
+      ['num', 7],
+    ] as const) {
+      const sid = `n1962-s3-${i}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...withUuid(assistantTurn([{ type: 'text', text: 'plain prose' }]), u),
+      ]);
+      const r = await runScript(promptInput(sid), testEnv());
+      expect(r.exitCode).toBe(0);
+      expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
+        R007_MISSING
+      );
+    }
+  });
+});

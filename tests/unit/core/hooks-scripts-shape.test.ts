@@ -550,11 +550,12 @@ describe('#1656 E: model-escalation-advisor.sh emits no integer-expression noise
     );
     const input = makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' });
 
-    for (const env of [
+    const envs: Record<string, string>[] = [
       {},
       { OMCUSTOM_MODEL_DEESCALATION: '' },
       { OMCUSTOM_MODEL_DEESCALATION: 'off' },
-    ]) {
+    ];
+    for (const env of envs) {
       const result = await runHookScript(MODEL_ESCALATION_SCRIPT, input, env);
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe('');

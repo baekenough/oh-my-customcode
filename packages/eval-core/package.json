@@ -17,12 +17,13 @@
     "dev": "bun run src/cli/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "commander": "^14.0.2",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
     "@types/bun": "^1.3.6",

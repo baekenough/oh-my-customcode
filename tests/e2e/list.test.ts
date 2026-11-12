@@ -399,7 +399,8 @@ Rule content here.
       const jsonOutput = lines.slice(jsonStartIndex).join('\n');
 
       // Should parse as valid JSON
-      let parsed: unknown[];
+      // The `as` keeps the declared union un-narrowed: the assignment happens inside a closure
+      let parsed = undefined as unknown[] | undefined;
       expect(() => {
         parsed = JSON.parse(jsonOutput);
       }).not.toThrow();

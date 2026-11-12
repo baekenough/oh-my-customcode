@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
 import { basename } from 'node:path';
+import { eq } from 'drizzle-orm';
 import { createDb, type EvalDb } from '../db/client.js';
 import { agentInvocations, projects, sessions, turns } from '../db/schema.js';
 import { parseOutcomeFile } from './outcome-parser.js';
@@ -65,10 +65,9 @@ function collectSessions(db: EvalDb, options: CollectOptions): number {
     const existing = db.select().from(sessions).where(eq(sessions.sessionId, raw.session_id)).get();
     if (existing) continue;
 
-    const durationMs =
-      raw.ended_at
-        ? new Date(raw.ended_at).getTime() - new Date(raw.started_at).getTime()
-        : null;
+    const durationMs = raw.ended_at
+      ? new Date(raw.ended_at).getTime() - new Date(raw.started_at).getTime()
+      : null;
 
     if (!options.dryRun) {
       const now = new Date().toISOString();
@@ -78,8 +77,7 @@ function collectSessions(db: EvalDb, options: CollectOptions): number {
         projectId = upsertProject(db, raw.cwd, now);
       }
 
-      db
-        .insert(sessions)
+      db.insert(sessions)
         .values({
           sessionId: raw.session_id,
           projectId,
@@ -125,8 +123,7 @@ function collectTurns(db: EvalDb, options: CollectOptions): number {
     if (!matchingSession) continue;
 
     if (!options.dryRun) {
-      db
-        .insert(turns)
+      db.insert(turns)
         .values({
           sessionId: matchingSession.sessionId,
           threadId: raw.thread_id,
@@ -153,8 +150,7 @@ function collectInvocations(db: EvalDb, ppid: string, dryRun?: boolean): number 
 
   for (const raw of rawOutcomes) {
     if (!dryRun) {
-      db
-        .insert(agentInvocations)
+      db.insert(agentInvocations)
         .values({
           sessionPpid: ppid,
           timestamp: raw.timestamp,

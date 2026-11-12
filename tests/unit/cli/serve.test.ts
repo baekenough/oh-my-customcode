@@ -31,6 +31,7 @@ import {
   PARTIAL_RECORD_GRACE_MS,
   resolveServePidFile,
   ServePidFileError,
+  type ServeStartResult,
   ServeStopPermissionError,
   startServeBackground,
   stopServe,
@@ -962,10 +963,10 @@ describe('serve.ts', () => {
         pid: undefined,
         unref: () => {},
       });
-      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation(() => {
+      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation((() => {
         process.nextTick(() => failedChild.emit('error', new Error('spawn node ENOENT')));
         return failedChild as unknown as ChildProcess;
-      });
+      }) as unknown as typeof childProcess.spawn);
       try {
         await expect(
           startServeBackground(tempDir, undefined, { skipNpmFallback: true })
@@ -1008,7 +1009,7 @@ describe('serve.ts', () => {
         }
       }
 
-      function start(): Promise<void> {
+      function start(): Promise<ServeStartResult> {
         return startServeBackground(tempDir, undefined, { skipNpmFallback: true });
       }
 
@@ -1042,7 +1043,7 @@ describe('serve.ts', () => {
               { status: 'started', pid: STUB_PID },
             ]);
             const loser = results.find((result) => result.status !== 'started');
-            expect(['starting-elsewhere', 'already-running']).toContain(loser?.status);
+            expect(['starting-elsewhere', 'already-running']).toContain(loser?.status ?? '');
           });
           // Both starts staged a claim, and the two claims differ although both
           // come from this one process (the nonce tells them apart).
@@ -1469,7 +1470,7 @@ describe('serve.ts', () => {
 
       describe('a claim lost before the PID is recorded', () => {
         // #1825 review A1: what took the claim's place decides the result.
-        it.each([
+        it.each<[string, string, ServeStartResult]>([
           [
             'a running server',
             String(process.pid),

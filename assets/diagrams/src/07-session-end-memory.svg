@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="1130" viewBox="0 0 1300 1130" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="#f2f2f2" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <rect width="1300" height="1130" fill="#141414"/>
+
+  <!-- lifelines -->
+  <line x1="150" y1="110" x2="150" y2="1010" stroke="#3b82f6" stroke-width="2"/>
+  <line x1="480" y1="110" x2="480" y2="1010" stroke="#4ade80" stroke-width="2"/>
+  <line x1="810" y1="110" x2="810" y2="1010" stroke="#d946ef" stroke-width="2"/>
+  <line x1="1140" y1="110" x2="1140" y2="1010" stroke="#d946ef" stroke-width="2"/>
+
+  <!-- top participant boxes -->
+  <g font-size="26" fill="#f2f2f2" text-anchor="middle">
+    <rect x="40" y="20" width="220" height="90" rx="12" fill="#1f3a63" stroke="#3b82f6" stroke-width="2"/>
+    <text x="150" y="73">User</text>
+    <rect x="370" y="20" width="220" height="90" rx="12" fill="#2a5c33" stroke="#4ade80" stroke-width="2"/>
+    <text x="480" y="73">Orchestrator</text>
+    <rect x="700" y="20" width="220" height="90" rx="12" fill="#5a2a63" stroke="#d946ef" stroke-width="2"/>
+    <text x="810" y="58">sys-memory-</text><text x="810" y="88">keeper</text>
+    <rect x="1010" y="20" width="260" height="90" rx="12" fill="#5a2a63" stroke="#d946ef" stroke-width="2"/>
+    <text x="1140" y="58">Native auto</text><text x="1140" y="88" font-size="21">memory (MEMORY.md)</text>
+  </g>
+
+  <!-- activation bar on keeper -->
+  <rect x="802" y="330" width="16" height="520" fill="#5a2a63" stroke="#d946ef" stroke-width="1.5"/>
+
+  <!-- step circles + messages -->
+  <g font-size="22" fill="#f2f2f2">
+    <!-- 1 -->
+    <circle cx="150" cy="190" r="17" fill="#1f3a63" stroke="#f2f2f2"/><text x="150" y="197" font-size="17" text-anchor="middle">1</text>
+    <line x1="170" y1="190" x2="478" y2="190" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="325" y="178" text-anchor="middle">End session signal</text>
+    <!-- 2 -->
+    <circle cx="480" cy="270" r="17" fill="#2a5c33" stroke="#f2f2f2"/><text x="480" y="277" font-size="17" text-anchor="middle">2</text>
+    <line x1="500" y1="270" x2="800" y2="270" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="650" y="256" text-anchor="middle">Delegate session-end save</text>
+    <!-- 3 self -->
+    <circle cx="810" cy="360" r="17" fill="#5a2a63" stroke="#f2f2f2"/><text x="810" y="367" font-size="17" text-anchor="middle">3</text>
+    <path d="M830 360 H900 V450 H822" fill="none" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="912" y="360">Collect session</text>
+    <text x="912" y="388">summary</text>
+    <text x="912" y="418" font-size="19" fill="#c9c9c9">(tasks, decisions,</text>
+    <text x="912" y="442" font-size="19" fill="#c9c9c9">open items)</text>
+    <!-- 4 -->
+    <circle cx="810" cy="500" r="17" fill="#5a2a63" stroke="#f2f2f2"/><text x="810" y="507" font-size="17" text-anchor="middle">4</text>
+    <line x1="830" y1="500" x2="1138" y2="500" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="984" y="488" text-anchor="middle">Update MEMORY.md</text>
+    <!-- 5 self on keeper -->
+    <circle cx="810" cy="590" r="17" fill="#5a2a63" stroke="#f2f2f2"/><text x="810" y="597" font-size="17" text-anchor="middle">5</text>
+    <path d="M830 590 H900 V660 H822" fill="none" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="912" y="584">Confidence decay</text>
+    <text x="912" y="612">check, behaviors,</text>
+    <text x="912" y="640">metrics</text>
+    <!-- 6 -->
+    <circle cx="1140" cy="720" r="17" fill="#5a2a63" stroke="#f2f2f2"/><text x="1140" y="727" font-size="17" text-anchor="middle">6</text>
+    <line x1="1120" y1="720" x2="822" y2="720" stroke="#f2f2f2" stroke-width="2" stroke-dasharray="10 8" marker-end="url(#ah)"/>
+    <text x="970" y="706" text-anchor="middle">MEMORY.md saved</text>
+    <!-- 7 -->
+    <circle cx="810" cy="810" r="17" fill="#5a2a63" stroke="#f2f2f2"/><text x="810" y="817" font-size="17" text-anchor="middle">7</text>
+    <line x1="790" y1="810" x2="492" y2="810" stroke="#f2f2f2" stroke-width="2" stroke-dasharray="10 8" marker-end="url(#ah)"/>
+    <text x="640" y="796" text-anchor="middle">Return formatted summary</text>
+    <!-- 8 self orch -->
+    <circle cx="480" cy="890" r="17" fill="#2a5c33" stroke="#f2f2f2"/><text x="480" y="897" font-size="17" text-anchor="middle">8</text>
+    <path d="M500 890 H570 V960 H492" fill="none" stroke="#f2f2f2" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="582" y="890">Self-check:</text>
+    <text x="582" y="918">MEMORY.md</text>
+    <text x="582" y="946">updated?</text>
+    <!-- 9 -->
+    <circle cx="480" cy="1000" r="17" fill="#2a5c33" stroke="#f2f2f2"/><text x="480" y="1007" font-size="17" text-anchor="middle">9</text>
+    <line x1="460" y1="1000" x2="162" y2="1000" stroke="#f2f2f2" stroke-width="2" stroke-dasharray="10 8" marker-end="url(#ah)"/>
+    <text x="310" y="986" text-anchor="middle">Session ended</text>
+  </g>
+
+  <!-- failure note -->
+  <rect x="830" y="850" width="290" height="130" rx="10" fill="#222" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <g font-size="18" fill="#f2f2f2">
+    <text x="844" y="880">Write failure is</text>
+    <text x="844" y="906">non-blocking: log warning,</text>
+    <text x="844" y="932">session still ends, user</text>
+    <text x="844" y="958">is told anyway</text>
+  </g>
+
+  <!-- bottom participant boxes -->
+  <g font-size="26" fill="#f2f2f2" text-anchor="middle">
+    <rect x="40" y="1020" width="220" height="90" rx="12" fill="#1f3a63" stroke="#3b82f6" stroke-width="2"/>
+    <text x="150" y="1073">User</text>
+    <rect x="370" y="1020" width="220" height="90" rx="12" fill="#2a5c33" stroke="#4ade80" stroke-width="2"/>
+    <text x="480" y="1073">Orchestrator</text>
+    <rect x="700" y="1020" width="220" height="90" rx="12" fill="#5a2a63" stroke="#d946ef" stroke-width="2"/>
+    <text x="810" y="1058">sys-memory-</text><text x="810" y="1088">keeper</text>
+    <rect x="1010" y="1020" width="260" height="90" rx="12" fill="#5a2a63" stroke="#d946ef" stroke-width="2"/>
+    <text x="1140" y="1058">Native auto</text><text x="1140" y="1088" font-size="21">memory (MEMORY.md)</text>
+  </g>
+</svg>
