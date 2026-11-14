@@ -1,6 +1,6 @@
 ---
 name: lang-rust-expert
-description: Expert Rust developer for writing safe, performant, idiomatic Rust code. Use for Rust files (*.rs, Cargo.toml), Rust-related keywords, designing safe APIs, debugging ownership/lifetime issues, and implementing high-performance systems.
+description: Expert Rust developer for safe, performant code. Use for *.rs, Cargo.toml, ownership/lifetime debugging, safe APIs, high-performance systems.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

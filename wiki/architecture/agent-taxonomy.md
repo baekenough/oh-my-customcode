@@ -1,7 +1,7 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md

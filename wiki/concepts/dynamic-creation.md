@@ -1,7 +1,7 @@
 ---
 title: Dynamic Agent Creation
 type: concept
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -80,7 +80,7 @@ This auto-discovery implements the [[compilation-metaphor]] principle: `mgr-crea
 
 | Mode | Trigger | Confirmation | Thoroughness |
 |------|---------|-------------|-------------|
-| **Explicit** | `/omcustom:create-agent` | User-guided | Full 3-phase workflow, 25 turns |
+| **Explicit** | `/omcustom:create-agent` | User-guided | Full 3-phase workflow (no turn limit; `maxTurns` removed in v2.0.26) |
 | **Dynamic** | Routing no-match fallback | None (immediate) | Minimal viable agent, focused discovery |
 
 Dynamic mode creates a functional agent quickly. Explicit mode creates a fully researched, production-quality agent with external reference documentation.

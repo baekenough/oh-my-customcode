@@ -14,7 +14,6 @@ tools:
   - Grep
   - Glob
   - Bash
-maxTurns: 20
 limitations:
   - "cannot modify source code"
 permissionMode: bypassPermissions

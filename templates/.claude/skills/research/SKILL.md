@@ -1,6 +1,6 @@
 ---
 name: research
-description: 10-team parallel deep analysis with cross-verification for any topic, repository, or technology. Use when user invokes /research or asks for comprehensive research.
+description: 10-team parallel deep analysis with cross-verification of any topic, repo, or technology. Use when user invokes /research or wants deep research.
 scope: core
 user-invocable: true
 teams-compatible: true

@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/skills/fsd/SKILL.md
 related:

@@ -287,8 +287,17 @@ export async function validateHookCountDocs(
  * the actual injected size (see #1717 measurement: raw 430,808 vs CC-reported
  * ~308,800, matching the comment-stripped total of 306,752).
  */
-export const INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT = 150_000;
-export const INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT = 140_000;
+/**
+ * Two-tier budget (v2.0.26): the always-loaded tier is CLAUDE.md plus every rule
+ * file WITHOUT a `paths:` frontmatter key (injected at session start); the total
+ * tier is CLAUDE.md plus every rule file (including `paths:`-conditional ones,
+ * which load lazily when a matching file is accessed). Limits are exclusive: a
+ * value exactly at a limit produces neither a warning nor an error.
+ */
+export const INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT = 60_000;
+export const INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT = 50_000;
+export const INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT = 140_000;
+export const INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT = 120_000;
 
 /** A single instruction file (CLAUDE.md or a .claude/rules/*.md file) fed to the budget check. */
 export interface InstructionFileInput {
@@ -300,6 +309,13 @@ export interface InstructionFileMeasurement {
   file: string;
   rawLength: number;
   visibleLength: number;
+  /**
+   * True when the file is injected at session start. False only for a rule file
+   * whose leading YAML frontmatter has a `paths:` key (lazy-loaded on a matching
+   * file access). A `globs:`-only frontmatter is NOT a condition for Claude Code,
+   * so such a file stays always-loaded.
+   */
+  alwaysLoaded: boolean;
   /**
    * True when the comment-stripped text still contains a `-->` or `<!--`
    * marker — evidence of an orphan/nested HTML comment (e.g. a `<!-- ... -->`
@@ -313,6 +329,8 @@ export interface InstructionBudgetResult {
   files: InstructionFileMeasurement[];
   totalRawLength: number;
   totalVisibleLength: number;
+  /** Visible size of the always-loaded tier (files with `alwaysLoaded === true`). */
+  alwaysVisibleLength: number;
   /** Top 3 files by visible size, descending. */
   topFiles: InstructionFileMeasurement[];
   errors: string[];
@@ -325,18 +343,39 @@ export function stripHtmlComments(content: string): string {
 }
 
 /**
+ * True when the file's leading YAML frontmatter (first line `---` up to the next
+ * `---`) declares a `paths:` key — Claude Code then lazy-loads the file instead of
+ * injecting it at session start. Only the `paths:` key counts (probe, CC 2.1.325):
+ * a `globs:` key is ignored, and a `paths:` string in the body is not frontmatter.
+ * Tested on the raw content, before comment stripping.
+ */
+export function hasPathsFrontmatter(content: string): boolean {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  return match !== null && /^paths[ \t]*:/m.test(match[1]);
+}
+
+/**
  * Pure measuring logic for the instruction-file context budget (#1717). Takes
  * file contents directly (no filesystem access) so it is unit-testable in
  * isolation. Computes the comment-stripped ("visible") size of each file,
  * flags stray comment markers left behind by orphan/nested comments, and
- * checks the total against the error/warning thresholds.
+ * checks two tiers against the error/warning thresholds: the always-loaded tier
+ * (CLAUDE.md + rules without `paths:` frontmatter) and the total tier (all files).
  */
 export function measureInstructionBudget(
   files: InstructionFileInput[],
-  options: { errorLimit?: number; warnLimit?: number } = {},
+  options: {
+    errorLimit?: number;
+    warnLimit?: number;
+    alwaysErrorLimit?: number;
+    alwaysWarnLimit?: number;
+  } = {},
 ): InstructionBudgetResult {
-  const errorLimit = options.errorLimit ?? INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT;
-  const warnLimit = options.warnLimit ?? INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT;
+  const errorLimit = options.errorLimit ?? INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT;
+  const warnLimit = options.warnLimit ?? INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT;
+  const alwaysErrorLimit =
+    options.alwaysErrorLimit ?? INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT;
+  const alwaysWarnLimit = options.alwaysWarnLimit ?? INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT;
 
   const measurements: InstructionFileMeasurement[] = files.map(({ file, content }) => {
     const visible = stripHtmlComments(content);
@@ -344,12 +383,17 @@ export function measureInstructionBudget(
       file,
       rawLength: content.length,
       visibleLength: visible.length,
+      // CLAUDE.md is always injected; only rule files can be path-conditional.
+      alwaysLoaded: path.basename(file) === 'CLAUDE.md' || !hasPathsFrontmatter(content),
       hasStrayCommentMarker: visible.includes('-->') || visible.includes('<!--'),
     };
   });
 
   const totalRawLength = measurements.reduce((sum, m) => sum + m.rawLength, 0);
   const totalVisibleLength = measurements.reduce((sum, m) => sum + m.visibleLength, 0);
+  const alwaysVisibleLength = measurements
+    .filter((m) => m.alwaysLoaded)
+    .reduce((sum, m) => sum + m.visibleLength, 0);
 
   const topFiles = [...measurements]
     .sort((a, b) => b.visibleLength - a.visibleLength)
@@ -366,17 +410,41 @@ export function measureInstructionBudget(
     }
   }
 
-  if (totalVisibleLength > errorLimit) {
+  if (alwaysVisibleLength > alwaysErrorLimit) {
     errors.push(
-      `Instruction budget exceeded: ${totalVisibleLength} visible chars > ${errorLimit} limit`,
+      `Instruction budget exceeded (always-loaded tier: CLAUDE.md + rules without paths: frontmatter): ${alwaysVisibleLength} visible chars > ${alwaysErrorLimit} limit`,
     );
-  } else if (totalVisibleLength > warnLimit) {
+  } else if (alwaysVisibleLength > alwaysWarnLimit) {
     warnings.push(
-      `Instruction budget warning: ${totalVisibleLength} visible chars > ${warnLimit} (error limit ${errorLimit})`,
+      `Instruction budget warning (always-loaded tier: CLAUDE.md + rules without paths: frontmatter): ${alwaysVisibleLength} visible chars > ${alwaysWarnLimit} (error limit ${alwaysErrorLimit})`,
     );
   }
 
-  return { files: measurements, totalRawLength, totalVisibleLength, topFiles, errors, warnings };
+  if (totalVisibleLength > errorLimit) {
+    errors.push(
+      `Instruction budget exceeded (total tier: CLAUDE.md + all rules): ${totalVisibleLength} visible chars > ${errorLimit} limit`,
+    );
+  } else if (totalVisibleLength > warnLimit) {
+    warnings.push(
+      `Instruction budget warning (total tier: CLAUDE.md + all rules): ${totalVisibleLength} visible chars > ${warnLimit} (error limit ${errorLimit})`,
+    );
+  }
+
+  return {
+    files: measurements,
+    totalRawLength,
+    totalVisibleLength,
+    alwaysVisibleLength,
+    topFiles,
+    errors,
+    warnings,
+  };
+}
+
+/** One-line summary of both budget tiers for the validate-docs console report. */
+function formatInstructionBudgetSummary(result: InstructionBudgetResult): string {
+  const alwaysCount = result.files.filter((f) => f.alwaysLoaded).length;
+  return `📏 Instruction budget: always-loaded ${result.alwaysVisibleLength.toLocaleString()} visible chars across ${alwaysCount} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT.toLocaleString()}) | total ${result.totalVisibleLength.toLocaleString()} visible chars across ${result.files.length} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT.toLocaleString()})`;
 }
 
 /**
@@ -896,9 +964,7 @@ function printProgrammaticResults(
     const topFilesText = instructionBudget.topFiles
       .map((f) => `${f.file} (${f.visibleLength.toLocaleString()})`)
       .join(', ');
-    console.log(
-      `📏 Instruction budget: ${instructionBudget.totalVisibleLength.toLocaleString()} visible chars across ${instructionBudget.files.length} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT.toLocaleString()})`,
-    );
+    console.log(formatInstructionBudgetSummary(instructionBudget));
     console.log(`   top 3 by visible size: ${topFilesText}`);
     for (const warning of instructionBudget.warnings) {
       console.log(`⚠️ ${warning}`);
@@ -992,9 +1058,7 @@ async function main() {
     const topFilesText = instructionBudget.topFiles
       .map((f) => `${f.file} (${f.visibleLength.toLocaleString()})`)
       .join(', ');
-    console.log(
-      `📏 Instruction budget: ${instructionBudget.totalVisibleLength.toLocaleString()} visible chars across ${instructionBudget.files.length} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT.toLocaleString()})`,
-    );
+    console.log(formatInstructionBudgetSummary(instructionBudget));
     console.log(`   top 3 by visible size: ${topFilesText}`);
     for (const warning of instructionBudget.warnings) {
       console.log(`⚠️ ${warning}`);

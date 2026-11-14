@@ -1,7 +1,7 @@
 ---
 title: lang-java-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/lang-java-expert.md
 related:

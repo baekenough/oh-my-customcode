@@ -1,6 +1,6 @@
 ---
 name: arch-documenter
-description: Use for generating architecture documentation, API specifications (OpenAPI), Architecture Decision Records (ADRs), technical diagrams (Mermaid/PlantUML), and README maintenance
+description: Use for architecture docs, OpenAPI specs, Architecture Decision Records (ADRs), Mermaid/PlantUML diagrams, and README maintenance
 model: claude-sonnet-5-5
 domain: universal
 memory: local
@@ -14,7 +14,6 @@ tools:
   - Edit
   - Grep
   - Glob
-maxTurns: 20
 disallowedTools: [Bash]
 permissionMode: bypassPermissions
 ---

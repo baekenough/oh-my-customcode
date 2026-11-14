@@ -1,6 +1,6 @@
 ---
 name: db-supabase-expert
-description: Supabase and PostgreSQL expert. Use when working with Supabase projects, writing SQL queries, designing database schemas, configuring Row-Level Security (RLS), optimizing Postgres performance, or managing connection pooling. Handles .sql files and Supabase configuration.
+description: Supabase and PostgreSQL expert. Use for Supabase projects, .sql files, schema design, Row-Level Security (RLS), Postgres tuning, connection pooling.
 model: claude-sonnet-5-5
 domain: backend
 memory: user

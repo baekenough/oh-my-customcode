@@ -237,7 +237,7 @@ Reference documentation covering best practices, architecture decisions, and int
 
 ## Safety
 
-oh-my-customcode ships 42 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
+oh-my-customcode ships 43 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
@@ -299,10 +299,10 @@ your-project/
 │   ├── agents/                 # 50 agent definitions
 │   ├── skills/                 # 114 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
-│   ├── hooks/                  # 42 lifecycle hook scripts (hooks.json source; compiled into settings.json)
+│   ├── hooks/                  # 43 lifecycle hook scripts (hooks.json source; compiled into settings.json)
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
-│   └── contexts/               # 4 shared context files
+│   └── contexts/               # 6 shared context files
 └── guides/                     # 56 reference documents
 ```
 

@@ -31,6 +31,18 @@ contexts:
       - Validate with evidence
       - Summarize findings
 
+  delegation:
+    file: delegation.md
+    mode: Delegation-prompt authoring (L2 event pack)
+    focus: Measured facts in prompts, approval/privilege boundaries, parallel disclosure, spawn announce format
+    injected: PreToolUse on Agent, Task, SendMessage (once per session and agent, by context-pack-injector.sh)
+
+  commit-release:
+    file: commit-release.md
+    mode: Commit, push, PR and release time (L2 event pack)
+    focus: Git delegation gates, release staging and version bump, CI/publish ground truth
+    injected: PreToolUse on Bash running git commit/push, gh pr create/merge, gh release, npm publish (once per session and agent, by context-pack-injector.sh)
+
 usage:
   description: |
     Use contexts to change Claude's behavior mode.

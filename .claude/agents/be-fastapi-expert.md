@@ -1,6 +1,6 @@
 ---
 name: be-fastapi-expert
-description: Expert FastAPI developer for building high-performance async Python APIs. Use for FastAPI projects, Python async/await patterns, Pydantic models, API architecture design, and performance optimization.
+description: Expert FastAPI developer for high-performance async Python APIs. Use for FastAPI projects, async/await, Pydantic models, API design, performance.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

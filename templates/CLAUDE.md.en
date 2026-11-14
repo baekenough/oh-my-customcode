@@ -54,7 +54,7 @@ NO EXCEPTIONS. NO EXCUSES.
 
 ## Global Rules (MUST comply)
 
-> See `.claude/rules/`
+> See `.claude/rules/` (some are loaded conditionally — see "Rule Loading" below)
 
 ### MUST (Never violate)
 | ID | Rule | Description |
@@ -91,10 +91,32 @@ NO EXCEPTIONS. NO EXCUSES.
 |----|------|-------------|
 | R005 | Optimization | Efficiency, token optimization |
 
+## Rule Loading (Lazy-Loading Index)
+
+Always loaded (15 in total): R000–R005, R007–R011, R013, R015, R020, R021. The 8 below are conditional, with a `paths:` frontmatter. In the CC 2.1.325 probe measurement they are not loaded at session start; they are loaded only into the context of the agent that Reads or Writes a file matching their glob. Reloading after compaction has not been measured. If needed, open the rule file directly with Read.
+
+| ID | Core Norm (1 line) | Load Condition |
+|----|--------------------|----------------|
+| R006 | When creating or modifying agents, skills, hooks, or output-styles, apply the design rules (frontmatter, separation of concerns). | Files under agents, skills, hooks, output-styles |
+| R012 | Applies when editing the statusline, settings, or hook wiring. | statusline.sh, settings*.json, hooks.json |
+| R016 | When a rule violation is pointed out, Read `MUST-continuous-improvement.md`, then update the rule → commit → continue the original task. | rules/**, CLAUDE.md (a conversational trigger, so file access alone is insufficient) |
+| R017 | After changing agents, skills, guides, or rules, `mgr-sauron:watch` must pass before commit and push. | agents, skills, rules, hooks, guides, wiki, templates, CLAUDE.md |
+| R018 | If `TeamCreate` is in the tool list, Read `MUST-agent-teams.md` and apply it. | Only when reading that file itself |
+| R019 | When routing confidence is below 90%, look up `wiki/index.yaml` (advisory). Whether a Skill invocation loads it has not been measured, so Read it if needed. | The 4 routing skills, intent-detection, wiki/index.yaml |
+| R022 | When agents, skills, rules, or guides change, update the wiki pages and re-seed the manifest. | wiki, agents, skills, rules, guides |
+| R023 | Escalate verification from deterministic Tier 1 upward in cost order. | hooks, scripts, tests, .github, skills, src |
+
+The 2 L2 event packs are injected by the hook `.claude/hooks/scripts/context-pack-injector.sh` once per session and agent, at PreToolUse (just before the tool runs).
+- `.claude/contexts/delegation.md`: immediately before Agent, Task, and SendMessage calls
+- `.claude/contexts/commit-release.md`: immediately before `git commit`·`git push`, `gh pr create`·`gh pr merge`, `gh release`, and `npm publish`
+
+The markers are reset at compaction (SessionStart compact), so the packs are injected again after compaction. Disable with `OMCUSTOM_CONTEXT_PACKS=off`.
+
 ## Commands
 
 ### Slash Commands (from Skills)
 
+<!-- METADATA (command catalog, advisory only — use /omcustom:lists for the live full list):
 | Command | Description |
 |---------|-------------|
 | `/omcustom:analysis` | Analyze project and auto-configure customizations |
@@ -122,6 +144,9 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/omcustom:lists` | Show all available commands |
 | `/omcustom:status` | Show system status |
 | `/omcustom:help` | Show help information |
+-->
+
+> Full command list (60+ commands): run `/omcustom:lists`
 
 ## Project Structure
 
@@ -133,7 +158,7 @@ project/
 |   +-- skills/                  # Skills (114 directories)
 |   +-- rules/                   # Global rules (R000-R023)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
-|   +-- contexts/                # Context files (ecomode)
+|   +-- contexts/                # Context files (ecomode, delegation/commit packs)
 +-- guides/                      # Reference docs (56 topics)
 ```
 
@@ -160,6 +185,7 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 
 ## Agents Summary
 
+<!-- METADATA (agent roster by type, advisory only — see .claude/agents/ for the live full catalog):
 | Type | Count | Agents |
 |------|-------|--------|
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
@@ -176,6 +202,9 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 | System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
 | Agora | 1 | agora-runner |
 | **Total** | **50** | |
+-->
+
+**50** agents in total (per-type table in the HTML comment above; definition files in `.claude/agents/`)
 
 ## Agent Teams (MUST when enabled)
 
@@ -216,6 +245,10 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## External Dependencies
 
+The required-plugin table and the install commands are one-time setup information, preserved in the HTML comment below (readable with the Read tool). Summary: 5 required plugins (superpowers, superpowers-developing-for-claude-code, elements-of-style, obsidian-skills, context7).
+
+<!-- METADATA (plugin/MCP catalog + install commands, advisory only — one-time setup, not needed every session):
+
 ### Required Plugins
 
 Install via `/plugin install <name>`:
@@ -239,5 +272,7 @@ Install via `/plugin install <name>`:
 /plugin install superpowers-developing-for-claude-code
 /plugin install elements-of-style
 ```
+-->
+
 
 <!-- omcustom:git-workflow -->

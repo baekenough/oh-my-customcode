@@ -111,16 +111,28 @@ describe('migrateHookCommands — tracked settings fixture', () => {
   it('rewrites every old-form command of the tracked settings.json and is idempotent', async () => {
     const oldSettings = await loadOldFormSettings();
     const before = collectCommands(oldSettings);
-    const expected = before.filter((c) => /\.claude\/hooks\//.test(c)).length;
+    // Migrator-eligible old-form commands: a bare script with NO trailing arguments (the migrator
+    // is full-string anchored, see OLD_HOOK_COMMAND). Counted with an independent regex.
+    const expected = before.filter((c) =>
+      /^(bash )?\.?\/?\.claude\/hooks\/\S+\.sh$/.test(c)
+    ).length;
     expect(expected).toBeGreaterThan(0);
+    // Hooks that take arguments (e.g. context-pack-injector.sh <pack>) are already anchored in the
+    // tracked settings.json and are never rewritten (they stay untouched, even in old-form fixtures).
+    const withArgs = before.filter((c) => /\.claude\/hooks\/\S+\.sh"?\s+\S/.test(c));
+    expect(withArgs.length).toBeGreaterThan(0);
     const statusLineRewrites = oldSettings.statusLine ? 1 : 0;
 
     const first = migrateHookCommands(oldSettings);
     expect(first.rewritten).toBe(expected + statusLineRewrites);
-    for (const command of collectCommands(first.settings)) {
+    const afterCommands = collectCommands(first.settings);
+    for (const command of afterCommands) {
       expect(command).not.toMatch(/^(bash )?(\.\/)?\.claude\/hooks\//);
     }
-    expect(collectCommands(first.settings).filter((c) => c.includes(ANCHOR)).length).toBe(expected);
+    expect(afterCommands.filter((c) => c.includes(ANCHOR)).length).toBe(expected + withArgs.length);
+    for (const command of withArgs) {
+      expect(afterCommands).toContain(command);
+    }
 
     const second = migrateHookCommands(first.settings);
     expect(second.rewritten).toBe(0);
@@ -166,6 +178,11 @@ describe('migrateHookCommands — custom / non-matching commands', () => {
     ],
     ['bash ./scripts/foo.sh', null, 'script outside .claude/hooks untouched'],
     ['bash .claude/hooks/scripts/x.sh --flag', null, 'trailing arguments: not full-string match'],
+    [
+      `bash "${ANCHOR}/.claude/hooks/scripts/x.sh" arg`,
+      null,
+      'already-anchored command with an argument is left unchanged',
+    ],
     ['bash .claude/hooks/scripts/x.sh | tee -a log', null, 'pipeline: not full-string match'],
     ['bash .claude/hooks/scripts/sub/x.sh', null, 'nested subdirectory under scripts/ untouched'],
     ['bash .claude/hooks/my scripts/x.sh', null, 'space inside the relative path: untouched'],

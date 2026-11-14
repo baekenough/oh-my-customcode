@@ -1,52 +1,52 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.25",
-  "generatedAt": "2026-11-12T06:54:44.498Z",
-  "templateVersion": "2.0.25",
+  "generatorVersion": "2.0.26",
+  "generatedAt": "2026-11-14T10:08:03.119Z",
+  "templateVersion": "2.0.26",
   "files": {
     ".claude/agents/agora-runner.md": {
-      "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
-      "size": 8727,
+      "templateHash": "61b0e8efc09329701cfdf51bcf4641adc8cd32782b8e96f72ec58a6a1b796364",
+      "size": 8681,
       "component": "agents"
     },
     ".claude/agents/arch-documenter.md": {
-      "templateHash": "964a4271716ab7d2d737b3b8965760a6367f4bc36718e1991f74b9b2ff4f935e",
-      "size": 2570,
+      "templateHash": "e0c0df64120502a10f95b6684407039642e44c0953c9397fd2de43f3330e529a",
+      "size": 2510,
       "component": "agents"
     },
     ".claude/agents/arch-speckit-agent.md": {
-      "templateHash": "894618ba3a6530e3b73fc733efb561bb94c9243c90b8bef9bad19edc11f88f9e",
-      "size": 2699,
+      "templateHash": "5171122780623e1abca53ce8bc351da06c5b4f563a4562f3c30efce03bb285ad",
+      "size": 2652,
       "component": "agents"
     },
     ".claude/agents/be-django-expert.md": {
-      "templateHash": "65e4537bf982c1935511cebf876b1234644f29005ebb035fa0a3e03c73a8ee34",
-      "size": 1665,
+      "templateHash": "cdfe953844c1754bdb602b5a964f999a97fc686265797d650f8aae6c7e30d4e2",
+      "size": 1598,
       "component": "agents"
     },
     ".claude/agents/be-express-expert.md": {
-      "templateHash": "1775d4eb4ab0b550a4bdc591c35b266fb3189754111989ad7af17d52d56ea8e8",
-      "size": 1075,
+      "templateHash": "e584d9794d9986e0208c95e0204f421fb9288b257a4bbb4c797992cf10643fc8",
+      "size": 940,
       "component": "agents"
     },
     ".claude/agents/be-fastapi-expert.md": {
-      "templateHash": "77bd3f7436c2ee8d7c3235530023e4c9bbd965fe32d1801312834eeece481bfd",
-      "size": 1245,
+      "templateHash": "cd6d650bc15bb7d10d831f760741c6dd5248fc252cf2206417cf027dbb7e4882",
+      "size": 1190,
       "component": "agents"
     },
     ".claude/agents/be-go-backend-expert.md": {
-      "templateHash": "356b29c0ea7a7a0e95b33c28a19fed20ed908cd824dfaf00ab048393fbedfae0",
-      "size": 1276,
+      "templateHash": "0b805e0b4266b0c55c75a59e33b7d191ee31d47ca11088e8c82af906a2e64941",
+      "size": 1193,
       "component": "agents"
     },
     ".claude/agents/be-nestjs-expert.md": {
-      "templateHash": "1a581141af84fbd311ed23e7a77632e688cb38a67ca1d4d669c1ee48b3da9930",
-      "size": 881,
+      "templateHash": "8aade49a3eacb63d762adaec435a40fb67eaf7bbf8ad2b3957cfa56d5cabf46e",
+      "size": 741,
       "component": "agents"
     },
     ".claude/agents/be-springboot-expert.md": {
-      "templateHash": "8139b7e13858a64a5e63af2965499bb124c927c2970d4e362a22a59d6dac6edd",
-      "size": 1335,
+      "templateHash": "f10347a3aeca7de12f785c6cd4e9408653c596db05d4d87af9375ae0d2768651",
+      "size": 1223,
       "component": "agents"
     },
     ".claude/agents/db-alembic-expert.md": {
@@ -55,53 +55,53 @@
       "component": "agents"
     },
     ".claude/agents/db-postgres-expert.md": {
-      "templateHash": "c14e83f759828a1314c8f67b6f8d2e58c050aec3d01d08d43b342cb62657d772",
-      "size": 1213,
+      "templateHash": "b2b451eaa6b75404a4bf032ee0dfe0b76e410bdc3e526eadacc6c6f80f7d7f65",
+      "size": 1136,
       "component": "agents"
     },
     ".claude/agents/db-redis-expert.md": {
-      "templateHash": "1717007afc07a0824b167f7d5815f46ead3f5cbf3d5bf43b95d2c3caa1d5a15e",
-      "size": 1169,
+      "templateHash": "b4e2c67fe07f3a9cb3a3bb45d9909c4e9a4c923905f651f04450dfd7e2f9b540",
+      "size": 1084,
       "component": "agents"
     },
     ".claude/agents/db-supabase-expert.md": {
-      "templateHash": "98099339733efc90a5e688407683db2b1515500c47c834aa708e11ee0cd68d59",
-      "size": 1076,
+      "templateHash": "f765671eaf9eb709871c44fe562d6af5ec8bdc222d03c805d4f7bf7ed5c50158",
+      "size": 953,
       "component": "agents"
     },
     ".claude/agents/de-airflow-expert.md": {
-      "templateHash": "b0bb033249b682cec19d1b44df0a1cabacf9a355ef4f84fcec58c6fea50f4d64",
-      "size": 1652,
+      "templateHash": "e6bf7c6db1bf2c853074e328e2028c57ba5dc7a3e438dbb1fca2cb8bd0c3bf21",
+      "size": 1600,
       "component": "agents"
     },
     ".claude/agents/de-dbt-expert.md": {
-      "templateHash": "79a79fcd97cb7215f166d1111e29da19d9bfc6cf92dc2aa39a47002eeecf3e7f",
-      "size": 1048,
+      "templateHash": "df88c05ebfbf303d21bdd6e0f16dc8dee34aa54836792f6c68627b4969773357",
+      "size": 994,
       "component": "agents"
     },
     ".claude/agents/de-kafka-expert.md": {
-      "templateHash": "1e540ec19ec9d53d9155ec0eea54afa317e72a5ee19fa74c77d70f4612b24d91",
-      "size": 2809,
+      "templateHash": "528f8edeed2f855ccabd1012a8380965091bcdbb53a917035f09ebbc11c1cf8d",
+      "size": 2750,
       "component": "agents"
     },
     ".claude/agents/de-pipeline-expert.md": {
-      "templateHash": "538e0125ec4af1ccb51534a5e8a1af64c8d1f7f9c89ac37dd9212e4a31f644c6",
-      "size": 1108,
+      "templateHash": "f90483843204e35197c8bcb90bddff737d6a20974caea5c1bed2bd61452ce877",
+      "size": 1022,
       "component": "agents"
     },
     ".claude/agents/de-snowflake-expert.md": {
-      "templateHash": "90adfbb2a437c6488b844a89a00d80fda4a8b21d132b21c46ac0d91e9ec574e2",
-      "size": 1128,
+      "templateHash": "ecbc6beaa15b89b3f0d6cc6f803d2927a85f4871e5a7a0074ca0f30dc1ec2ba5",
+      "size": 1067,
       "component": "agents"
     },
     ".claude/agents/de-spark-expert.md": {
-      "templateHash": "b22796f400cdce0d03bd892c5a3f2e37a992c98e2450bfd802cd8096a8d819fd",
-      "size": 1295,
+      "templateHash": "fd9c7e8226ab54a77734533442b71ca1e24e3ec841b7aece8584819048c3e0f1",
+      "size": 1243,
       "component": "agents"
     },
     ".claude/agents/fe-design-expert.md": {
-      "templateHash": "23783ae2ba0d28c504602bd3cf7d761885115f3b5ad0a2f744563dcca7a155ae",
-      "size": 5245,
+      "templateHash": "d858fdd7e178ed44883975da3f2d3fdab71499da03e2a669e2b23b3f8df665e0",
+      "size": 5232,
       "component": "agents"
     },
     ".claude/agents/fe-flutter-agent.md": {
@@ -125,8 +125,8 @@
       "component": "agents"
     },
     ".claude/agents/infra-aws-expert.md": {
-      "templateHash": "72e823adf76373cb7095029a3bfba3cb32bf9c68544121b874f9401185092e57",
-      "size": 5108,
+      "templateHash": "f91665027990df923e09e3f9188dbff5e31e492a1adcaa34560a7661474167dd",
+      "size": 5069,
       "component": "agents"
     },
     ".claude/agents/infra-docker-expert.md": {
@@ -135,83 +135,83 @@
       "component": "agents"
     },
     ".claude/agents/lang-golang-expert.md": {
-      "templateHash": "4f05c939ccb77e447ae702512927ea245a0b93dec246893c438319d400e2242d",
-      "size": 1435,
+      "templateHash": "a12bf102a838000bb89b47fe0ff33b7d32d8c8dd471349081f1b366b65eb57f9",
+      "size": 1362,
       "component": "agents"
     },
     ".claude/agents/lang-java-expert.md": {
-      "templateHash": "366a415431db69650ed664a5f9908a98d09de96e51c9cba619bd3a6ca9e360bf",
-      "size": 1269,
+      "templateHash": "5a2e889343188061c4551a06262190fdf07b7baaa1dd3820a8867b75c21adb6c",
+      "size": 1113,
       "component": "agents"
     },
     ".claude/agents/lang-kotlin-expert.md": {
-      "templateHash": "8605c84000cbcaaa01a0f93c7ddebbc10a7b544896e1ccce0ab71a717766ab4b",
-      "size": 1379,
+      "templateHash": "6561c7451b06afe8dc615a12a51a65d74db0c20273ce76c1b2df25ddfc50bb24",
+      "size": 1294,
       "component": "agents"
     },
     ".claude/agents/lang-python-expert.md": {
-      "templateHash": "8f7de0e8cb2bec41d2237847a6c353be2c9a329303550a2fef51e3842811423a",
-      "size": 1356,
+      "templateHash": "47420eae9a7f839d8d732b8cae2b4ffceca6a91ad70523ac7de639d2f4798bf4",
+      "size": 1260,
       "component": "agents"
     },
     ".claude/agents/lang-rust-expert.md": {
-      "templateHash": "4f24f0015f820463f5c333c48fb4bd369d14be5061ed76d39cf458ca8e15494f",
-      "size": 1491,
+      "templateHash": "004fc1772e0fbfd861ed3978edeef807a10575fecee8c456e2415cae0334891b",
+      "size": 1397,
       "component": "agents"
     },
     ".claude/agents/lang-typescript-expert.md": {
-      "templateHash": "4c93deb7e9f13e06dda7cc67dacb1f80a2e2cd82b0d49a8d9e2ad39a23196fdd",
-      "size": 1508,
+      "templateHash": "ecfb45c4ba754b8f9e98058b5732674deb910a90bd16f489067869748286c2df",
+      "size": 1379,
       "component": "agents"
     },
     ".claude/agents/mgr-claude-code-bible.md": {
-      "templateHash": "b19339a1dfe007cb44e9afb33b718437ad1b407c3d4ab818da72cba69b4454be",
-      "size": 2264,
+      "templateHash": "c6fbedb0adf0111df1439486411bbfbdd9b5bb3c5464b194d030030ce627d14a",
+      "size": 2173,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
-      "templateHash": "9930b868377ed3ac6f155758dfdc5cd96937a4bc035731f5a5f4c45da7a89cab",
-      "size": 1926,
+      "templateHash": "c18f57d66d350a28cc41969705c7912b8f6f53af206c68cb6b557959194c9820",
+      "size": 1871,
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "515ea7e612cbdb830f20161b3d7af5fd4359a9109dc1c707142c45f509bf25a0",
-      "size": 5060,
+      "templateHash": "453d5574b530ad026d8f205999d83fa2f09e340007c3cd820e2df7098e68ec89",
+      "size": 5016,
       "component": "agents"
     },
     ".claude/agents/mgr-sauron.md": {
-      "templateHash": "5fe78feb22307c6ac6e3f197c441f727800fd6599e031e16613cd3bc605e1212",
-      "size": 2297,
+      "templateHash": "105d2c80912e6991f7d98169e525a833b411a287addba9e12fabf77a04f80fff",
+      "size": 2184,
       "component": "agents"
     },
     ".claude/agents/mgr-supplier.md": {
-      "templateHash": "925673bf2d86ca72a10b35d4f28784f107fcf8626f9769535a027112ddbb47f8",
-      "size": 1091,
+      "templateHash": "7f76e2b3958b07fc184ea100593e42fd09abbd66ed7dfc47308944de55bde35b",
+      "size": 1078,
       "component": "agents"
     },
     ".claude/agents/mgr-updater.md": {
-      "templateHash": "4a233cb16fb9c088612a6e8e8e3762536af21ea272c11bd571ca5160851b6aad",
-      "size": 1036,
+      "templateHash": "3ebc4f7a519cda2d564782ad0eddfc65f12ce0f229864e5484d30045310f1746",
+      "size": 1023,
       "component": "agents"
     },
     ".claude/agents/qa-engineer.md": {
-      "templateHash": "b6d40e9fbdb7739692b644b1107718ed336cdaab1aeb0a3dc3e9e1ebd1d67ef0",
-      "size": 1594,
+      "templateHash": "31efb2130c939e90b04bfbdd3bb162de51b86e0054f85abbbfee47cdb3766406",
+      "size": 1581,
       "component": "agents"
     },
     ".claude/agents/qa-planner.md": {
-      "templateHash": "abadfb20a764c4d0bdc95d1d96c8b16611a3aebb22a786dad56d9c39c091156c",
-      "size": 1915,
+      "templateHash": "fa2a92a32f03e7ef40f7ec480ffc8f7fae14c1f6664428da0c54e6edd513183b",
+      "size": 1829,
       "component": "agents"
     },
     ".claude/agents/qa-writer.md": {
-      "templateHash": "ce29090651fca4646f41b8a8e0e53c31050c5049d75f2d72170cffd180c299f9",
-      "size": 917,
+      "templateHash": "f03705a726974ade7abe3af3f28899c34ff6a7599b6318e8277cad7b1a853171",
+      "size": 904,
       "component": "agents"
     },
     ".claude/agents/sec-codeql-expert.md": {
-      "templateHash": "1f7d4770275d7659cfc7f1718e80aa351e8770c4323be2a84a936ac69d2084b2",
-      "size": 2001,
+      "templateHash": "f2d91efb1fd54c1b856e29758383b6108a87e09f41e7f99b00ab740c0df25919",
+      "size": 1949,
       "component": "agents"
     },
     ".claude/agents/slack-cli-expert.md": {
@@ -225,13 +225,13 @@
       "component": "agents"
     },
     ".claude/agents/sys-memory-keeper.md": {
-      "templateHash": "94e92a81f67ae259c1722ee4fcb50553ad5ab1948d88a2b92556e480d62ca52d",
-      "size": 3931,
+      "templateHash": "6b26add3773f1191bb715e4089d6c7d744fd486c8a25978843faa1fd9ebb34b1",
+      "size": 3843,
       "component": "agents"
     },
     ".claude/agents/sys-naggy.md": {
-      "templateHash": "31859ca980b4dcf7c8536f6cb66c05e4e3d024aceeb0074c66d4fc202b0f2707",
-      "size": 2174,
+      "templateHash": "bda39ad99165c464c297475b4a5ee9b92ad4fa8925a65c338ef1d6b9dfd44576",
+      "size": 2112,
       "component": "agents"
     },
     ".claude/agents/tool-bun-expert.md": {
@@ -245,13 +245,13 @@
       "component": "agents"
     },
     ".claude/agents/tool-optimizer.md": {
-      "templateHash": "d648d4e02840879a77d52130f9d0c1ca8923ff9784476a8847146d5b4528ac6e",
-      "size": 1099,
+      "templateHash": "48b4add15e6081d690dc43e3d8ba196ca149f04ecb2056cfaef0154bbf523f94",
+      "size": 1086,
       "component": "agents"
     },
     ".claude/agents/tracker-checkpoint.md": {
-      "templateHash": "2db2857a2db76ce747a55fcac15d0f536a6986702b75a620107799baf61390cd",
-      "size": 3126,
+      "templateHash": "12739d8e3191ddc206b3bf11f7b2d259f47a7aa1d97d94b7ec9e75a73cafd2dd",
+      "size": 3024,
       "component": "agents"
     },
     ".claude/agents/wiki-curator.md": {
@@ -265,8 +265,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "1ceb63343a1151798a5226c43dbd1a5330fdd7a573942c77f6635453408cdb16",
-      "size": 32512,
+      "templateHash": "492c3ed9774f9655154f7b974c44e5a452699ccbb1baa4367cfbe24086df7a08",
+      "size": 33942,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -322,6 +322,11 @@
     ".claude/hooks/scripts/context-budget-advisor.sh": {
       "templateHash": "d2a68cee3c651bce6071b4a8c9d75b42cecf89162823d7e34d95dc347be7dcfe",
       "size": 3915,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/context-pack-injector.sh": {
+      "templateHash": "5e6c3c032a660c9992d91f107b548d42a1663aa5af78ad2b12c25beb1bd37199",
+      "size": 34563,
       "component": "hooks"
     },
     ".claude/hooks/scripts/cost-cap-advisor.sh": {
@@ -485,43 +490,43 @@
       "component": "hooks"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "6c850fdefc110e8310907617d7cfa57a69c49523db0445c6a857364e220a44ca",
-      "size": 32992,
+      "templateHash": "03dfaf9a7e34b916315a8b9e7c7ffa6eac24e8cb54d03467680195ebd75d38c0",
+      "size": 37488,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "ddb181552d3286c0e79560a3c07f8378e4663f2044abf2967a86954cb8f23865",
-      "size": 71658,
+      "templateHash": "952711770f7abcd4e4e17ac262d4eec97630a7db382863b92a1833b7bd910144",
+      "size": 66824,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
-      "templateHash": "c9a00559be5547c309783d1d53ec8abb67a156d422aa2ceab659d4a899fa5764",
-      "size": 8407,
+      "templateHash": "a1580881427f2f4f9b25a1f6b40a29559ae2a9762ea3d19f297d4f6713ec847f",
+      "size": 10771,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "610dceb649a427bd95528feb7cf7f59c55ac36a26f92d57acab8cc155c71d918",
-      "size": 49245,
+      "templateHash": "229e149b0abe9d69a5cfebef76943cf2871ae3690b1bc3d3bf14b64c7eb2c71e",
+      "size": 53195,
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "da49c0ca5d40db57b04b619884fc00b176cbd113abec17e732585817aa01b35c",
-      "size": 73159,
+      "templateHash": "95268c27f47fb04fab06ebb92b52b9fe80ac8b553d6c0bebe11f4863d7a1d5ac",
+      "size": 49883,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "b165376b2bf05a9a64092065979261cb865d7e21ae8c76b3c595cb2b4c141c64",
-      "size": 23098,
+      "templateHash": "3167b23dd522aebb34c929c951cc0eb41e5b145822ee42184b002f1773a4cb94",
+      "size": 28891,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "a70a71f1e925321c135681079f0c0095fd710465c5f49fc99c1992be0a39db63",
-      "size": 24929,
+      "templateHash": "467d8e8c9c54e955adfc8f4f3d312556d495a5c76f4a8982f92aeb7512e701e7",
+      "size": 27453,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
-      "templateHash": "5974595cfd10f2ee4a0a0a23920bac16774e70797e132d3fbfbae5f5fffc0021",
-      "size": 12890,
+      "templateHash": "034d220d731cfd1ba804c886262f0abb6432ac0d89e1807b26240c4c86d622a9",
+      "size": 15278,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -530,73 +535,73 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "01080a50100c283ce73ac0edd90a1eaa8785950b990eacbcb29011ea5c924ab6",
-      "size": 106386,
+      "templateHash": "a73b6ac2c93cd43fb4668f54cc5ab30fd801bd954adbccd5da01374eff471684",
+      "size": 119088,
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "7940b0b212dc9ec482a48736e4b25431c5daf6d9c942498bf5cd82c5fd18ebfb",
-      "size": 27852,
+      "templateHash": "1f42d2f276939587f1a3e70abd31fc07736570a1b8598dc69e7e4fd74dd7af0a",
+      "size": 32485,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "b3f0edaa4a4344a596eac3318b9565aeb6a42d87138bca607c70b619e41915b0",
-      "size": 39301,
+      "templateHash": "09644ca43296d626a9368afd630782eec5845aeb24524c8b1fc6b6e1d22f2dce",
+      "size": 43823,
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "31ce7a1d02f0d4151042bd7cf06df09d67fcc6a56be83ae0f007ffceb9288c62",
-      "size": 28451,
+      "templateHash": "e1fa1a2c50c049cd8d4979cf73eed1f97783adc03444e6b17b50c97db317715e",
+      "size": 35804,
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "67ceed5b49b2457df8ec222627562cccb8256d99fd503977a00f41a7dcb0e622",
-      "size": 48234,
+      "templateHash": "aa956f223c3c3db5c9804aab318eac9d3f57fcc8b51050ea524c10cb25856f41",
+      "size": 43566,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
-      "templateHash": "866e37f0573b2b1d8e1497635d8498c9b3fe17348d9777e1b53dbfa30e31d4e3",
-      "size": 18635,
+      "templateHash": "a38edef0bfc849de0855ceb8d4fd6ed32435b18f0a5aece9119a4aadc8417218",
+      "size": 20660,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "ae3d18cd292954498c76a80e31299e7f3f0d37cee986553b875511bad0e962b0",
-      "size": 12777,
+      "templateHash": "06576f0609e3926a34efb83f678562b158dcc1b9e824fb1d2c4bbd25d6009fff",
+      "size": 15778,
       "component": "rules"
     },
     ".claude/rules/SHOULD-error-handling.md": {
-      "templateHash": "8619e3b932dfa1b05f9b2c01a97c8905fb8f59ccb311d6c26fd98d1bbfd3084d",
-      "size": 2246,
+      "templateHash": "f572e09c332e565979c59e5142ee214a4df8338c7399fe11d95124979aff4edb",
+      "size": 3495,
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "d6957f6ae29fee00f88f057020361977e9b825836ab493ae098d9fa055466719",
-      "size": 8202,
+      "templateHash": "019ef1f4437f950c8f2f5720ee68335d57223d9ccf3198b7080ce477dd6664cf",
+      "size": 8363,
       "component": "rules"
     },
     ".claude/rules/SHOULD-interaction.md": {
-      "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
-      "size": 6486,
+      "templateHash": "00c84a402112b1cc22565b2a33e0d88db28b93b62befca7ef6189da85eef8f2c",
+      "size": 9879,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "e5702aa8bdc2bef22b6329804984c137c47f731a0161b5bb6f683e5b185d730d",
-      "size": 34454,
+      "templateHash": "bcf6f16a8bb60e750fe7200e3a027d36bf5749c94f0c0f94acfa7c9bade52145",
+      "size": 38211,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
-      "templateHash": "fd80f1787467f0f900daf3d05e7415233c7b54605c9d55a6ab8d256afbe6ebbe",
-      "size": 1611,
+      "templateHash": "f7b6c02c0493c9bcb50c40e914f748cea4c297491952a9073f8b101239a83cee",
+      "size": 2782,
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "ee257352ed3a8ba101c2aa05e7b5aa3bbd1bdf19f648f06fc828a3f973cd6cba",
-      "size": 36166,
+      "templateHash": "fec71b888c515e62c2044128c75e4e10d0e6521f807d69adf3f24919b38fcaa2",
+      "size": 43159,
       "component": "rules"
     },
     ".claude/rules/SHOULD-wiki-sync.md": {
-      "templateHash": "50617a10bf86f55b0b5cb3b4d3f372c58ce5364212c2d0821c5214bc76292db9",
-      "size": 4057,
+      "templateHash": "a0b1341a33c65aeb3a4f122d1c787f9582b76272fae224cd7dba10323ee712e7",
+      "size": 4852,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
@@ -620,13 +625,13 @@
       "component": "skills"
     },
     ".claude/skills/agent-eval-framework/SKILL.md": {
-      "templateHash": "d1944485076e9073bcf3d001cbd00f91ea245e9fea73cb352833f36854cda8a3",
-      "size": 8224,
+      "templateHash": "2d7ce9e65feeb03be2432d52b78a27648bad8c71b2363185ddda518516b5af38",
+      "size": 7979,
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {
-      "templateHash": "8e321434a7977cfe239d284fc678b502d36739198ccf82506cc7c2cf258c8ada",
-      "size": 35799,
+      "templateHash": "4e4b3ce270fe01e5908ff95081df318ffcd0d46401a8c921bbb96b61e0ced352",
+      "size": 35747,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/agora.sh": {
@@ -730,8 +735,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "a97ec57de3e555bd6fc227fdd1a4c3ae5f9f02aaea6fec65d96db9f38f3e86bf",
-      "size": 8919,
+      "templateHash": "6c71511873412c3a9e081bb056732c8b76d74e7d811f50b8c8f6401b6c3b68a0",
+      "size": 8888,
       "component": "skills"
     },
     ".claude/skills/deep-plan/SKILL.md": {
@@ -750,8 +755,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "2d02d5f9513afdb63dcbee2765c69c3878f7b7a314850e51c93fbe1284007ecc",
-      "size": 7447,
+      "templateHash": "d119c01013d5e12e9d65135dd4889cd6ec27c235b09c22f48c0fce8a050b51f4",
+      "size": 7430,
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
@@ -800,8 +805,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "9e5f0c9bad985ac19685f18afbf37c3a4098390c52be46ff89ed612e1bbaea70",
-      "size": 25854,
+      "templateHash": "42021ed8bcc6850cc3ffa0cbecbdacd9096d9a18bd9858d1b8c5a0a9454161b0",
+      "size": 25822,
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
@@ -815,8 +820,8 @@
       "component": "skills"
     },
     ".claude/skills/goal/SKILL.md": {
-      "templateHash": "839d35d9392a65b01585cc2c0cc29a5925aa4749bbaaaa3d2625b543d373bd33",
-      "size": 4031,
+      "templateHash": "2086fe2d4cfbc2ff10b10a405f38322ed011a709c9ff825f5286ccf176cde2db",
+      "size": 3819,
       "component": "skills"
     },
     ".claude/skills/grill-with-docs/ADR-FORMAT.md": {
@@ -835,8 +840,8 @@
       "component": "skills"
     },
     ".claude/skills/grill-with-docs/SKILL.md": {
-      "templateHash": "8b06f2bdfe4fe361f59bc2ba738fc108eb610db6465d249c7f1cb2395b01fe15",
-      "size": 4425,
+      "templateHash": "b49b247c43299a4a5f8863971823e436ca895a27d3327b83870f3976578d73a8",
+      "size": 4296,
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
@@ -860,8 +865,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "967b60177fa39b0177069c1c2c6fbdf6bd78a3588a3c84cea86b32875da6e5b9",
-      "size": 16512,
+      "templateHash": "f2cbd49d50a7d223555bf1ad0a75929ee27e8a968e2c0d3fa1d4d22128fea2a8",
+      "size": 16302,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -1015,8 +1020,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "d080a3d28905b145619e1895f6f5a8e46d718b48ce1007506fa72b216ca8314f",
-      "size": 192199,
+      "templateHash": "f7ad366b7e09005c43d99fe3d0dabf589d3468eec0b73c38a295c13e2167593f",
+      "size": 194660,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1055,8 +1060,8 @@
       "component": "skills"
     },
     ".claude/skills/profile/SKILL.md": {
-      "templateHash": "49ce2d5b0aec5916875454794317e37fa38a84f6a72afbf3043c4580d6cafab6",
-      "size": 4380,
+      "templateHash": "e0a179ee72808a653a68c581e2a1d3b3401c5334c0d35252acc37f5107bbaef2",
+      "size": 4333,
       "component": "skills"
     },
     ".claude/skills/python-best-practices/SKILL.md": {
@@ -1090,8 +1095,8 @@
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
-      "templateHash": "e3733b4bc2367c3ab920411bab646ff23ce1d75ca4ff266f9b37259586eee531",
-      "size": 18623,
+      "templateHash": "151af94981c96024188b3d60b7f8093d0c48549305272e990813c676619be839",
+      "size": 18604,
       "component": "skills"
     },
     ".claude/skills/result-aggregation/SKILL.md": {
@@ -1100,8 +1105,8 @@
       "component": "skills"
     },
     ".claude/skills/roundtable-debate/SKILL.md": {
-      "templateHash": "29ba5d2d4648573fdc65594d8e9cc50f3a8bdf84fcb2f1d8691f95ec09608610",
-      "size": 4735,
+      "templateHash": "3e02c85527a42b26a3fe8eeb721a9f0f496bbea00102c5327b88f1200c66a57f",
+      "size": 4622,
       "component": "skills"
     },
     ".claude/skills/rust-best-practices/SKILL.md": {
@@ -1135,8 +1140,8 @@
       "component": "skills"
     },
     ".claude/skills/sec-agentshield-wrapper/SKILL.md": {
-      "templateHash": "bb79623de6903b138f96df2c0a06607ec71dcb6a0ebdd26df0e3fe1ee562400d",
-      "size": 7118,
+      "templateHash": "3e1dfc08d56cb58a1115b18a4ff379e50be5b3aa43dab2615474cacd290470ec",
+      "size": 7085,
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
@@ -1235,13 +1240,13 @@
       "component": "skills"
     },
     ".claude/skills/supabase-postgres-best-practices/SKILL.md": {
-      "templateHash": "54169317d9c71a9c0525e15cd1578ddccd618861945945f2958c44b1acfd1638",
-      "size": 3961,
+      "templateHash": "33d8ca802d3e7e784d6c0983cdf2a811432022c4cf970e5b9a60d6dc1d89e11e",
+      "size": 3948,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/SKILL.md": {
-      "templateHash": "5ebbf1475bd1b80d9c5da75f26c12de980f7c70f059737bb95e6f4bcf526454b",
-      "size": 11522,
+      "templateHash": "0f90a04944e8c39b6dae042a90591ac2ef43ae9dff34f346edf28f0d74ad40ef",
+      "size": 11490,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/condition-based-waiting-example.ts": {
@@ -1495,8 +1500,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "5d8221711c87ef594dacbdf4c124cb9917e8c890d542ab424583b44262c41257",
-      "size": 761237,
+      "templateHash": "34e88b73c4321ae025b8ff695d302d80a7877b798ceb1e96e0d7a9afd68258dc",
+      "size": 862532,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

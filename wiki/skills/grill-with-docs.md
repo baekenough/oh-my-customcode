@@ -1,7 +1,7 @@
 ---
 title: Grill With Docs
 type: skill
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - .claude/skills/grill-with-docs/SKILL.md
 related:

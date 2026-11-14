@@ -1,6 +1,6 @@
 ---
 name: agora
-description: Use when a design or decision needs adversarial multi-round scrutiny from several independent model vendors. Runs anonymized A/B/C reviewer rounds with a rotating judge and produces a consensus report.
+description: Use for decisions needing adversarial multi-round scrutiny from independent model vendors. Anonymized A/B/C rounds, rotating judge, consensus report.
 scope: core
 version: 1.0.0
 user-invocable: true

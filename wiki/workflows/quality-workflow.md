@@ -1,7 +1,7 @@
 ---
 title: Quality Workflow
 type: workflow
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - .claude/rules/MUST-sync-verification.md
   - .claude/rules/MUST-completion-verification.md
@@ -82,7 +82,7 @@ Before declaring `[Done]`, verify actual outcomes (not just attempts):
 | Documentation | Links valid, counts accurate, cross-refs updated |
 | Git Operations | Exit code checked, working tree clean |
 | Agent/Skill Creation | Frontmatter valid, skill refs exist, routing updated |
-| Release | Issues closed, version bumped, PR merged, GitHub Release created |
+| Release | `release.yml` completed AND GitHub Release `isDraft=false`; external automation checked (details in `.claude/contexts/commit-release.md`) |
 
 The distinction: "ran the command" ≠ "succeeded." Check `$?` or tool output.
 

@@ -1,6 +1,6 @@
 ---
 name: de-lead-routing
-description: Routes data engineering tasks to the correct DE expert agent. Use when user requests data pipeline design, DAG authoring, SQL modeling, stream processing, or warehouse optimization.
+description: Routes data engineering tasks to the right DE expert agent. Use for pipeline design, DAG authoring, SQL modeling, stream processing, warehouse tuning.
 scope: core
 user-invocable: false
 context: fork

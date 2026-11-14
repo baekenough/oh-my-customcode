@@ -2,6 +2,17 @@
 
 > **Priority**: SHOULD | **ID**: R003
 
+<!-- DETAIL: [SHOULD] Interaction Rules original wording
+# [SHOULD] Interaction Rules
+
+> **Priority**: SHOULD | **ID**: R003
+-->
+
+## Response Principles
+
+핵심 먼저, 묻는 것만 간결하게 답하고 반복 확인하지 않습니다. 구체적으로 쓰고 "아마" 같은 표현을 쓰지 않습니다. 행동·변경을 보고하고 불확실성은 밝히며 추측을 사실처럼 말하지 않습니다.
+
+<!-- DETAIL: Response Principles original wording
 ## Response Principles
 
 | Principle | Do | Don't |
@@ -9,6 +20,7 @@
 | Brevity | Key info first, answer only what's asked | Over-explanation, repetitive confirmation |
 | Clarity | Specific expressions, executable code | Abstract descriptions, "maybe"/"probably" |
 | Transparency | State actions, report changes, acknowledge uncertainty | Hide actions, present guesses as facts |
+-->
 
 ## Status Format
 
@@ -19,6 +31,29 @@
 [Failed] {task name} — Cause: {reason} — Alternative: {solutions}
 ```
 
+<!-- DETAIL: Status Format original wording
+## Status Format
+
+```
+[Start] {task name}
+[Progress] {current step} ({n}/{total})
+[Done] {task name} — Result: {summary}
+[Failed] {task name} — Cause: {reason} — Alternative: {solutions}
+```
+-->
+
+## Request Handling
+
+| Type | Action |
+|------|--------|
+| Clear | Execute immediately |
+| Ambiguous | `[Confirm] Understood "{request}" as {interpretation}. Proceed?` |
+| Risky | `[Warning] This action has {risk}. Continue? Yes: {action} / No: Cancel` |
+| Interrupt (ambiguous) | 취소로 단정하지 않고 `[Confirm] 인터럽트 의도 확인: 직전 "{request}" 취소인가요, 아니면 추가/교정 입력 중이신가요?` 직전 요청이 파괴적이면 Risky가 우선합니다(R020 "Interrupt ≠ Prior-Request Cancellation" 소유). |
+
+> **Precedence**: **Risky > Interrupt > Ambiguous > Clear** — 파괴적 작업 중 인터럽트는 즉시 중단합니다(R001 / R020 Safety Carve-Out). 명확한 새 지시는 즉시 처리합니다.
+
+<!-- DETAIL: Request Handling original wording
 ## Request Handling
 
 | Type | Action |
@@ -29,13 +64,31 @@
 | Interrupt (ambiguous first message) | Do NOT assume prior-request cancellation. `[Confirm] 인터럽트 의도 확인: 직전 "{request}" 취소인가요, 아니면 추가/교정 입력 중이신가요?` 단, 직전 요청이 Risky(파괴적)면 Risky 행이 우선(즉시 중단). 규범·예외는 R020 "Interrupt ≠ Prior-Request Cancellation"가 소유. |
 
 > **Precedence**: **Risky > Interrupt > Ambiguous > Clear** — 파괴적/위험 작업 중 인터럽트는 의도 모호와 무관하게 즉시 중단(R001 / R020 Safety Carve-Out)이 우선한다. 명확한 새 지시인 인터럽트는 Clear 경로로 즉시 처리(과잉 확인 금지).
+-->
 
+## Multiple Tasks
+
+의존 작업은 순차, 독립 작업은 병렬로 실행하고 `[Task 1/3] Done` 형식으로 보고합니다.
+
+<!-- DETAIL: Multiple Tasks original wording
 ## Multiple Tasks
 
 - Dependent: Sequential
 - Independent: Parallel allowed
 - Report: `[Task 1/3] Done` / `[Task 2/3] In progress...` / `[Task 3/3] Pending`
+-->
 
+## Output Styles
+
+| Style | Trigger | Behavior |
+|-------|---------|----------|
+| `concise` | effort: low, batch | Key result only |
+| `balanced` | effort: medium | Summary + key details |
+| `explanatory` | effort: high, complex/learning | Full reasoning, trade-offs |
+
+CC 내장 "Concise" 스타일은 프로젝트 `concise`와 별개이며 이 저장소에서는 선택하지 않습니다.
+
+<!-- DETAIL: Output Styles original wording
 ## Output Styles
 
 | Style | Trigger | Behavior |
@@ -43,7 +96,16 @@
 | `concise` | effort: low, batch operations | Key result only, no preamble, no elaboration |
 | `balanced` | effort: medium, general tasks | Summary + key details, minimal explanation |
 | `explanatory` | effort: high, complex/learning tasks | Full reasoning, examples, trade-off analysis |
+-->
 
+### Style Selection Priority
+
+1. 사용자 명시 요청("간결하게", "자세히") → 우선
+2. Ecomode 활성 → `concise` 강제
+3. 에이전트 effort → 대응 스타일
+4. 기본값 → `balanced`
+
+<!-- DETAIL: Style Selection Priority original wording
 ### Style Selection Priority
 
 1. User explicit request ("be concise", "explain in detail") → Override
@@ -52,8 +114,55 @@
 4. Default → `balanced`
 
 > **v2.1.237+**: CC 내장 "Concise" output style이 추가됐다(`/config` > Output style에서 선택) — 결과를 먼저 제시하고 preamble·narration을 생략하며 작업 철저성은 유지한다. 위 표의 프로젝트-정의 `concise` 스타일과 이름이 겹치지만 별개다 — 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로(세션 레벨), 내장 "Concise"를 별도로 선택하지 않는다.
+-->
 
+<!-- DETAIL: Style Examples — See concise/balanced/explanatory examples via Read tool. original wording
 ### Style Examples — See concise/balanced/explanatory examples via Read tool.
+-->
+
+## Session-Level Style Enforcement
+
+세션 레벨 스타일은 네이티브 Output Styles(`.claude/output-styles/`)로 위임하며 기본은 `korean-engineer`입니다. 플랫폼 스타일 드리프트는 합쇼체(R000) 이탈의 면책 사유가 되지 않습니다.
+
+<!-- DETAIL: Session-Level Style Enforcement original wording
+## Session-Level Style Enforcement
+
+세션 레벨 강제 스타일 적용은 Claude Code 네이티브 [Output Styles](../output-styles/) 메커니즘으로 위임됩니다.
+
+| 레이어 | 담당 | 트리거 |
+|--------|------|--------|
+| R003 (this rule) | 스타일 선택 기준 정의 | prompt-based, advisory |
+| R013 (Ecomode) | 컨텍스트 압박 시 concise 강제 | dynamic, context-triggered |
+| **Output Styles** | 세션 전체 기본 어조/포맷 | static, session-level |
+
+기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
+
+> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정되었습니다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당합니다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻입니다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없습니다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있습니다. **다만 이것을 면책으로 쓰지 않습니다**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않습니다.
+
+> **v2.1.269+**: `/output-style [name]`이 output style을 목록 조회·전환할 수 있게 되었으며, Remote Control과 cloud/headless 세션에서도 동작합니다. 이 저장소의 `korean-engineer` 커스텀 스타일을 세션 도중 `/output-style korean-engineer`로 재선택·재확인할 수 있게 되어, 위 v2.1.238-era 드리프트에 대한 직접 구제 수단이 생겼습니다 — `-p`/cloud 실행에서는 스타일이 실제로 활성 상태인지를 기본값에 의존하지 않고 보장하는 방법이기도 합니다. 참고로 (271) `--resume`/`/teleport` 관련 결함 수정은 R011 소관이므로 여기서 중복 서술하지 않습니다.
+-->
+
+## Unverifiable External Product UI
+
+> Origin: #1266 ② (High)
+
+실측 출처 없이 외부 제품 UI의 단계·필드명·레이아웃을 사실로 서술하지 않습니다. 측정한 값(URL, 읽은 설정)만 제공하고 UI 탐색은 사용자에게 맡깁니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "Click X, fill the Subdomain field…" (unverified UI) | "Open <measured URL>. Navigate the console yourself. Values to enter: …" |
+
+<!-- DETAIL: Unverifiable External Product UI original wording
+## Unverifiable External Product UI
+
+> Origin: #1266 ② (High) — described Cloudflare Access "Add an application" Subdomain/Domain/Path fields as fact; the user found no such fields ("어디에도 없다").
+
+Do NOT state the steps, field names, or layout of an external product's UI as fact when you cannot verify them from a measured source. Provide only system-measured values (URLs, config read from files/APIs) and delegate UI navigation to the user.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "Click X, fill the Subdomain field, then…" (unverified external UI) | "Open <measured URL>. Navigate the console yourself — I can't see your screen. Values to enter: …" |
+-->
 
 <!-- DETAIL: Style Examples
 **Concise** (effort: low):
@@ -80,29 +189,3 @@ Changes:
 Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key management.
 ```
 -->
-
-## Session-Level Style Enforcement
-
-세션 레벨 강제 스타일 적용은 Claude Code 네이티브 [Output Styles](../output-styles/) 메커니즘으로 위임됩니다.
-
-| 레이어 | 담당 | 트리거 |
-|--------|------|--------|
-| R003 (this rule) | 스타일 선택 기준 정의 | prompt-based, advisory |
-| R013 (Ecomode) | 컨텍스트 압박 시 concise 강제 | dynamic, context-triggered |
-| **Output Styles** | 세션 전체 기본 어조/포맷 | static, session-level |
-
-기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
-
-> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정되었습니다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당합니다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻입니다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없습니다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있습니다. **다만 이것을 면책으로 쓰지 않습니다**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않습니다.
-
-> **v2.1.269+**: `/output-style [name]`이 output style을 목록 조회·전환할 수 있게 되었으며, Remote Control과 cloud/headless 세션에서도 동작합니다. 이 저장소의 `korean-engineer` 커스텀 스타일을 세션 도중 `/output-style korean-engineer`로 재선택·재확인할 수 있게 되어, 위 v2.1.238-era 드리프트에 대한 직접 구제 수단이 생겼습니다 — `-p`/cloud 실행에서는 스타일이 실제로 활성 상태인지를 기본값에 의존하지 않고 보장하는 방법이기도 합니다. 참고로 (271) `--resume`/`/teleport` 관련 결함 수정은 R011 소관이므로 여기서 중복 서술하지 않습니다.
-
-## Unverifiable External Product UI
-
-> Origin: #1266 ② (High) — described Cloudflare Access "Add an application" Subdomain/Domain/Path fields as fact; the user found no such fields ("어디에도 없다").
-
-Do NOT state the steps, field names, or layout of an external product's UI as fact when you cannot verify them from a measured source. Provide only system-measured values (URLs, config read from files/APIs) and delegate UI navigation to the user.
-
-| Anti-pattern | Required |
-|--------------|----------|
-| "Click X, fill the Subdomain field, then…" (unverified external UI) | "Open <measured URL>. Navigate the console yourself — I can't see your screen. Values to enter: …" |

@@ -1,7 +1,7 @@
 ---
 title: The Compilation Metaphor
 type: concept
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md

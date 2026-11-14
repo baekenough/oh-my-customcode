@@ -1,6 +1,6 @@
 ---
 name: be-nestjs-expert
-description: Expert NestJS developer for opinionated, scalable Node.js applications with TypeScript. Use for NestJS projects, decorator-based patterns (@Injectable, @Module, @Controller), enterprise API architectures, authentication/authorization guards, DTO validation, and modular architecture.
+description: Expert NestJS developer for scalable TypeScript Node.js apps. Use for NestJS projects, @Injectable/@Module/@Controller, guards, DTO validation.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

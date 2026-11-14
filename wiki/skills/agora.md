@@ -1,7 +1,7 @@
 ---
 title: Agora
 type: skill
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/skills/agora/SKILL.md
 related:

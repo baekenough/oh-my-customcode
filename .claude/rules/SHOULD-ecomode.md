@@ -2,12 +2,26 @@
 
 > **Priority**: SHOULD | **ID**: R013
 
+<!-- DETAIL: # [SHOULD] Ecomode Rules original wording
+# [SHOULD] Ecomode Rules
+> **Priority**: SHOULD | **ID**: R013
+-->
+
 ## Activation
 
+병렬 작업 4개 이상, 배치 작업, 컨텍스트 사용률 80% 이상, 또는 명시적 "ecomode on"이면 자동 활성화됩니다.
+
+<!-- DETAIL: ## Activation original wording
+## Activation
 Auto-activates when: 4+ parallel tasks, batch operations, 80%+ context usage, or explicit "ecomode on".
+-->
 
 ## Behaviors
 
+에이전트는 `status + summary(1-2문장) + key_data`만 반환합니다. 파일 목록은 5개 미만이 아니면 개수만, 오류 트레이스는 앞/뒤 3줄, 코드는 `path:line` 참조만 씁니다. 집계: `[Batch Complete] {n}/{total}` + 에이전트별 ✓/✗/⚠ 요약.
+
+<!-- DETAIL: ## Behaviors original wording
+## Behaviors
 **Compact Output**: Agents return `status + summary (1-2 sentences) + key_data only`. Skip intermediate steps, verbose explanations, repeated context, full file contents.
 
 **Aggregation Format**:
@@ -17,9 +31,9 @@ Auto-activates when: 4+ parallel tasks, batch operations, 80%+ context usage, or
 ```
 
 **Compression**: File lists -> count only (unless < 5), error traces -> first/last 3 lines, code -> path:line ref only.
+-->
 
 ## Config
-
 ```yaml
 ecomode:
   threshold: 4
@@ -27,17 +41,27 @@ ecomode:
   max_result_length: 200
 ```
 
+<!-- DETAIL: ## Example original wording
 ## Example
-
 Normal: Full agent header + step-by-step analysis + detailed results.
 Ecomode: `[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_error -> handleError)`
+-->
 
 ## Override
 
+"ecomode off", "verbose mode", "show full details"로 해제합니다.
+
+<!-- DETAIL: ## Override original wording
+## Override
 Disable with: "ecomode off", "verbose mode", or "show full details".
+-->
 
 ## Pruning Transparency
 
+압축한 내용을 보고합니다: 입력 가지치기 후 `[Pruned] {n} chunks, ~{tokens} tokens saved | Retained: {m} | Summarized: {k} | Dropped: {j}`, 출력 압축 후 `[Compressed]` 줄, 요청 시 전체 원장. advisory이며 "hide pruning"으로 끕니다.
+
+<!-- DETAIL: ## Pruning Transparency original wording
+## Pruning Transparency
 When ecomode is active, report what was compressed so users can audit context decisions:
 
 ```
@@ -51,8 +75,11 @@ When ecomode is active, report what was compressed so users can audit context de
 | On request ("what was pruned?") | Full pruning ledger with chunk names |
 
 Pruning transparency is advisory — it adds ~1 line per pruning event. Disable with "ecomode off" or "hide pruning".
+-->
 
-## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool.
+## Input Context Pruning
+
+무관한 내용을 능동 제거합니다. 명세는 Read 도구로 확인하십시오.
 
 <!-- DETAIL: Input Context Pruning
 
@@ -84,17 +111,13 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 - Track pruning decisions: `[Pruned] {N} chunks → {M} retained, {K} summarized, {J} dropped`
 -->
 
-## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool.
+<!-- DETAIL: ## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool. original wording
+## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool.
+-->
 
-> **v2.1.238+**: 장시간 대화형 세션에서 subagent tool 결과가 최근 표시 윈도우를 벗어나면 이제 메모리에서 해제되는 unbounded memory growth 결함이 수정되었습니다. 구버전 장기 세션(`/fsd` 등 자율 루프 포함)에서는 subagent tool 결과가 무한 누적되어 컨텍스트/메모리 예산 관리가 왜곡될 수 있었습니다 — 위 Context Budget Management의 task-type 임계값 계산이 이 결함으로 인해 부정확했을 가능성을 회고적으로 시사합니다.
+## Context Budget Management
 
-> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 native 1M 창을 가진 **모든** Claude 모델을 auto-compaction으로 200K에 유지하도록 확대되었고(이전에는 고정 모델 목록), 미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원). 위 임계값은 **창 대비 백분율**이므로 절대 토큰량은 이 env 설정에 따라 5배까지 달라집니다 — 1M 전제로 예산을 잡기 전 env 설정 여부를 확인합니다(cross-ref R006).
-
-> **v2.1.251+**: Sonnet 5의 기본 auto-compact 창이 **전체 1M 컨텍스트로 변경**되어, 1M 창 세션이 이제 ~934K가 아니라 ~967K 토큰에서 auto-compact됩니다. 위 `CLAUDE_CODE_DISABLE_1M_CONTEXT` 노트와 **직접 상호작용**합니다 — 그 env가 **설정된 환경**에서는 여전히 200K로 강제 유지되지만, **비활성 환경**(기본값)에서는 이번 변경으로 실효 auto-compact 임계값 자체가 상향됩니다. 위 임계값 표의 백분율 계산은 env 설정 여부에 더해 이 CC 버전 여부까지 함께 확인해야 절대 토큰량이 정확합니다. **현재 정정**: 이 노트는 Sonnet 5에 대한 CHANGELOG 항목("Changed Sonnet 5's default auto-compact window to its full 1M context")에 근거하며 실측이 아닙니다. 이 저장소 에이전트는 이제 `claude-sonnet-5-5`로 실행되지만(#1755), 동일한 auto-compact 지점이 5.5에도 적용되는지는 CHANGELOG에 명시되어 있지 않으므로 의존하기 전에 실측합니다.
-
-> **v2.1.260+**: 1M 컨텍스트를 가진 모델의 auto-compact 시점이 확대되어, Opus·Fable 세션도 이제 1M 토큰 한도 직전에 compact되고 매우 큰 컨텍스트에서의 recovery compaction이 더 이상 10분 타임아웃으로 실패하지 않습니다 — 위 v2.1.251 Sonnet 5 노트를 Opus/Fable 계열로 확장하는 것이므로, `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 설정되지 않은 한 이 섹션의 백분율 임계값은 이제 세 모델군 전체에서 절대 토큰량 ~1M에 대응합니다. 같은 릴리즈에서 `/cost`와 statusline의 `prompt_cache` 필드가 prompt-cache miss의 **가능성 있는 원인**(도구 정의·시스템 프롬프트 변경, TTL 경과 idle)을 표시하도록 개선되어, 이 규칙이 다루는 캐시 관련 비용 이상 징후를 진단할 때 그 원인 후보를 출발점으로 삼을 수 있습니다 — 후보이지 확정 원인이 아니므로 R020 Proxy Signal 원칙대로 실측으로 확정합니다(cross-ref R012 statusline).
-
-> **v2.1.261+**: 컨텍스트 비용 진단 도구 2종이 추가되었습니다. `/skill-doctor`는 로드된 스킬 중 사용되지 않는 것과 그 컨텍스트 비용을 표시해 가지치기 대상을 알려줍니다 — 이 저장소의 114개 스킬 열거 블록과 `profile` 스킬의 플러그인 세트 전환에 직접 관련됩니다. `bashOutputMaxChars`/`taskOutputMaxChars` 설정은 command·background-task 출력이 파일로 저장되기 전 모델에 인라인 전달되는 상한을 올릴 수 있습니다(최대 128K자). **v2.1.277+**: `taskOutputMaxChars`는 `TaskOutput` 도구 제거로 더 이상 효과가 없습니다(상세는 `guides/claude-code/15-version-compatibility.md`). 지침: `bashOutputMaxChars`는 기본값으로 올리지 않습니다 — 이 규칙의 압축 원칙(파일 목록 → 개수, 오류 트레이스 → 앞/뒤 줄)이 작은 인라인 출력을 선호하므로, pass/fail 라인이 잘리는 특정 검증에 한해서만 올리고 그 외에는 독립적인 exit-code 조회(R005 #1492)를 우선합니다.
+작업 유형별 임계값은 research 40%, implementation 50%, review 60%, management 70%, general 80%입니다. 임계값은 창 대비 백분율이므로 절대 토큰량은 창 크기 설정에 따라 달라집니다 — 창 크기를 먼저 확인하십시오. auto-compact 창 수치는 `guides/claude-code/15-version-compatibility.md`의 「R013 — SHOULD-ecomode.md」에 CHANGELOG 근거로 기록되어 있으므로 의존하기 전에 실측합니다. `bashOutputMaxChars`는 pass/fail 라인이 잘리는 검증에서만 올립니다(R005 #1492). 전체 명세는 Read 도구로 확인하십시오.
 
 <!-- DETAIL: v2.1.269/273/274+ compaction/meter fix notes (version narration)
 > **v2.1.269/273+**: (269) auto-compaction이 요약할 완전한 이전 대화 교환이 없을 때(주로 매우 큰 프롬프트를 쓰는 SDK 세션) "Prompt is too long"으로 세션이 영구적으로 멈추던 결함이 수정되었습니다. (273) context meter와 auto-compact가 advisor-tool 턴을 실제 컨텍스트 크기의 약 **2배**로 계산해 auto-compact가 실제 창의 약 **절반** 지점에서 발동하던 결함이 수정되었습니다 — 이 규칙의 백분율 임계값에 대한 함의: 273 이전 2.1.2xx에서 advisor tool을 쓴 세션은 CTX% 수치와 auto-compact 시점이 최대 2배 부풀려져, 그 수치에 근거한 예산 판단이 의도치 않게 보수적이었습니다; 273+에서는 미터를 다시 신뢰할 수 있습니다(cross-ref R012 statusline CTX 세그먼트).
@@ -142,7 +165,22 @@ The `context-budget-advisor.sh` hook monitors context usage and emits warnings w
 - Context percentage from statusline data when available
 -->
 
-## Deep Insight Context Handoff Pattern — 에이전트 간 핸드오프 시 context window 한계를 극복하는 패턴. per-agent budget 할당 + artifact channel 전달. See full spec via Read tool.
+<!-- DETAIL: ## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool. original wording
+## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool.
+> **v2.1.238+**: 장시간 대화형 세션에서 subagent tool 결과가 최근 표시 윈도우를 벗어나면 이제 메모리에서 해제되는 unbounded memory growth 결함이 수정되었습니다. 구버전 장기 세션(`/fsd` 등 자율 루프 포함)에서는 subagent tool 결과가 무한 누적되어 컨텍스트/메모리 예산 관리가 왜곡될 수 있었습니다 — 위 Context Budget Management의 task-type 임계값 계산이 이 결함으로 인해 부정확했을 가능성을 회고적으로 시사합니다.
+
+> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 native 1M 창을 가진 **모든** Claude 모델을 auto-compaction으로 200K에 유지하도록 확대되었고(이전에는 고정 모델 목록), 미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원). 위 임계값은 **창 대비 백분율**이므로 절대 토큰량은 이 env 설정에 따라 5배까지 달라집니다 — 1M 전제로 예산을 잡기 전 env 설정 여부를 확인합니다(cross-ref R006).
+
+> **v2.1.251+**: Sonnet 5의 기본 auto-compact 창이 **전체 1M 컨텍스트로 변경**되어, 1M 창 세션이 이제 ~934K가 아니라 ~967K 토큰에서 auto-compact됩니다. 위 `CLAUDE_CODE_DISABLE_1M_CONTEXT` 노트와 **직접 상호작용**합니다 — 그 env가 **설정된 환경**에서는 여전히 200K로 강제 유지되지만, **비활성 환경**(기본값)에서는 이번 변경으로 실효 auto-compact 임계값 자체가 상향됩니다. 위 임계값 표의 백분율 계산은 env 설정 여부에 더해 이 CC 버전 여부까지 함께 확인해야 절대 토큰량이 정확합니다. **현재 정정**: 이 노트는 Sonnet 5에 대한 CHANGELOG 항목("Changed Sonnet 5's default auto-compact window to its full 1M context")에 근거하며 실측이 아닙니다. 이 저장소 에이전트는 이제 `claude-sonnet-5-5`로 실행되지만(#1755), 동일한 auto-compact 지점이 5.5에도 적용되는지는 CHANGELOG에 명시되어 있지 않으므로 의존하기 전에 실측합니다.
+
+> **v2.1.260+**: 1M 컨텍스트를 가진 모델의 auto-compact 시점이 확대되어, Opus·Fable 세션도 이제 1M 토큰 한도 직전에 compact되고 매우 큰 컨텍스트에서의 recovery compaction이 더 이상 10분 타임아웃으로 실패하지 않습니다 — 위 v2.1.251 Sonnet 5 노트를 Opus/Fable 계열로 확장하는 것이므로, `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 설정되지 않은 한 이 섹션의 백분율 임계값은 이제 세 모델군 전체에서 절대 토큰량 ~1M에 대응합니다. 같은 릴리즈에서 `/cost`와 statusline의 `prompt_cache` 필드가 prompt-cache miss의 **가능성 있는 원인**(도구 정의·시스템 프롬프트 변경, TTL 경과 idle)을 표시하도록 개선되어, 이 규칙이 다루는 캐시 관련 비용 이상 징후를 진단할 때 그 원인 후보를 출발점으로 삼을 수 있습니다 — 후보이지 확정 원인이 아니므로 R020 Proxy Signal 원칙대로 실측으로 확정합니다(cross-ref R012 statusline).
+
+> **v2.1.261+**: 컨텍스트 비용 진단 도구 2종이 추가되었습니다. `/skill-doctor`는 로드된 스킬 중 사용되지 않는 것과 그 컨텍스트 비용을 표시해 가지치기 대상을 알려줍니다 — 이 저장소의 114개 스킬 열거 블록과 `profile` 스킬의 플러그인 세트 전환에 직접 관련됩니다. `bashOutputMaxChars`/`taskOutputMaxChars` 설정은 command·background-task 출력이 파일로 저장되기 전 모델에 인라인 전달되는 상한을 올릴 수 있습니다(최대 128K자). **v2.1.277+**: `taskOutputMaxChars`는 `TaskOutput` 도구 제거로 더 이상 효과가 없습니다(상세는 `guides/claude-code/15-version-compatibility.md`). 지침: `bashOutputMaxChars`는 기본값으로 올리지 않습니다 — 이 규칙의 압축 원칙(파일 목록 → 개수, 오류 트레이스 → 앞/뒤 줄)이 작은 인라인 출력을 선호하므로, pass/fail 라인이 잘리는 특정 검증에 한해서만 올리고 그 외에는 독립적인 exit-code 조회(R005 #1492)를 우선합니다.
+-->
+
+## Deep Insight Context Handoff Pattern
+
+per-agent budget + artifact channel 전달로 핸드오프 시 context window 한계를 극복합니다.
 
 <!-- DETAIL: Deep Insight Context Handoff Pattern
 
@@ -171,7 +209,13 @@ task-type threshold와 곱연산 — 예: research 40% × 전문가 30% = 실질
 - `ecomode` + `cc-token-saver` Token Guardian 공존 (기존 섹션)
 -->
 
-## Token Guardian Coexistence — R013 context budget (usage-based) + cc-token-saver Token Guardian (time-based) can run simultaneously.
+<!-- DETAIL: ## Deep Insight Context Handoff Pattern — 에이전트 간 핸드오프 시 context window 한계를 극복하는 패턴. per-agent budget 할당 + artifact channel 전달. See full spec via Read tool. original wording
+## Deep Insight Context Handoff Pattern — 에이전트 간 핸드오프 시 context window 한계를 극복하는 패턴. per-agent budget 할당 + artifact channel 전달. See full spec via Read tool.
+-->
+
+## Token Guardian Coexistence
+
+R013 context budget(사용량 기반)과 cc-token-saver Token Guardian(시간 기반)은 동시에 실행될 수 있습니다.
 
 <!-- DETAIL: Token Guardian Coexistence (cc-token-saver)
 
@@ -181,4 +225,8 @@ task-type threshold와 곱연산 — 예: research 40% × 전문가 30% = 실질
 | Token Guardian (cc-token-saver) | 1h cache TTL idle detection | Cross-session cost |
 
 Both can run simultaneously — different triggers, complementary coverage. R013's context budget is usage-based (approaching limit), Token Guardian is time-based (idle cache expiry).
+-->
+
+<!-- DETAIL: ## Token Guardian Coexistence — R013 context budget (usage-based) + cc-token-saver Token Guardian (time-based) can run simultaneously. original wording
+## Token Guardian Coexistence — R013 context budget (usage-based) + cc-token-saver Token Guardian (time-based) can run simultaneously.
 -->

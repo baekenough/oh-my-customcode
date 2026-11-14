@@ -1,7 +1,7 @@
 ---
 title: arch-documenter
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/arch-documenter.md
 related:
@@ -21,7 +21,7 @@ Architecture documentation specialist for generating system design docs, API spe
 
 `arch-documenter` handles all software architecture documentation needs. It produces human-readable technical artifacts — from high-level system overviews to detailed API contracts — using standard formats like Markdown, Mermaid diagrams, and OpenAPI/Swagger specs. It cannot execute commands (`disallowedTools: [Bash]`) or deploy systems; its role is purely documentation and specification. This Bash restriction is a known R010 delegation pre-check limitation: callers needing shell output (e.g., `gh` calls) must pre-collect that data before delegating to this agent.
 
-The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, git-untracked) and `bypassPermissions` mode, and is capped at 20 turns per invocation.
+The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, git-untracked) and `bypassPermissions` mode, with no per-invocation turn limit.
 
 ## Key Details
 
@@ -30,7 +30,6 @@ The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, gi
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash — `disallowedTools: [Bash]`)
 - **Memory**: local
 - **Effort**: medium
-- **Max turns**: 20
 - **Permission mode**: bypassPermissions
 - **Limitations**: cannot execute commands, cannot deploy
 

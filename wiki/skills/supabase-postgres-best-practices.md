@@ -1,7 +1,7 @@
 ---
 title: Supabase PostgreSQL Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - .claude/skills/supabase-postgres-best-practices/SKILL.md
 related:

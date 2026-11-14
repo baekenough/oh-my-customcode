@@ -1,11 +1,10 @@
 ---
 name: qa-planner
-description: Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition
+description: Use to create QA plans from requirements, including test strategy, risk-based prioritization, test scenarios, and acceptance criteria.
 model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: high
-maxTurns: 20
 disallowedTools: [Bash]
 limitations:
   - "cannot execute tests"

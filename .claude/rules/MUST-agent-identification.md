@@ -14,11 +14,18 @@ Every response MUST start with agent identification:
 
 Default (no specific agent): `┌─ Agent: claude (default)`
 
+<!-- DETAIL: Simplified Format original wording
 ## Simplified Format
 
 For brief responses: `[mgr-creator] Creating agent structure...`
 With skill: `[fe-vercel-agent → react-best-practices] Analyzing...`
+-->
 
+## Routing & Skill Context
+
+Routing active: `claude ({routing-skill})`. Skill via the Skill tool: integrate in the header (`┌─ Agent: claude → {skill-name}`), never a separate tool call. Short form: `[agent-name]`, with a skill `[agent-name → skill-name]`. 장시간 작업은 진행 상황에도 에이전트 컨텍스트를 표시합니다.
+
+<!-- DETAIL: Routing & Skill Context original wording
 ## Routing & Skill Context
 
 When the orchestrator uses a routing skill, identification should reflect the active context:
@@ -37,7 +44,9 @@ When the orchestrator uses a routing skill, identification should reflect the ac
 | de-lead-routing | `claude (de-lead-routing)` |
 | qa-lead-routing | `claude (qa-lead-routing)` |
 | Skill invocation | `claude → {skill-name}` |
+-->
 
+<!-- DETAIL: Skill Invocation Format original wording
 ## Skill Invocation Format
 
 When the orchestrator invokes a skill via the Skill tool, the skill name MUST be integrated into the identification block — NOT displayed as a separate tool call.
@@ -46,6 +55,7 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 ┌─ Agent: claude → {skill-name}
 └─ Task: {brief-task-description}
 ```
+-->
 
 <!-- DETAIL: Common Violations examples (redundant with Skill Invocation Format above)
 ### Common Violations
@@ -64,8 +74,7 @@ Correct: With sub-skill
    ┌─ Agent: claude → research
    ├─ Skill: result-aggregation
    └─ Task: aggregate team findings
--->
-
+--><!-- DETAIL: When to Display original wording
 ## When to Display
 
 | Situation | Display |
@@ -75,7 +84,13 @@ Correct: With sub-skill
 | General conversation | "claude (default)" |
 | Long tasks | Show progress with agent context |
 | Skill invocation | Integrated `claude → {skill-name}` format |
+-->
 
+## Multi-Turn Self-Check (MANDATORY)
+
+Before every response, re-check: (1) it starts with `┌─ Agent: ...` or `[agent-name]`; (2) every tool call has the `[agent-name][model] → Tool: ...` prefix. Fix immediately if not; do not rely on prior turns or PostCompact.
+
+<!-- DETAIL: Multi-Turn Self-Check (MANDATORY) original wording
 ## Multi-Turn Self-Check (MANDATORY)
 
 매 응답 시작 전, 이전 응답이 자동 체크리스트를 통과했는지 의존하지 말고 다시 자가 점검:
@@ -84,6 +99,7 @@ Correct: With sub-skill
 2. 이번 응답에서 호출하는 모든 도구에 `[agent-name][model] → Tool: ...` prefix 가 있는가?
 
 체크 실패 시 즉시 헤더/prefix 추가 후 도구 호출. PostCompact hook 만으로 보장되지 않으며 압축 없이도 멀티턴 누락이 발생하므로 매 턴 자가 점검 강제.
+-->
 
 <!-- DETAIL: Common Multi-Turn Violation example (redundant with Short Response Discipline table below)
 ### Common Multi-Turn Violation
@@ -99,6 +115,11 @@ Reference issue: #1096.
 
 ### Short Response Discipline
 
+The header is required regardless of length (one-liners, apologies, one-word replies). Zero-word turns are prohibited.
+
+<!-- DETAIL: Short Response Discipline original wording
+### Short Response Discipline
+
 응답 길이와 무관하게 R007 헤더 필수. 다음과 같은 짧은 응답에서도 누락 금지:
 
 | 응답 유형 | 헤더 필수? |
@@ -109,7 +130,13 @@ Reference issue: #1096.
 | 도구 호출 없는 텍스트 응답 | YES |
 | 1단어 응답 ("네"/"OK") | YES |
 | **빈 응답 (0단어 turn 종료)** | **금지** — 헤더 누락 이전에 응답 자체가 없음 |
+-->
 
+#### 빈 응답 금지 (Empty-Response Prohibition)
+
+After tool results, never end a turn with no text: output the R007 header plus at least one R003 progress line. This includes turns handling task-notification system-reminders.
+
+<!-- DETAIL: 빈 응답 금지 (Empty-Response Prohibition) original wording
 #### 빈 응답 금지 (Empty-Response Prohibition)
 
 도구 결과를 수신한 후 응답 텍스트 없이 turn 을 종료하는 것(빈 응답, "(no content)")은 R007 위반의 극단 케이스다. 1단어 응답에도 헤더가 필수이므로 0단어 응답은 당연히 금지된다. 도구 호출 결과를 받은 직후에는 항상 최소 1줄의 진행 상태(R003 status format)와 R007 헤더를 출력한 뒤 다음 단계로 진행하거나 turn 을 마친다. 작업이 끝났으면 완료 요약을, 계속할 작업이 있으면 다음 단계 announce 를 출력한다 — 어느 경우에도 빈 turn 종료는 허용되지 않는다.
@@ -120,9 +147,15 @@ Reference issue: #1096.
 | 백그라운드 에이전트 완료 통지·task-notification 등 **system-reminder 통지 수신 후** 도구만 호출하고 텍스트 없이 turn 종료 | 통지 처리 턴에도 헤더 + 상태 1줄 출력 후 도구 호출 |
 
 v1.1.58 세션 트랜스크립트 실측 — 응답 22건 중 3건이 텍스트 블록 없이 tool_use만 있었고 전부 통지 수신 직후 턴이었다(#1646).
+-->
 
 <!-- Reference issues: #1188 item #2, #1198 item #2, #1409. -->
 
+#### Status-Line Bracket ≠ Agent Identification Header
+
+R003 status brackets (`[FSD Iteration N]`, `[Progress]`, `[Done]`, `[Start]`) do NOT satisfy R007; the header needs the agent name. Write `┌─ Agent: claude → fsd` or `[claude][opus] [FSD Iteration 3/5]` first.
+
+<!-- DETAIL: Status-Line Bracket ≠ Agent Identification Header original wording
 #### Status-Line Bracket ≠ Agent Identification Header
 
 `[FSD Iteration N]`, `[Progress]`, `[Done]`, `[Start]` 같은 R003 상태줄 브래킷은 R007 에이전트 식별 헤더를 **충족하지 않는다**. R007 헤더는 반드시 에이전트명(`┌─ Agent: {name}` 풀 헤더 또는 `[{agent-name}]` 단축 헤더)을 포함해야 한다. 장기 자율 루프(`/fsd` 등)의 기술적 몰입 중 상태줄 브래킷이 에이전트-id 브래킷을 대체하는 드리프트가 반복 관찰된다.
@@ -132,7 +165,13 @@ v1.1.58 세션 트랜스크립트 실측 — 응답 22건 중 3건이 텍스트 
 | `[FSD Iteration 3/5 — ...]` 상태줄로 응답 시작 (에이전트명 부재) | 먼저 `┌─ Agent: claude → fsd` 또는 `[claude]` R007 헤더를 출력한 뒤 상태줄; 또는 브래킷에 에이전트명 결합(`[claude][opus] [FSD Iteration 3/5]`) |
 
 Origin: #1507 (장기 자율 릴리즈 루프 몰입 중 상태줄 브래킷이 에이전트-id 브래킷 대체 — R007 External-Project/Debugging Session Vigilance의 자율-루프 각도 확장).
+-->
 
+#### Insight/분석 블록 선행 ≠ 헤더 면제
+
+The header MUST be the first line, before any `★ Insight` block, analysis, table, or code block. This is a writing-order failure, distinct from the bracket confusion above.
+
+<!-- DETAIL: Insight/분석 블록 선행 ≠ 헤더 면제 original wording
 #### Insight/분석 블록 선행 ≠ 헤더 면제
 
 응답을 `★ Insight` 블록, 분석 서술, 표, 코드 블록 등으로 시작하더라도 R007 에이전트 식별 헤더는 **그보다 먼저** 와야 한다. 헤더는 응답의 첫 줄이며, 분석·통찰의 밀도가 높다는 이유로 뒤로 밀리거나 생략될 수 없다.
@@ -145,7 +184,13 @@ Origin: #1507 (장기 자율 릴리즈 루프 몰입 중 상태줄 브래킷이 
 | "이번엔 분석이 본론이라 헤더는 뒤에 붙이겠다" | 헤더는 항상 선행 — 본론 밀도와 무관 |
 
 실증: 2026-07-30 세션에서 R007 헤더 누락 7건 중 **5건이 `★ Insight` 블록으로 시작**했다 — 단일 최대 누락 경로다. Origin: #1553 찐빠 #2.
+-->
 
+### External-Project / Debugging Session Vigilance
+
+Applies identically to external projects, debugging, SSH, deploy, and infra sessions; re-anchor with the full header if it lapses.
+
+<!-- DETAIL: External-Project / Debugging Session Vigilance original wording
 ### External-Project / Debugging Session Vigilance
 
 R007 헤더 누락은 외부 프로젝트 디버깅, SSH 진단, 배포 작업 등 기술적 몰입 세션에서 가장 자주 발생한다. 이 규칙은 프로젝트 종류와 무관하게 모든 상황에 적용된다.
@@ -157,6 +202,7 @@ R007 헤더 누락은 외부 프로젝트 디버깅, SSH 진단, 배포 작업 �
 | SSH / 배포 / 인프라 작업 | **동일하게 필수** |
 
 기술적 몰입 중 헤더 누락이 반복될 경우 즉시 re-anchor: 다음 응답에 `┌─ Agent:` 풀 헤더를 붙이고 이후 계속 유지한다.
+-->
 
 <!-- DETAIL: Case history — 외부 프로젝트 진단 세션(예: #1417 통화녹음 수집 진단)에서 세션 전체에 걸쳐 헤더가 반복 누락되는 재발이 관측되었다 — 진단 몰입 중에도 매 응답 헤더를 고정한다.
 Reference issues: #1401, #1417.

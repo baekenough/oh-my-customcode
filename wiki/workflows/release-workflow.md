@@ -1,7 +1,7 @@
 ---
 title: Release Workflow
 type: workflow
-updated: 2026-09-25
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-completion-verification.md
@@ -99,7 +99,7 @@ Per [[wiki/rules/r020]], a release is only `[Done]` when:
 | All issues closed | Check GitHub issue status |
 | Version bumped | Read `manifest.json` and `package.json` |
 | PR merged | `gh pr view --json state` |
-| GitHub Release created | `gh release view vX.Y.Z` |
+| GitHub Release created | `release.yml` completed AND `gh release view vX.Y.Z` shows `isDraft=false`; external automation checked (R020 matrix; details in `.claude/contexts/commit-release.md`) |
 
 ## Relationships
 
@@ -113,3 +113,4 @@ Per [[wiki/rules/r020]], a release is only `[Done]` when:
 - `.claude/rules/MUST-sync-verification.md` — R017 sauron verification phases
 - `CLAUDE.md` — slash command descriptions for release skills
 - Content-drift resync 2026-09-25 (v1.1.83, #1733/#1734): renamed the triage label to `triage-complete` in Phase 1/Phase 2 (meaning unchanged); added release step 0a (user-execution constraint check, holds an unattended loop at the first covered merge/tag/publish command) and the `ci-check` scoped `verify-ready` cleanup for this release's closed issues.
+- Content-drift resync 2026-11-14 (v2.0.26, #1970)

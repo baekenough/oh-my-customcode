@@ -1,6 +1,6 @@
 ---
 name: supabase-postgres-best-practices
-description: PostgreSQL performance optimization guidelines from Supabase. Apply when writing SQL, designing schemas, configuring RLS, or optimizing database performance.
+description: PostgreSQL performance guidelines from Supabase. Apply when writing SQL, designing schemas, configuring RLS, or optimizing database performance.
 scope: core
 user-invocable: false
 ---

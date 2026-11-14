@@ -1,7 +1,7 @@
 ---
 title: tool-optimizer
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/tool-optimizer.md
 related:
@@ -29,7 +29,6 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 - **Skills**: `optimize-analyze`, `optimize-bundle`, `optimize-report`
 - **Memory**: local (`.claude/agent-memory-local/tool-optimizer/`, git-untracked — since v1.1.13, #1468)
 - **Effort**: medium
-- **Max Turns**: 20
 - **Permission Mode**: bypassPermissions
 - **Limitations**: cannot modify source code
 

@@ -1,6 +1,6 @@
 ---
 name: arch-speckit-agent
-description: Use for spec-driven development, transforming requirements into executable specifications, defining project constitution, creating technical plans, and generating TDD task lists
+description: Use for spec-driven development, turning requirements into executable specs, defining project constitution, technical plans, and TDD task lists
 model: claude-sonnet-5-5
 domain: universal
 memory: local
@@ -12,7 +12,6 @@ tools:
   - Grep
   - Glob
   - Bash
-maxTurns: 20
 limitations:
   - "cannot execute code"
   - "cannot deploy infrastructure"

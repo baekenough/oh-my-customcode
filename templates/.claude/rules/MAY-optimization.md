@@ -4,91 +4,140 @@
 
 ## Efficiency
 
+병렬(독립 I/O 3+), 캐싱(반복 접근 재사용), 지연 로딩(필요한 파일만)을 씁니다.
+<!-- DETAIL: Efficiency table (lines 7-11) original wording
 | Strategy | When | Example |
 |----------|------|---------|
 | Parallel | 3+ independent I/O tasks | Read multiple files simultaneously |
 | Caching | Same data accessed repeatedly | Cache file contents, reuse search results |
 | Lazy Loading | Large datasets, partial use | Read only needed files, stream results |
+-->
 
+도구 가용성 미확인 시(#1307): `Bash`(`find`/`grep`)로 먼저 탐색합니다.
+<!-- DETAIL: tool availability (line 13) original wording
 도구 가용성 미확인 시(#1307): 미확인 도구셋에서는 Glob 등 존재를 가정하지 말고 `Bash`(`find`/`grep`)로 먼저 탐색합니다.
+-->
 
 <!-- DETAIL: tool-availability assumption
 > **Tool-availability assumption (#1307 찐빠 #3)**: On first exploration, do NOT assume a tool (e.g., `Glob`) is available without confirming. Prefer `Bash` (`find`/`grep`) for initial search when the available-tool set is unconfirmed, to avoid "No such tool available" round-trips.
 -->
 
+플랫폼별 도구 변형(#1327): macOS는 `timeout` 대신 `gtimeout`을 씁니다.
+<!-- DETAIL: platform variants (line 19) original wording
 플랫폼별 도구 변형(#1327): 도구명은 플랫폼마다 다르므로(macOS는 GNU `timeout` 대신 `gtimeout`) 사용 전 가용성을 확인합니다.
+-->
 
 <!-- DETAIL: platform tool variants
 > **Platform tool variants (#1327 찐빠 #5)**: tool names differ by platform — e.g., macOS lacks GNU `timeout` (use `gtimeout` from coreutils). Confirm platform-specific tool availability before use.
 -->
 
+BSD sed(#1413): `\?`는 무음 실패하므로 POSIX 수단(`cut` 등)을 씁니다.
+<!-- DETAIL: BSD sed (line 25) original wording
 BSD sed `\?` 미지원(#1413): macOS BSD sed는 `\?`를 해석하지 않아 무음 실패하므로, POSIX 호환 대안(`cut` 등)을 사용합니다.
+-->
 
 <!-- DETAIL: BSD sed backslash-question
 > **BSD sed `\?` 미지원 (#1413)**: macOS BSD sed는 `\?`(optional 메타문자, GNU 확장)를 해석하지 않아 `sed 's|https\?://||'` 치환이 무음 실패한다. URL 도메인 추출 등은 `cut -d'/' -f3` 같은 POSIX 호환 수단을 사용한다.
 -->
 
+샌드박스(#1401 #4): `curl`/`wget`/`nc`가 없을 수 있으니 HTTP는 `WebFetch`, CLI는 `command -v`로 확인합니다.
+<!-- DETAIL: sandbox gaps (line 31) original wording
 샌드박스 도구 공백(#1401 #4): `curl`/`wget`/`nc`는 샌드박스에 없을 수 있으니 HTTP는 `WebFetch`를 우선하고 CLI는 `command -v`로 사전 확인합니다.
+-->
 
 <!-- DETAIL: sandbox tool gaps
 > **Sandbox/container tool gaps (#1401 찐빠 #4)**: `curl`, `wget`, `nc` 등 공통 CLI 도구는 샌드박스·컨테이너 환경에서 미설치일 수 있다. HTTP 요청에는 `WebFetch` 도구를 우선 사용하고, CLI 도구 사용 전 `command -v <tool>` 으로 가용성을 사전 확인한다.
 -->
 
+zsh `echo`(#1625): JSON 전달은 `printf '%s' "$var"`를 씁니다.
+<!-- DETAIL: zsh echo (line 37) original wording
 zsh 내장 `echo`는 이스케이프를 확장합니다(#1625) — JSON 문자열 전달은 `printf '%s' "$var"`를 표준으로 합니다.
+-->
 
 <!-- DETAIL: zsh echo escape
 > **zsh 내장 `echo`는 이스케이프를 확장한다 (#1625)**: zsh(이 저장소 Bash 도구 실행 셸)의 내장 `echo`는 `\n` 등 백슬래시 이스케이프를 기본 확장하므로, JSON 문자열을 파이프에 실을 때 `echo "$var"`를 쓰면 valid JSON을 스스로 깨뜨려 하류 파서 오진을 유발한다(v1.1.53 세션 훅 오진의 실제 원인). JSON/구조화 문자열 전달은 `printf '%s' "$var"`를 표준으로 한다.
 -->
 
+zsh 단어분할(#1683 #5): 미인용 `$var`는 분할되지 않으니 `${=var}`·배열·`read -r a b c <<< "$line"`을 쓰고, 즉석 순회는 `xargs`·배열·`bash -c`, 띄운 프로세스는 `pgrep -f <패턴> | wc -l`로 잔여 0을 확인합니다. `=`로 시작하는 단어(`===A`)는 `=cmd` 확장입니다("`==A not found`" 2026-11-14 세션 관측).
+<!-- DETAIL: zsh word splitting (line 43) original wording
 zsh는 미인용 `$var`를 단어분할하지 않습니다(#1683 #5) — 분할이 필요하면 `${=var}`나 배열을, 여러 필드는 `read -r a b c <<< "$line"`을 사용합니다. 즉석 순회는 `xargs`·배열·`bash -c`로 쓰고, 프로세스를 띄운 스크립트는 정리 직후 `pgrep -f <패턴> | wc -l`로 잔여 개수를 출력해 0이 아니면 즉시 조치합니다.
+-->
 
 <!-- DETAIL: zsh word splitting
 > **zsh는 미인용 `$var`를 단어 분할하지 않는다 (#1683 #5)**: bash에서 관용적인 `for l in $list` / `set -- $line` 은 zsh(이 저장소 Bash 도구 실행 셸)에서 변수 전체를 **한 단어**로 취급하므로, `set -u`와 결합하면 `$2` 접근이 `parameter not set`으로 즉시 종료됩니다. 단어 분할이 필요하면 `${=var}`(zsh 전용) 또는 배열(`arr=(a b c); for x in "${arr[@]}"`)을 사용하고, 여러 필드가 든 문자열은 `read -r a b c <<< "$line"`으로 분해합니다. Origin: #1683 찐빠 #5 (v1.1.64 세션 — pre-triage 라벨 부트스트랩 스니펫이 1턴 실패 후 명시 인자로 재실행). Cross-ref: 위 zsh `echo` 노트, 파이프 `$?` 노트(#1540 zsh 변형) — 같은 "이 저장소의 셸은 zsh" 계열입니다.
 -->
 
+로컬 실행 옵션(#1455 #2): 제시 전 env/CLI/인증 가용성을 확인합니다(저장소 secret ≠ 로컬 env).
+<!-- DETAIL: local exec resources (line 49) original wording
 로컬 실행 옵션 자원 선확인(#1455 #2): 로컬 실행 옵션 제시 전 필요한 env/CLI/인증 가용성을 먼저 확인합니다 — 저장소 secret 존재가 로컬 env 존재를 보장하지 않습니다.
+-->
 
 <!-- DETAIL: local exec resource pre-check
 > **로컬 실행 옵션 제시 전 자원 가용성 선확인 (#1455 #2)**: 로컬 실행에 의존하는 검증 옵션(로컬 스모크 테스트, 로컬 스크립트 실행 등)을 사용자에게 제시하기 **전에**, 그 실행에 필요한 로컬 자원(env 키, CLI 도구, 인증 상태)의 가용성을 먼저 확인한다. **저장소 secret 존재 ≠ 로컬 셸 env 존재** — `gh secret list`로 저장소 secret을 확인해도 로컬 셸에 해당 env가 있으리라 단정하지 말 것. 자원 부재 시 옵션에 전제조건을 명시하거나 옵션에서 제외하여, 사용자가 실행 불가한 옵션을 선택했다가 되돌리는 왕복(AskUserQuestion 재질문)을 방지한다. Cross-ref: R020(사전 검증). Origin: #1455 #2 (Session 127 회고 찐빠 #2) — 사용자가 "로컬 스모크 테스트 먼저"를 선택했으나 로컬 셸에 ANTHROPIC_API_KEY 부재로 실행 불가 → "스킵, 바로 커밋" 재선택, AskUserQuestion 왕복 1회 발생.
 -->
 
+출력 파싱(#1401 #3): 구조화 출력은 `python3 -c`로 파싱합니다.
+<!-- DETAIL: shell output parsing (line 55) original wording
 셸 출력 파싱(#1401 #3): 구조화된 출력 파싱은 `read`+`grep -o` 대신 Python(`python3 -c`)을 사용합니다.
+-->
 
 <!-- DETAIL: shell output parsing
 > **Shell output parsing — use Python, not read/grep (#1401 찐빠 #3)**: adb bounds rect, 좌표쌍, JSON 분할 등 구조화된 출력 파싱은 `read`+`grep -o` 파이프라인 대신 Python (`python3 -c "..."`) 을 사용한다. `read`+`grep -o` 조합은 공백 차이에 취약해 헛값을 산출한다. SSH 원격 `bash -c` 인자에 소괄호 포함 금지 — `ssh host "cmd; cmd2"` 형식 사용.
 -->
 
+`ls | tail`(#1417): 최신 파일은 `ls -t`나 `find -newermt`로 판단합니다.
+<!-- DETAIL: ls tail (line 61) original wording
 `ls | tail` 시계열 오판(#1417): `ls`는 알파벳순 정렬이므로 최신 파일 판단에는 `ls -t`나 `find -newermt`를 사용합니다.
+-->
 
 <!-- DETAIL: ls tail time-order
 > **`ls | tail` 시계열 오판 (#1417)**: `ls`는 파일명을 알파벳/사전순으로 정렬하므로 `ls <dir> | tail`로 "가장 최근 파일"을 판단하면 오판한다(파일명 순서 ≠ mtime 순서). 시계열 최신 판단은 `ls -t`, `find <dir> -newermt <ts>`, 또는 stat/timestamp 기반 정렬을 명시한다. `tail`만으로 "최신" 단정 금지. Origin: #1417 (외부 통화녹음 진단 세션 — `ls TPhoneCallRecords | tail -6`이 알파벳순이라 최신을 6/18로 오판 → `find -newermt`로 6/19~20 파일 발견해 정정).
 -->
 
+`readdir`(#1599): 순서 비보장 — 정렬 키를 명시하고 디렉토리는 `withFileTypes`+`isDirectory()`로 판별합니다.
+<!-- DETAIL: readdir (line 67) original wording
 `readdir` 순서 비보장(#1599): 디렉토리 열거 순서는 정렬·생성순이 아니므로 정렬 키를 명시하거나 필터로 유일성을 보장하고, 추가로 각 항목이 디렉토리인지는 `withFileTypes`+`isDirectory()`로 판별합니다.
+-->
 
 <!-- DETAIL: readdir order
 > **`readdir` 순서는 플랫폼·런타임 의존이며 정렬되지 않는다 (#1599)**: 디렉토리 열거 결과는 **정렬순도 생성순도 아니다**. bun의 `readdir`는 APFS에서 파일시스템의 이름 해시 순서를 그대로 반환하며 node의 `readdirSync`와도 다른 순서를 낸다 — 같은 코드가 런타임·파일시스템·항목 이름에 따라 다른 순서를 낸다. 따라서 "첫 항목"·"마지막 항목"으로 대상을 고르지 말고 **정렬 키를 명시**(`.sort()`, mtime 기준 정렬)하거나 **필터로 유일성을 보장**한다. 함께: 열거 결과의 모든 항목이 디렉토리라고 가정하지 말고 `withFileTypes: true` + `isDirectory()`로 판별한다 — 관측 파일·`.DS_Store` 등이 섞이면 "첫 항목"이 디렉토리가 아닐 수 있다. **테스트에서의 파급**: 대상 디렉토리명이 `date -u +%Y-%m-%d`처럼 날짜에서 파생되면 이름이 바뀌는 날 해시 순서가 뒤집혀 **clean clone 첫 실행부터 달력 날짜의 절반에서 실패**한다(실측: 8/15 통과, 8/16~17 실패). 위 `ls | tail` 시계열 오판(#1417)의 **API 각도 변형**이다 — 도구가 순서를 보장한다는 미확인 전제에서 결과를 해석한 같은 계열. Origin: #1599 (agora 테스트 `findSessionDir`가 출력 루트를 readdir 후 전 항목을 디렉토리로 가정; 코드 조치는 `withFileTypes:true` + `isDirectory()` 필터 + 관측 파일 분리로 완료). Cross-ref: R005 「계수/매칭 방법 확인」(도구 기본 동작 미확인), R023(Conditional-Output Verification).
 -->
 
+파이프 뒤 `$?`(#1492, zsh 변형 #1540): 검증은 단독 실행하고, 불가피하면 bash `${PIPESTATUS[0]}` / zsh `$pipestatus[1]`을 씁니다.
+<!-- DETAIL: pipe exit code (line 73) original wording
 파이프 뒤 `$?`는 마지막 명령의 종료코드입니다(#1492, zsh 변형 #1540) — 검증 스크립트는 단독 실행하고, 부득이 파이프를 쓸 때는 셸을 확인한 뒤 문법(bash `${PIPESTATUS[0]}` / zsh `$pipestatus[1]`)을 구분합니다.
+-->
 
 <!-- DETAIL: pipe exit code
 > **파이프 뒤 `$?`는 마지막 명령의 exit code (#1492, zsh 변형 #1540)**: `script.sh | tail -N; echo $?`처럼 검증 스크립트를 파이프에 연결한 뒤 `$?`로 읽으면 파이프라인 **마지막 명령**(`tail`)의 종료코드를 얻는다 — 스크립트 자체가 실패(exit 1)해도 `tail`이 성공(exit 0)하면 `$?=0`으로 "통과"를 오판한다. **1차 지침**: 검증 스크립트는 파이프 없이 단독 실행한다. 부득이 파이프를 써야 한다면, 원본 exit code를 읽는 문법은 **셸마다 다르다** — bash는 `${PIPESTATUS[0]}`(대문자, 0-indexed), zsh는 `$pipestatus[1]`(소문자, 1-indexed)이며 서로 호환되지 않는다. **이 저장소의 기본 셸이자 Claude Code Bash 도구 실행 셸은 zsh**이므로, bash 문법 `${PIPESTATUS[0]}`을 그대로 쓰면 zsh에서는 미정의 변수로 취급되어 **오류 없이 빈 값**을 반환한다 — 조건문에서 빈 값은 거짓으로 평가돼 "검증 통과"처럼 보이는 조용한 오판을 재생산한다. 셸을 사전 확인(`echo $SHELL` / `$BASH_VERSION` 존재 여부)한 뒤 해당 셸의 문법을 쓴다. **주의**: `${PIPESTATUS[0]}` 자체는 R023 Workflow JS 템플릿 리터럴 이스케이프 이슈(#1438, `${...}`를 JS가 평가해 ReferenceError)와 별개 문제 — 본 항목은 셸에서 파이프 뒤 exit code를 읽는 각도다. Origin: #1492 (Session 132 회고 찐빠 #3); zsh 변형은 #1540 (Session 138 회고 찐빠 #6) — `gh run watch ... | tail` 뒤 `${PIPESTATUS[0]}`가 zsh에서 빈 값을 반환해 CI 결론을 재실측해야 했음. Cross-ref: R020 ("command executed" ≠ "succeeded").
 -->
 
+계수/매칭 방법 확인(#1521): 카운트 대조 전 비교 대상의 계수 방법(glob/`find`, 부분매칭, 확장자 필터, 머지커밋 diff)을 확인합니다.
+<!-- DETAIL: counting method (line 79) original wording
 계수/매칭 방법 확인(#1521): 카운트 대조 전 비교 대상의 계수 방법(glob vs `find`, 부분매칭, 확장자 필터, 머지커밋 diff 생략 등)을 먼저 확인합니다.
+-->
 
+`git grep -E`(#1760): 일부 플랫폼(macOS git 2.52.0 확인)에서 `\b`·`\d`·`\s` 미지원(0건 오반환) — `git grep -P`나 python을 씁니다.
+<!-- DETAIL: git grep ERE (line 81) original wording
 `git grep -E`(POSIX ERE)는 `\b`·`\d`·`\s`를 지원하지 않으며 오류 없이 0건을 반환할 수 있습니다(#1760, 플랫폼 의존 — macOS git 2.52.0에서 확인, GNU/glibc ERE는 확장으로 지원) — 이식 가능한 PCRE가 필요하면 `git grep -P` 또는 python을 사용합니다.
+-->
 
 <!-- DETAIL: counting method check
 > **계수/매칭 방법 확인 (#1521)**: 카운트를 대조하기 전에 **비교 대상이 무엇을 어떻게 세는지** 먼저 확인한다 — 같은 지표라도 계수 방법이 다르면 값이 달라진다. 대표 함정 4종: (a) glob(`ls *.md`, 최상위만) vs 재귀 `find`(하위 디렉토리 포함), (b) 부분 문자열 grep(`grep "sdd"`가 `sdd-dev`까지 매칭), (c) 확장자 필터(`--include='*.md'`가 `CLAUDE.md.en`을 미매칭), (d) **머지 커밋 diff 기본 생략** — `git show --name-only <머지커밋>`은 diff를 기본적으로 출력하지 않아 변경 파일 0개로 오독된다. 머지 커밋의 변경 파일을 세려면 `--first-parent`(1차 부모 대비) 또는 `-m`(각 부모별 diff)을 명시한다. 검증 스크립트와 대조할 때는 **스크립트의 실제 계수 로직을 읽고** 같은 방법으로 센다. 위 `ls | tail` 시계열 오판(#1417)과 동류로, 도구의 기본 동작을 확인하지 않은 채 결과를 해석해 오탐에 이르는 패턴이다. Origin: #1521 (2026-07-20 세션에서 3회 반복; 두 서브에이전트가 독립적으로 동일 오탐에 도달); (d)는 #1553 찐빠 #4 (2026-07-30 세션에서 머지 커밋 `--name-only` 0파일을 "변경 없음"으로 오독).
 -->
 
+도구 이름 ≠ 그 프로그램(#1590): `type <tool>`로 실체를 확인하고 전수조사는 `git grep`을 씁니다(`grep`은 `.gitignore`를 존중하는 셸 함수).
+
+rule-deletion-guard(#1954): 분석 불가 구문(`eval`·`$(…)`·백틱·`sh -c`·`source`·파싱 실패)에서는 `rm`/`mv`/`unlink` 토큰과 `.claude/rules` 경로 공존만으로 차단합니다 — 그런 데이터는 Write로 파일에 쓰고 우회하지 않습니다.
+
+Bash `cd`(#1778, #1767, #1816): 지속 `cd` 금지 — 절대 경로나 `( cd <dir> && … )`만 쓰며 `cd X && ( … )`도 금지합니다.
+<!-- DETAIL: tool name / rule-deletion-guard / Bash cd (lines 87-91) original wording
 도구 이름 ≠ 그 프로그램(#1590): 사용 전 `type <tool>`로 실체를 확인합니다 — 이 저장소 Bash의 `grep`은 `.gitignore`를 존중하는 셸 함수이므로 저장소 전수조사는 `git grep`을 표준으로 합니다.
 
 rule-deletion-guard는 명령을 경로 단위로 분석하므로 heredoc 본문 같은 데이터는 보통 통과하지만(#1954), `eval`·`$(…)`·백틱·`sh -c`·`source`·파싱 실패처럼 분석기가 모델링하지 못하는 구문이 있으면 `rm`/`mv`/`unlink` 토큰과 `.claude/rules` 경로의 공존만으로 차단하는 폴백이 작동합니다 — 그런 데이터는 명령 문자열에 넣지 말고 Write 도구로 파일에 쓰며, 가드를 우회하지 않습니다.
 
 Bash `cd`는 세션 cwd로 남습니다(#1778, #1767): 훅 명령은 `CLAUDE_PROJECT_DIR`로 고정되어 지속 `cd`에 영향받지 않지만, 상대 경로를 내부에서 읽는 스크립트·도구와 이후 명령의 상대 경로는 어긋날 수 있습니다 — 절대 경로나 서브셸 `( cd <dir> && … )`만 사용하고 지속 `cd`는 남기지 않습니다. `cd X && ( … )`도 `cd`가 서브셸 밖에 놓인 지속 `cd`이므로 금지합니다(#1816) — 괄호는 `cd` 앞에서 열어야 합니다.
+-->
 
 <!-- DETAIL: tool name vs program
 > **도구 이름 ≠ 그 프로그램 (#1590)**: 도구를 쓰기 전에 `type <tool>`로 실체를 확인한다. Bash 도구의 `grep`은 `~/.claude/shell-snapshots/snapshot-zsh-*.sh`의 **셸 함수**이며 `ugrep --ignore-files`에 위임한다. 그 결과 `.gitignore`의 리터럴 `CLAUDE.md` 패턴을 존중해, **force-tracked 파일을 재귀 탐색에서 조용히 누락**한다(에러 없이 exit 0). 명시 경로를 준 grep은 정상 동작하므로 **traversal만 영향**을 받는다. 실측(2026-08-15): 동일 패턴·동일 대상에 대해 셸 함수 36 / `command grep` 43 / `git grep` 38 히트 — 셸 함수만 `CLAUDE.md`를 0 히트로 놓쳤다. 진단 함정: `git check-ignore`는 **index-aware**라 tracked 파일에 "not ignored"(exit 1)를 반환한다 — 원인을 보려면 `git check-ignore --no-index`를 써야 한다. 처방: 저장소 전수 조사는 `git grep`을 표준으로 한다(R017 Count Sync cross-ref). Origin: #1590.
@@ -160,19 +209,35 @@ Bash `cd`는 세션 cwd로 남습니다(#1778, #1767): 훅 명령은 `CLAUDE_PRO
 
 ### Capability-Aware Tool Scheduling
 
+<!-- DETAIL: Capability-Aware lead (line 163) original wording
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:
+-->
 
+| Capability | Parallelizable? |
+|-----------|----------------|
+| Read-only | Yes |
+| Write, independent targets | Yes |
+| Write, shared target | No |
+| External, rate limits | Throttle |
+<!-- DETAIL: Capability table (lines 165-170) original wording
 | Capability | Parallelizable? | Example |
 |-----------|----------------|---------|
 | Read-only, no side effects | Yes | Read, Glob, Grep |
 | Write with independent targets | Yes | Write(file-A) + Write(file-B) |
 | Write with shared target | No | Sequential edits to same file |
 | External with rate limits | Throttle | WebFetch, API calls |
+-->
 
+<!-- DETAIL: Capability-Aware closing (lines 172-174) original wording
 This aligns with R009 (parallel execution) detection criteria and extends it with tool-level scheduling awareness.
 
 Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capability graph pattern.
+-->
 
+## Token Optimization
+
+필요한 정보만 포함·요약하고, 유사 작업은 묶고(Batch) 변경분만 처리합니다(Incremental).
+<!-- DETAIL: Token and Task Optimization (lines 176-184) original wording
 ## Token Optimization
 
 - Include only necessary info, remove duplicates, use summaries
@@ -182,18 +247,25 @@ Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capab
 
 - **Batch**: Group similar tasks (edit 10 files at once)
 - **Incremental**: Process only changed parts
+-->
 
 ## When to Optimize
 
+반복 작업·명확한 병목·측정 가능한 이득일 때만 최적화합니다. 가독성 > 최적화.
+<!-- DETAIL: When to Optimize (lines 188-192) original wording
 | Do | Don't |
 |----|-------|
 | Repetitive tasks, clear bottleneck, measurable gain | One-time tasks, already fast, complexity > benefit |
 
 Readability > Optimization. No optimization without measurement.
+-->
 
 ## Context Optimization via HTML Comments (v2.1.72+)
 
+자동 주입되는 .md(CLAUDE.md, rules/*.md)의 HTML 주석은 모델에서 숨겨지고 Read로만 보입니다.
+<!-- DETAIL: HTML comments intro (line 196) original wording
 HTML comments in all auto-injected .md files (CLAUDE.md and rules/*.md) are hidden from the model during auto-injection but visible via Read tool.
+-->
 
 | Use Case | Example |
 |----------|---------|
@@ -202,4 +274,7 @@ HTML comments in all auto-injected .md files (CLAUDE.md and rules/*.md) are hidd
 | Conditional context | `<!-- detailed-architecture: see guides/architecture/ -->` in CLAUDE.md |
 | Rule detail hiding | `<!-- DETAIL: Self-Check ... -->` in rules/*.md |
 
+**Rule**: 실행 지시는 가시 텍스트로 유지하고 모델에 불필요한 메타데이터만 주석으로 옮깁니다.
+<!-- DETAIL: HTML comments rule (line 205) original wording
 **Rule**: Move model-unnecessary metadata into HTML comments to reduce context token usage. Keep actionable instructions as visible text.
+-->

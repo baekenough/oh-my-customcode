@@ -1,7 +1,7 @@
 ---
 title: mgr-supplier
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/mgr-supplier.md
 related:
@@ -28,7 +28,6 @@ Operates in three modes: Audit (scan and report), Supply (suggest missing skills
 - **Skills**: `audit-agents`
 - **Memory**: local
 - **Effort**: low
-- **Max Turns**: 10
 - **Limitations**: cannot modify agent files, cannot create new agents
 
 ## Relationships

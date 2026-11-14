@@ -5,7 +5,6 @@ model: haiku
 domain: universal
 memory: local
 effort: low
-maxTurns: 10
 limitations:
   - "cannot modify agent files"
   - "cannot create new agents"

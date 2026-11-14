@@ -1,7 +1,7 @@
 ---
 title: qa-planner
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/qa-planner.md
 related:
@@ -27,7 +27,6 @@ Outputs a YAML-structured QA plan consumed by [[qa-writer]] for detailed test ca
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
 - **Memory**: local (scoped to `.claude/agent-memory-local/qa-planner/`, git-untracked; changed from `project` in v1.1.13, #1468)
 - **Effort**: high
-- **Max Turns**: 20
 - **Limitations**: cannot execute tests, cannot modify code
 
 ## Relationships

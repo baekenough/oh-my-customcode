@@ -56,7 +56,7 @@ oh-my-customcode로 구동됩니다.
 
 ## 전역 규칙 (필수 준수)
 
-> `.claude/rules/` 참조
+> `.claude/rules/` 참조 (일부는 조건부 로드 — 아래 「규칙 로딩」)
 
 ### MUST (절대 위반 금지)
 | ID | 규칙 | 설명 |
@@ -93,6 +93,27 @@ oh-my-customcode로 구동됩니다.
 |----|------|------|
 | R005 | 최적화 | 효율성, 토큰 최적화 |
 
+## 규칙 로딩 (지연 로딩 색인)
+
+상시 로드는 15개(R000–R005, R007–R011, R013, R015, R020, R021)이고, 아래 8개는 `paths:` frontmatter가 있는 조건부 규칙입니다. CC 2.1.325 프로브 실측으로는 세션 시작 시 로드되지 않고, glob과 일치하는 파일을 Read·Write할 때 그 에이전트 컨텍스트에만 로드됩니다. 압축 후 재로드는 미실측입니다. 필요하면 해당 규칙 파일을 Read로 직접 엽니다.
+
+| ID | 핵심 규범 (1줄) | 로드 조건 |
+|----|----------------|-----------|
+| R006 | 에이전트·스킬·훅·output-style 생성·수정 시 설계 규칙(frontmatter, 관심사 분리)을 적용합니다. | agents·skills·hooks·output-styles 하위 파일 |
+| R012 | 상태줄·설정·훅 배선 편집 시 적용합니다. | statusline.sh, settings*.json, hooks.json |
+| R016 | 위반 지적 시 규칙 갱신 → 커밋 → 원작업을 계속합니다. 지적받으면 `MUST-continuous-improvement.md`를 Read합니다. | rules/**, CLAUDE.md (대화 트리거라 파일 접근만으로는 불충분) |
+| R017 | agents·skills·guides·rules 변경 후 커밋·푸시 전 `mgr-sauron:watch` 통과가 필수입니다. | agents, skills, rules, hooks, guides, wiki, templates, CLAUDE.md |
+| R018 | `TeamCreate`가 도구 목록에 있으면 `MUST-agent-teams.md`를 Read해 적용합니다. | 그 파일 자신을 읽을 때만 |
+| R019 | 라우팅 확신도가 90% 미만일 때 `wiki/index.yaml`을 조회합니다(advisory). Skill 호출이 로드하는지는 미실측이라 필요하면 Read합니다. | 라우팅 스킬 4종, intent-detection, wiki/index.yaml |
+| R022 | 에이전트·스킬·룰·가이드 변경 시 wiki 페이지 갱신과 매니페스트 재시딩을 합니다. | wiki, agents, skills, rules, guides |
+| R023 | 검증은 결정론적 Tier 1부터 비용 순서로 올립니다. | hooks, scripts, tests, .github, skills, src |
+
+L2 이벤트 팩 2개는 훅 `.claude/hooks/scripts/context-pack-injector.sh`가 PreToolUse 시점(도구 실행 직전)에 세션·에이전트당 1회 주입합니다.
+- `.claude/contexts/delegation.md`: Agent·Task·SendMessage 호출 직전
+- `.claude/contexts/commit-release.md`: `git commit`·`git push`, `gh pr create`·`gh pr merge`, `gh release`, `npm publish` 직전
+
+압축(SessionStart compact) 때 마커를 초기화하므로 압축 뒤 다시 주입됩니다. `OMCUSTOM_CONTEXT_PACKS=off`로 끕니다.
+
 ## 커맨드
 
 ### 슬래시 커맨드 (스킬 기반)
@@ -121,7 +142,7 @@ project/
 |   +-- skills/                  # 스킬 (114 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
-|   +-- contexts/                # 컨텍스트 파일 (ecomode)
+|   +-- contexts/                # 컨텍스트 파일 (ecomode, 위임·커밋 팩)
 +-- guides/                      # 레퍼런스 문서 (56 토픽)
 ```
 
@@ -163,7 +184,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 
 ## 에이전트 요약
 
-<!-- METADATA (agent roster by type, advisory only — use /omcustom:lists or wiki/agents/ for the live full catalog):
+<!-- METADATA (agent roster by type, advisory only — see .claude/agents/ for the live full catalog):
 | 타입 | 수량 | 에이전트 |
 |------|------|----------|
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
@@ -181,7 +202,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | Agora | 1 | agora-runner |
 -->
 
-총 **50개** 에이전트 (타입별 상세는 `/omcustom:lists` 또는 wiki/agents/ 참조)
+총 **50개** 에이전트 (타입별 표는 위 HTML 주석, 정의 파일은 `.claude/agents/`)
 
 ## Agent Teams (MUST when enabled)
 
@@ -222,7 +243,7 @@ Agent Teams는 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **그리고** `TeamCreat
 
 ## 외부 의존성
 
-필수/권장 플러그인·MCP 서버 카탈로그 및 설치 명령어는 1회성 설정 정보로 아래 HTML 주석에 보존됨(Read 도구로 확인 가능). 요약: 필수 5종(superpowers, superpowers-developing-for-claude-code, elements-of-style, obsidian-skills, context7), 권장 플러그인 4종, 권장 MCP 서버 3종(code-review-graph, semble, aws-mcp).
+필수/권장 플러그인·MCP 서버 카탈로그 및 설치 명령어는 1회성 설정 정보로 아래 HTML 주석에 보존되어 있습니다(Read 도구로 확인 가능). 요약: 필수 5종(superpowers, superpowers-developing-for-claude-code, elements-of-style, obsidian-skills, context7), 권장 플러그인 4종, 권장 MCP 서버 3종(code-review-graph, semble, aws-mcp).
 
 <!-- METADATA (plugin/MCP catalog + install commands, advisory only — one-time setup, not needed every session):
 

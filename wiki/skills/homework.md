@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-11-06
+updated: 2026-11-14
 sources:
   - .claude/skills/homework/SKILL.md
 related:

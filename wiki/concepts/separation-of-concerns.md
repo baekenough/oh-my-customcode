@@ -1,7 +1,7 @@
 ---
 title: Separation of Concerns
 type: concept
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - .claude/rules/MUST-agent-design.md
   - .claude/rules/MUST-orchestrator-coordination.md

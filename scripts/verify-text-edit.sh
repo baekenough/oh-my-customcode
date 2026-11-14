@@ -273,10 +273,14 @@ if [ -n "$mode" ]; then
   lf=$(command grep -E '다[.。"]?$' < "$tmp" | command grep -vcE '니다[.。"]?$')
   nn=$(command grep -E '(함|됨|필요)[.。"]?$' < "$tmp" | command grep -c '')
 
+  # Counting unit: grep -c counts matching LINES, so the python3 family check counts matching lines
+  # too (re.search per line, split on LF only like grep). len(re.findall(...)) counted every hit and
+  # gave DISAGREE (rc 3) whenever one line held two family hits. line-final and noun-ending end in a
+  # `$` anchor, so they can match at most once per line and are unaffected.
   IFS= read -r -d '' PY <<'PYEOF'
 import re,sys
 text=sys.stdin.read()
-fam=len(re.findall(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "(]', text))
+fam=sum(1 for l in text.split(chr(10)) if re.search(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "(]', l))
 lf=len(re.findall(r'다[.。"]?$', text, re.M)) - len(re.findall(r'니다[.。"]?$', text, re.M))
 noun=len(re.findall(r'(함|됨|필요)[.。"]?$', text, re.M))
 print(fam, lf, noun)

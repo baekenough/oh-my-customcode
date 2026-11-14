@@ -1,6 +1,6 @@
 ---
 name: omcustom:agent-eval-framework
-description: Quantitative agent evaluation using 4-metric framework (correctness/step_ratio/tool_call_ratio/latency_ratio) with ideal trajectory annotation and capability-categorical taxonomy. Use when measuring agent efficiency, comparing agent variants, or gating new agents through correctness→efficiency phases. Complements harness-eval (SE benchmarks) and evaluator-optimizer (qualitative rubric).
+description: 4-metric agent evaluation (correctness/step_ratio/tool_call_ratio/latency_ratio). Use to measure efficiency, compare variants, or gate new agents.
 scope: harness
 version: 1.0.0
 user-invocable: true

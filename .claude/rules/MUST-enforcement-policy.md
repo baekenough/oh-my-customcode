@@ -4,9 +4,15 @@
 
 ## Core Policy
 
+**advisory-first** 강제 모델입니다. 대부분의 규칙은 hard block이 아니라 프롬프트(CLAUDE.md, rules/, `SessionStart` 재주입[^postcompact])로 강제하며, 에이전트 유연성을 보존하려는 의도적 설계입니다.
+<!-- DETAIL: Core Policy (line 7) original wording
 oh-my-customcode uses an **advisory-first enforcement model**. Most rules are enforced through prompt engineering (CLAUDE.md, rules/, `SessionStart` re-injection[^postcompact]) rather than hard-blocking hooks. This is intentional — it preserves agent flexibility while maintaining behavioral standards.
+-->
 
+[^postcompact]: 재주입 보장 경로는 `SessionStart`(matcher `compact`)이며 PostCompact는 효과 미보장입니다.
+<!-- DETAIL: footnote (line 9) original wording
 [^postcompact]: 재주입 보장 경로는 `SessionStart`(matcher `compact`, `claude-md-reinject.sh`)다. PostCompact 배선은 유지되나 `additionalContext` 미정의로 효과 미보장. Origin: #1619 #7. 상세는 Read 도구로 열람.
+-->
 
 <!-- DETAIL: [^postcompact] footnote (full text)
 [^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `compact`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). 후속 바이너리 프로브(postcompact-probe 2026-08-29, CC 2.1.251)에서 dispatch 경로 실재가 확인됨(전용 실행 함수·payload 스키마 `trigger`/`compact_summary`·dispatch map 등록, PreCompact 대비 동형 구조). 따라서 '발동 미검증'은 'dispatch 실재하나 라이브 발동·prompt 핸들러 효과는 미검증'으로 좁혀진다 — `additionalContext` 미정의는 불변이므로 재주입 보장 경로는 여전히 SessionStart다. Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
@@ -14,6 +20,14 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 ## Enforcement Tiers
 
+| Tier | Mechanism | Behavior |
+|------|-----------|----------|
+| Hard Block | PreToolUse hook, exit 2 | 도구 실행 차단 |
+| Soft Block | Stop hook prompt | 자동 수행 후 승인 |
+| Conversation Block | PostToolUse hook + `continueOnBlock`, exit 2 | 거부 사유를 대화에 전달, 계속 진행 |
+| Advisory | Pre/PostToolUse·SubagentStop·UserPromptSubmit hooks | `additionalContext` 경고, 차단 없음 |
+| Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입 | 컨텍스트 내 행동 지침 |
+<!-- DETAIL: Enforcement Tiers table (lines 17-26) original wording
 | Tier | Mechanism | Rules | Behavior |
 |------|-----------|-------|----------|
 | Hard Block | PreToolUse hook, exit 2 | stage-blocker, rule-deletion-guard | Prevents tool execution |
@@ -24,18 +38,27 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Advisory (telemetry + advisory) | PostToolUseFailure hook | — (계측+어드바이저리, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 실패를 JSONL 원장에 append, 무출력(모델 미도달)·비차단. 같은 이벤트의 `subagent-failure-advisor.sh`(Agent/Task)는 additionalContext advisory 전달 |
 | Advisory (proactive) | UserPromptSubmit hook | R020 (원인 진단) | `fail-axis-cause-advisor.sh` (#1561, v1.1.44) — 원장에 실패 기록이 있는데 원인 진술 없는 재촉 프롬프트가 오면 `hookSpecificOutput.additionalContext`로 "원인 가설 되묻기" advisory 전달. 원장 부재 시 조용히 통과 |
 | Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입(matcher `compact`; PostCompact 이벤트 배선은 유지되나 효과 미보장[^postcompact]) | All MUST rules | Behavioral guidance in context |
+-->
 
+훅 배선: `.claude/hooks/hooks.json`은 CC가 직접 로드하지 않으며 로드되는 것은 `.claude/settings.json`(+로컬+templates 미러)입니다. 편집 후 `bun run sync:hooks`(또는 `bun run build`)로 재생성해야 하며 누락하면 변경이 발화에 반영되지 않습니다(#1623).
+<!-- DETAIL: 훅 배선 paragraph (line 28) original wording
 훅 배선: `.claude/hooks/hooks.json`은 CC가 직접 로드하지 않는다 — 로드되는 것은 `.claude/settings.json`(+로컬+templates 미러)이며 `hooks-settings.ts`가 변환한다. 편집 후 재생성(빌드) 필수 — 누락 시 변경이 발화에 반영되지 않는다. Origin: #1623 (v1.1.53). 상세는 Read 도구로 열람.
+-->
 
 <!-- DETAIL: 훅 배선 경로 (v1.1.53, #1623) — full narrative
 > **훅 배선 경로 (v1.1.53, #1623)**: `.claude/hooks/hooks.json`은 CC가 로드하는 파일이 아니다 — CC 2.1.251 바이너리에 `.claude/hooks` 경로 참조가 0건이고, `settings.json`에 `hooks` 키가 이력상 존재한 적이 없었다. 컴파일레이션 메타포로는 `hooks.json` = **소스**(source), CC가 실제 로드하는 것은 `.claude/settings.json`(+`.local.json`, +`templates/` 미러)의 공식 `hooks` 블록 = **빌드 산출물**이며, 변환은 `src/core/hooks-settings.ts`가 담당한다(matcher 조건 DSL 12건은 스크립트 자체 가드 3건 + stdin-가드 래퍼 9건으로 이관). `omcustom init` 사용자는 `installHooksSettings()`가 최종 settings.local.json에 병합하는 경로를 거친다. **`hooks.json`만 고치고 settings 재생성(빌드)을 누락하면 변경이 발화에 반영되지 않는다** — R022 Wiki Sync의 "페이지 갱신 + 매니페스트 재시딩" 이원 요구와 동형이다. 라이브 실증(2026-08-29 새 세션 프로브): SessionStart hook_success 9건(플러그인 2 + 프로젝트 7), `[claude-md-reinject]` 마커 5히트, UserPromptSubmit·Stop 발화 확인 — **세션 단위 발화의 최초 실측**은 이 릴리즈다.
 -->
 
+<!-- DETAIL: 훅 배선 Anti-pattern table (lines 34-36) original wording
 | Anti-pattern | Required |
 |--------------|----------|
 | `hooks.json`만 편집하고 커밋 → settings.json `hooks` 블록 미재생성 | 편집 후 `bun run sync:hooks`(또는 `bun run build`) 실행 → settings.json(+local+templates) 재생성 확인 후 커밋 |
+-->
 
+교훈: **배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인**.
+<!-- DETAIL: 교훈 (line 38) original wording
 교훈: **배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인** — R020 "actual outcome ≠ attempt"의 훅 도메인 재현 사례. 상세는 Read 도구로 열람.
+-->
 
 <!-- DETAIL: Advisory 발화 결함과 해소 + 교훈 상세 (실측)
 > **Advisory (proactive/retroactive) 발화 결함과 해소 (실측)**: `hookSpecificOutput.additionalContext` **전달 경로 자체는 #1547(v1.1.40)에서 구현**됐으나, 그 앞단 **파서 셀렉터 결함**으로 advisory가 **v1.1.42까지 한 번도 발화하지 못했다** — `jq -r '.role'`로 읽었으나 트랜스크립트 최상위에 `role` 키가 없어(실제는 `.message.role`) `last_assistant`가 항상 비고 즉시 `exit 0`으로 종료됐다. 당시 실측: 트랜스크립트 771개 전수에서 `"additionalContext":` 출현 0건, 라이브 프로브 stdout/stderr 각 0바이트. **proactive(`r007-r008-drift-advisor.sh`)와 retroactive(`session-reflection.sh`, 동일 결함) 두 계층 모두 미발화**였다. **v1.1.43에서 양 계층 파서 복구 + `PostToolUse` 배선을 완료했고, 라이브 프로브로 최초 발화를 확인했다(#1553).** **재검토(#1623)**: 이 서술은 세션 단위 CC 훅 서브시스템 경유 증거가 없다 — 당시에도 CC가 로드하는 `settings.json`에 `hooks` 블록이 부재했으므로, 리서치(git 이력 전수) 판단으로는 스크립트에 synthetic stdin을 직접 주입한 검증이었을 가능성이 가장 유력하다(단정 금지 — "직접 증거 없음"으로 기록). 세션 단위 발화의 최초 실측은 위 「훅 배선 경로 (v1.1.53, #1623)」의 v1.1.53이다. 후속으로 v1.1.44에서 R008 판정을 블록 인접 비교 → 턴 단위 개수 비교로 전환(#1563), v1.1.45에서 Skill 도구 면제를 추가했다(#1569). **v1.1.49에서 역방향 신호**(announce > tool_use — 도구 호출을 예고해 놓고 tool_use 블록 없이 턴을 종료한 방향)**를 추가했다(#1595 #6)** — 기존 판정식 `max(0, tool_use − announce)`는 이 방향을 **구조적으로 0으로 처리**해 원리적으로 탐지 불가였다. 역방향은 **전용 앵커 정규식**(`$an_anchored`, 줄 시작 앵커 있음 — forward의 `$an_tool`에는 적용하지 않는다. forward는 announce를 덜 세면 위반이 **늘어나기** 때문)을 쓰고, **Skill 포함 전체 tool_use가 0건**일 때만 계상한다(Skill 제외 카운트를 쓰면 Skill만 호출한 준수 턴에서 오발화). 기본 off 옵트인(`OMCUSTOM_R008_REVERSE=on`으로 활성)이다 — 482턴 실측에서 순진한 `announce − ntools > 0` 구현은 36턴에 발화해 advisory 총량을 2배로 만들었고(16건은 Skill 제외 아티팩트, 15건은 앵커 없는 정규식의 산문 매칭), 협소화 후 3/3 진양성·오탐 0(앵커 비용은 실제 announce 969줄 중 1줄, 0.1%)이 되었으나 표본이 3건이라 기본 활성은 보류했다. **배선 구조상 예방 효과가 없다는 점도 보류 근거다** — 결함 턴은 tool_use가 0이라 `PostToolUse`·`SubagentStop`이 발화하지 않고, `UserPromptSubmit`은 사용자가 이미 개입한 뒤 발화한다. 정시에 발화하는 유일한 이벤트는 `Stop`이며 거기 걸린 훅은 `session-reflection.sh`다. 역방향은 그래서 **의도적으로 advisor 전용**이며 `session-reflection.sh`에는 복제하지 않았다(같은 결함을 두 번 보고하면서 교정 기회는 여전히 0이 되고, 되돌릴 지점만 두 곳이 된다).
@@ -75,12 +98,20 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 ## Why Advisory-First
 
+hard block은 복구 불능 상태를 만들 수 있고 의존성 누락에도 세션이 유지되어야 하므로 advisory를 우선합니다. R007/R008/R009/R010/R018은 compaction 후 `SessionStart`로 재주입됩니다.
+<!-- DETAIL: Why Advisory-First items (lines 78-81) original wording
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
 2. **Graceful degradation**: Missing dependencies (jq, etc.) don't break the session
 3. **Composability**: External skills and internal rules can coexist without deadlocks
 4. **Post-compact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction via `SessionStart`(matcher `compact`) — not via the PostCompact event itself[^postcompact]
+-->
 
+## Hard Enforcement Candidates
+
+R007/R008 advisory는 구현·발화 중이며, hard block 승격에는 측정 위반율·사용자 승인·롤백 계획이 필요합니다. 승격 완료: `rule-deletion-guard.sh`.
+<!-- DETAIL: Hard Enforcement Candidates (line 83) original wording
 ## Hard Enforcement Candidates — R007/R008 advisory **implemented & firing** (#1229 UserPromptSubmit, proactive) + **#1545 SubagentStop** (covers subagent stops) + **#1553 PostToolUse** + retroactive Stop-hook (#1190); `additionalContext` 전달 경로는 #1547(v1.1.40)에서 구현됐으나 파서 셀렉터 결함으로 v1.1.42까지 **양 계층 모두 미발화**였고, **v1.1.43에서 수정 완료·발화 확인**(#1553); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
+-->
 
 <!-- DETAIL: Hard Enforcement Candidates (Future)
 If advisory enforcement proves insufficient for specific rules, these are candidates for promotion to hard-block:
@@ -103,6 +134,11 @@ Promotion requires: (1) measured violation rate data, (2) user approval, (3) rol
 
 | Rule | Interaction |
 |------|-------------|
+| R010 | git-delegation-guard.sh는 모델에 보이는 advisory입니다 (#1885) |
+| R016 | 위반은 규칙 갱신을 트리거합니다 |
+| SessionStart (compact) | 압축 후 핵심 규칙을 재주입합니다 |
+<!-- DETAIL: Integration rows (lines 106-108) original wording
 | R010 | git-delegation-guard.sh is model-visible advisory (#1885) |
 | R016 | Violations trigger rule updates, not enforcement changes |
 | SessionStart (compact re-entry) | Re-injects critical rules to combat context compaction amnesia — see [^postcompact] |
+-->

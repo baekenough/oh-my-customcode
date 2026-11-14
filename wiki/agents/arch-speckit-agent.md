@@ -1,7 +1,7 @@
 ---
 title: arch-speckit-agent
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/arch-speckit-agent.md
 related:
@@ -18,7 +18,7 @@ Spec-Driven Development (SDD) agent that transforms requirements into executable
 
 `arch-speckit-agent` implements the `/sdd-dev` skill workflow by wrapping the external [spec-kit](https://github.com/github/spec-kit) CLI tool. It guides development from raw requirements through a structured 7-step pipeline: `specify init` → constitution → specify → clarify → plan → tasks → implement.
 
-A key differentiator is support for EARS (Easy Approach to Requirements Syntax) notation — five patterns (Ubiquitous, Event-driven, State-driven, Optional, Complex) — for writing unambiguous, testable acceptance criteria applied to spec output's `invariants` and `acceptance_criteria` sections. The agent cannot execute code or deploy infrastructure — its output is exclusively specification artifacts, capped at 20 turns per invocation.
+A key differentiator is support for EARS (Easy Approach to Requirements Syntax) notation — five patterns (Ubiquitous, Event-driven, State-driven, Optional, Complex) — for writing unambiguous, testable acceptance criteria applied to spec output's `invariants` and `acceptance_criteria` sections. The agent cannot execute code or deploy infrastructure — its output is exclusively specification artifacts.
 
 ## Key Details
 
@@ -27,7 +27,6 @@ A key differentiator is support for EARS (Easy Approach to Requirements Syntax) 
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/`, git-untracked)
 - **Effort**: high
-- **Max turns**: 20
 - **Permission mode**: bypassPermissions
 - **Source**: external from `https://github.com/github/spec-kit`
 - **Prerequisites**: Python 3.14+, uv, Git

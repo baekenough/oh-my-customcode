@@ -2,7 +2,7 @@
 title: Goal
 type: skill
 scope: core
-updated: 2026-10-26
+updated: 2026-11-14
 sources:
   - .claude/skills/goal/SKILL.md
 related:

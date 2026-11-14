@@ -5,7 +5,6 @@ model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: medium
-maxTurns: 20
 limitations:
   - "cannot create new agents"
   - "cannot modify rules"

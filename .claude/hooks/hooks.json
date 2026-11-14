@@ -108,9 +108,14 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/bash-cd-advisor.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/context-pack-injector.sh\" commit-release",
+            "timeout": 5
           }
         ],
-        "description": "Advise against top-level (non-subshell) cd in Bash commands; cd persists as session cwd (R005, #1834/#1816 H2)"
+        "description": "Advise against top-level (non-subshell) cd in Bash commands; cd persists as session cwd (R005, #1834/#1816 H2) + event-driven one-shot commit-release context pack (L2) on first git commit/push, gh pr create/merge, gh release, npm publish per session+agent — advisory additionalContext, never blocks (#1970; same entry because hooks-validation forbids duplicate PreToolUse matchers)"
       },
       {
         "matcher": "tool == \"Task\" || tool == \"Agent\"",
@@ -133,6 +138,17 @@
           }
         ],
         "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Agent/Task spawn"
+      },
+      {
+        "matcher": "tool == \"Agent\" || tool == \"Task\" || tool == \"SendMessage\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/context-pack-injector.sh\" delegation",
+            "timeout": 5
+          }
+        ],
+        "description": "Event-driven one-shot context pack injection (L2): delegation conventions on first Agent/Task/SendMessage per session+agent — advisory additionalContext, never blocks (#1970)"
       }
     ],
     "SessionStart": [
@@ -205,6 +221,17 @@
           }
         ],
         "description": "Re-inject project CLAUDE.md into model context on compact re-entry only — CC already natively auto-loads CLAUDE.md on startup/resume/clear, so re-injecting there is pure duplication (~13.8KB/session); matcher narrowed to \"compact\" to keep the original #1617 purpose (post-compact amnesia defense) without the startup double-injection (#1626)"
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/context-pack-injector.sh\" --reset",
+            "timeout": 5
+          }
+        ],
+        "description": "Reset one-shot context pack markers for this session on compact re-entry so packs are re-injected after compaction (#1970)"
       }
     ],
     "UserPromptSubmit": [

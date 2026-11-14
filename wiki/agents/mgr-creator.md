@@ -1,7 +1,7 @@
 ---
 title: mgr-creator
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/mgr-creator.md
 related:
@@ -22,7 +22,6 @@ Agent creation specialist that follows R006 design guidelines, auto-researches a
 - **Explicit mode** (`/omcustom:create-agent`): Follows a full research-driven 3-phase workflow (Research → Create → Auto-discover)
 - **Dynamic mode** (routing fallback): When no existing agent matches a task, receives detected domain/keywords, auto-discovers relevant skills and guides, and creates a minimal viable agent immediately without user confirmation
 
-The agent runs for up to 25 turns to allow thorough research and creation.
 
 ## Key Details
 
@@ -32,7 +31,6 @@ The agent runs for up to 25 turns to allow thorough research and creation.
 - **Skills**: `create-agent`
 - **Memory**: local (own agent memory; changed from `project` in v1.1.13 / #1468)
 - **Effort**: high
-- **Max Turns**: 25
 
 ## Creation Workflow
 

@@ -1,7 +1,7 @@
 ---
 title: "Token Efficiency — Three-Layer Defense Stack"
 type: guide
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - guides/claude-code/14-token-efficiency.md
   - guides/cc-token-saver/README.md

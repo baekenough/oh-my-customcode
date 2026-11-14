@@ -1,5 +1,5 @@
 {
-  "version": "2.0.25",
+  "version": "2.0.26",
   "lastUpdated": "2026-11-11",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -38,7 +38,7 @@
       "name": "contexts",
       "path": ".claude/contexts",
       "description": "Context configuration files",
-      "files": 4
+      "files": 6
     }
   ],
   "source": "https://github.com/baekenough/oh-my-customcode"

@@ -1,6 +1,6 @@
 ---
 name: omcustom:fsd
-description: Full Self Driving — autonomous release loop that processes all auto-dev-eligible GitHub issues until none remain, by repeatedly running /pipeline auto-dev then /homework.
+description: Full Self Driving — autonomous release loop processing all auto-dev-eligible GitHub issues via repeated /pipeline auto-dev then /homework.
 scope: harness
 user-invocable: true
 argument-hint: "[<max-releases>]"

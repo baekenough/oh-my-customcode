@@ -219,7 +219,7 @@ steps:
 
       Before creating a milestone for version vX.Y.Z:
       1. Query all milestones (open and closed):
-         existing=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"')
+         existing=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --paginate --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"')
       2. Evaluate:
          - If existing && state=closed:
            HALT with "[scope-selection] BLOCKED: milestone vX.Y.Z already exists and is closed. Bump version or reopen milestone manually."
@@ -829,10 +829,10 @@ steps:
         grep/python3 disagreement was the missing `-E` on the second grep (in BRE `?` is a literal
         character), not a platform effect (re-measured 12/12 with `-vcE`; this text entered via commit 54f92b85, Refs #1760 — not in #1760's issue body). This repo's
         Bash `grep` MAY still be a shell function shadowing the real binary (R005) — the agent MUST ALSO run the same three checks as a
-        python3 `re` equivalent of all THREE checks above, reading from the SAME piped stdin as
+        python3 `re` equivalent of all THREE checks above (family 검사는 `grep -c`와 같은 단위인 적중 줄 수를 셉니다, 적중 횟수가 아닙니다), reading from the SAME piped stdin as
         (a) (`git diff -U0 -- <edited md/yaml files> | grep '^+' | python3 -c "import re,sys;
         text=sys.stdin.read();
-        fam=len(re.findall(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 \"(]', text));
+        fam=sum(1 for l in text.split(chr(10)) if re.search(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 \"(]', l));
         lf=len(re.findall(r'다[.。\"]?$', text, re.M)) - len(re.findall(r'니다[.。\"]?$', text, re.M));
         noun=len(re.findall(r'(함|됨|필요)[.。\"]?$', text, re.M));
         print(fam, lf, noun)"`, NOT a file-argument read — the input is the piped diff, never a
@@ -1044,6 +1044,10 @@ steps:
         `command rm`·`\rm`·`/bin/rm`으로 우회하지 마십시오(#1947 2).
         브라우저·서버·터널을 띄우는 위임의 완료 조건에 정리 뒤 잔여 프로세스 0
         (`pgrep -f <패턴> | wc -l` = 0)을 넣고 hand-back에 그 출력을 적게 하십시오(#1947 4a).
+        게이트 밖 즉석 마일스톤 조회도 번호 직접 조회(`gh api repos/{owner}/{repo}/milestones/{n}`)나
+        `--paginate`로만 하십시오. 오케스트레이터가 직접 하는 조회에도 같습니다. `per_page=100`의
+        첫 페이지만 읽으면 마일스톤이 100개를 넘는 저장소에서 최신 항목이 빠져 빈 출력이 나옵니다
+        (#1968 찐빠 #7).
         한 Bash 호출에 따옴표 밖 `$(`·`rm`·`.claude/rules`를 함께 넣지 마십시오
         (`rule-deletion-guard.sh`가 세 패턴이 한 명령에 있으면 차단하며 훅은 바꾸지 않습니다,
         #1900). 이슈·코멘트 본문처럼 이 패턴을 서술하는 텍스트를 셸로 넘길 때는 위임받은
@@ -1158,39 +1162,25 @@ steps:
         at the same SHA, any change (new, rewritten or removed files) inside an untracked nested
         repository, and writes outside the repo; in a shared worktree a delta is correlation, not
         proof (#1966 #1).
-      - Document mirror/parity delegations (README/ARCHITECTURE/CLAUDE.md ko-en, templates
-        mirrors, etc.) MUST be split to ≤3 files per delegation (a companion cap alongside the
-        arithmetic below, not a replacement for it); compute turn arithmetic (files × 3 +
-        edit_items × 2 ≤ 16 — a #1709-proposed guide kept below the 20-turn limit, not a
-        truncation guarantee, per R020 「maxTurns 절단 실증」 6항) and state that arithmetic in
-        the delegation prompt before dispatch (#1709 #1). Any edit delegation requiring
-        verification of N quotations or identifiers (not only claude-code-release CC-note
-        delegations) MUST perform that verification with batched command(s) (a single loop, or
-        one run of the quote-verify block over all N items, the items written to the file with the Write tool), never per-item invocations, and the turn
-        arithmetic above MUST add a batched-verification term — ⌈N/batch⌉ — still an
-        upper-bound guide that may still truncate, not a truncation guarantee (검증 비용을
-        턴 산술에 반영, R020 「maxTurns 절단 실증」 6항 확장, #1737 찐빠 #1).
+      - Any edit delegation requiring verification of N quotations or identifiers (not only
+        claude-code-release CC-note delegations) MUST perform that verification with batched command(s) (a single
+        loop, or one run of the quote-verify block over all N items, the items written to the
+        file with the Write tool), never per-item invocations (검증 비용을 배치 실행으로
+        묶습니다, #1737 찐빠 #1).
       - A single-file edit delegation (of any type, not only rule/skill/guide TEXT edits) whose
-        target file is ≥1,000 lines (measure `wc -l`) MUST either (i) split "본문 편집" (body edit) from "미러 복사·검증·
-        보고" (mirror copy, verification, and completion report) into separate delegations (under (i) the body-edit delegation does no mirror copy; the second
-        delegation performs "미러 복사 → 검사·보고" in that order as its first step, per the
-        procedure-order bullet below), or
-        (ii) add a large-file fixed-cost term to the turn arithmetic above — a large-file edit
-        can exceed what the arithmetic assumes even when the item count stays small; read-only
-        review delegations are excluded (대형 파일 편집 위임 20턴 절단 재발 방지, R020
-        「maxTurns 절단 실증」, R009, #1749 찐빠 #1).
-      - Every text-edit delegation MUST add an inspection fixed cost to the turn arithmetic
-        above (합쇼체 checks and each exhaustive grep ≈ 1 turn each), whether or not the target
-        has mirrors. A text-edit delegation whose target has mirrors (templates copies, ko/en
-        pairs, or the 4-copy workflow set) MUST additionally fix the procedure order "본문 편집 →
-        즉시 미러 복사 → 검사·보고" in the delegation prompt, so a truncation can no longer leave
-        mirror drift behind; under option (i) of the ≥1,000-line bullet above, the body-edit
-        delegation does no mirror copy and the second delegation runs "미러 복사 → 검사·보고" in
-        that order as its first step, while under option (ii) (single delegation) the full order
-        applies (텍스트 편집 위임은 모두 턴 산술에 검사 고정비를 더하며, 미러가 있는 대상은
-        본문 편집 직후 미러를 복사하고 그다음에 검사와 보고를 진행합니다 — 턴 산술이 편집
-        항목만 세고 검사·보고 준비 비용을 반영하지 않던 문제와 미러 복사가 절차 맨 끝에 있어
-        절단 시 미러 드리프트가 남던 문제 방지, R020 「maxTurns 절단 실증」, #1757 찐빠 #2).
+        target file is ≥1,000 lines (measure `wc -l`) MAY split "본문 편집" (body edit) from "미러 복사·검증·
+        보고" (mirror copy, verification, and completion report) into separate delegations (when
+        split, the body-edit delegation does no mirror copy; the second delegation performs
+        "미러 복사 → 검사·보고" in that order as its first step, per the procedure-order bullet
+        below) (R009, #1749 찐빠 #1).
+      - A text-edit delegation whose target has mirrors (templates copies, ko/en pairs, or the
+        4-copy workflow set) MUST fix the procedure order "본문 편집 → 즉시 미러 복사 →
+        검사·보고" in the delegation prompt, so an interrupted run can no longer leave mirror
+        drift behind; when the ≥1,000-line bullet above is split, the body-edit delegation does
+        no mirror copy and the second delegation runs "미러 복사 → 검사·보고" in that order as
+        its first step, while in a single delegation the full order applies (미러가 있는 텍스트
+        편집 위임은 본문 편집 직후 미러를 복사하고 그다음에 검사와 보고를 진행합니다 — 미러
+        복사가 절차 맨 끝에 있어 중단 시 미러 드리프트가 남던 문제 방지, #1757 찐빠 #2).
       - A delegation that adds rows to a table MUST include as a completion item a per-cell
         source table for each new row (every cell mapped 1:1 to a source sentence); a cell
         without a source is written "—" and never copied from an adjacent row; prose-only
@@ -1278,6 +1268,16 @@ steps:
         Exempt: an equivalent mutant (one whose behaviour is identical to the original in the
         test environment; the report states why) and documentation-only or yaml-only changes
         (#1811 제안 2·제안 1, #1814 제안 1, #1803 제안 2).
+      - A delegation that hardens an existing test (adds assertions, or closes a review finding
+        with a test change) MUST carry two more completion items: (1) a reviewer mutation-harness
+        RED/GREEN table of raw test outputs, with three rows per target — original GREEN, mutant
+        RED, equivalent mutant GREEN; (2) for every universal assertion (∀, e.g. "no line contains X")
+        the paired existence assertion (∃, e.g. "at least one line was checked"), so that an empty
+        input cannot satisfy the universal assertion vacuously and replace an existence check
+        the test already had. The prompt also states the scope of a static YAML or text test:
+        it does not close shell semantics (quoting, expansion, exit codes), which are verified by
+        running the block (테스트 강화 위임 완료 조건에 리뷰어 변이 하네스 + 존재 단언(∃) 병기,
+        #1968 찐빠 #1).
       - A delegation that REWRITES a guard, classifier or security-control script (a new
         addition or a documentation-only edit is out of scope) MUST put two items in its FIRST
         delegation prompt's completion criteria: (1) a differential corpus against the previous
@@ -1525,6 +1525,10 @@ steps:
          - If current FAIL count > baseline → NEW regression detected → halt + report failure list
          - If current FAIL count <= baseline → continue with advisory log "X failures (baseline {n}, delta {d})"
       5. Build verification (if package has build script)
+         build의 exit code만으로 완료를 판정하지 마십시오. 위임서는 산출물 계수(파일 수와 핵심 산출물의
+         바이트 크기)를 완료 조건에 명시하고, 직전 정상 빌드의 값과 대조한 원시 출력을 보고하게 하십시오.
+         exit 0이어도 산출물이 0으로 줄 수 있습니다(#1968 찐빠 #6: lean.js 81→0을 exit code가 아니라
+         R1이 포착했습니다).
       6. Coverage threshold check (equivalent to `.husky/pre-commit`'s coverage gate — this
          step exists so that a deferred implement-stage commit, per the implement step 5
          REQUIRED ordering, is still coverage-gated before release even though the hook has not run yet):
@@ -1647,7 +1651,7 @@ steps:
   - name: deep-verify
     skill: deep-verify
     description: |
-      Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정하십시오 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했습니다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다)와 플랫폼 축으로 CI 러너 macos-latest와 Linux 사용자 환경에서도 도달할 수 있는지(측정에는 로컬에 이미 있는 이미지만 `docker run --rm --pull never --network none …` 형태로 쓰고(`docker run`은 로컬에 없는 이미지를 기본으로 pull하므로 `--pull never`로 막습니다), 측정하지 못한 플랫폼은 [가설]로 표기합니다. 플랫폼 차단으로 측정하지 못해 [가설]로 둔 항목은 차단 사유를 기록하고 그 플랫폼에서 확인한 뒤에만 채택합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). CC-note 초안을 검토하는 리뷰 위임서(첫 리뷰 포함)는 implement 단계 Rules의 「개수 문장 스윕」도 반드시 지닙니다(#1901 찐빠 #1). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688).
+      Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정하십시오 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했습니다(R020 maxTurns 절단 누적 7건째) (v2.0.26 이전 maxTurns 기준). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다)와 플랫폼 축으로 CI 러너 macos-latest와 Linux 사용자 환경에서도 도달할 수 있는지(측정에는 로컬에 이미 있는 이미지만 `docker run --rm --pull never --network none …` 형태로 쓰고(`docker run`은 로컬에 없는 이미지를 기본으로 pull하므로 `--pull never`로 막습니다), 측정하지 못한 플랫폼은 [가설]로 표기합니다. 플랫폼 차단으로 측정하지 못해 [가설]로 둔 항목은 차단 사유를 기록하고 그 플랫폼에서 확인한 뒤에만 채택합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). 읽기 전용 리뷰 위임서는 coverage 표준 문구도 지닙니다. bunfig.toml의 `coverage = true`와 `coverageDir = "coverage"`는 targeted `bun test`에도 적용되어 gitignored `coverage/lcov.info`를 갱신하므로, 리뷰어는 coverage 출력이 저장소 `coverage/`로 가지 않게 하십시오. bun 1.3.14에서 scratch 프로젝트로 측정한 결과, `--coverage-dir=<경로>`·`--no-coverage`·`--coverage-reporter=text`는 프로젝트 `coverage/`의 쓰기를 막지 못했고(bunfig 설정이 우선했고 lcov.info도 계속 만들어졌습니다) `--coverage=false`는 exit 1이었으며, `coverage = false`만 담은 scratch bunfig를 `bun test --config=<scratch 경로>`로 지정했을 때만 `coverage/`가 만들어지지 않았습니다. 이 저장소의 실제 bunfig와 targeted 실행은 측정하지 않았으므로 리뷰어는 실행 전후 `coverage/lcov.info`의 mtime을 보고하십시오(#1968 찐빠 #9).CC-note 초안을 검토하는 리뷰 위임서(첫 리뷰 포함)는 implement 단계 Rules의 「개수 문장 스윕」도 반드시 지닙니다(#1901 찐빠 #1). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688).
 
       ## Correction dispatcher
 
@@ -1668,7 +1672,13 @@ steps:
       한계는 implement coverage clause대로 보고하십시오. 바뀐 상태에 옛 green을 쓰지 마십시오.
       정정 writer 위임서는 1차부터 "삭제·축소 우선, 새 주장 문장마다 측정 명령/관측 범위/[가설]
       중 하나, 추가 문장 수 보고"와 "요청된 한정어·치환만 반영하고 문장·수치·대조값을 덧붙이지 말 것"을 포함하십시오(정정에서 새로 덧붙인 주장 문장이 새 결함의
-      주된 출처였습니다, #1897 찐빠 #3). 정정 writer는 기준선 사본을 해당 라운드의 fresh 리뷰가
+      주된 출처였습니다, #1897 찐빠 #3). 같은 조항이 연속 2라운드 Medium 이상으로 지적되면 다음
+      정정 위임 전에 dispatcher가 "사실 주장 축소(원시 출력 보고)"로의 전환을 사용자 결정 선택지로
+      제시하십시오. 축소안은 그 조항의 판정 문장을 지우고 원시 출력만 보고하게 하며 판정은
+      오케스트레이터가 합니다. 이 선택지는 게이트 재실행을 생략하는 것이 아닙니다 — R017
+      「Post-Gate Scope-Expansion Re-Run」 경계(#1760)의 문장 중
+      "FAIL 판정 후의 정정은 PASS가 나올 때까지 항상 게이트를 재실행합니다"와
+      충돌하지 않습니다(#1968 찐빠 #1). 정정 writer는 기준선 사본을 해당 라운드의 fresh 리뷰가
       끝날 때까지 보존하고 그 경로를 보고하십시오. 사본과 임시 디렉토리의 정리는 writer가 아니라
       이후 단계(Correction dispatcher)가 합니다(writer가 기준선을 지워 라운드 델타를 재구성하지
       못했고 임시 디렉토리가 남았습니다, #1907 찐빠 #4·#5). 델타 계수는 `diff <before> <after> | grep -c '^[<>]'`를
@@ -1840,7 +1850,9 @@ steps:
            - major: actual compatibility breaks in existing CLI flags or public APIs, or an explicit major milestone declaration (e.g., v1.0.0). Skill/agent/integration lifecycle changes alone are excluded; the user's explicit version or bump-level judgment takes precedence.
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 
-      2. Release notes via omcustom-release-notes skill (mgr-gitnerd writes the notes file with its Write tool; the orchestrator does not write it, R010 「Exception: Simple Tasks」)
+      2. Release notes (the path depends on the release mechanism chosen in item 3):
+         - npm + auto-tag.yml projects (this repo): do NOT run the omcustom-release-notes skill and do not write a notes file. CHANGELOG.md is deprecated since v1.1.14 (its head says "새 엔트리를 추가하지 마십시오"), and its head also says that `release.yml`이 릴리즈 태그의 커밋·PR 이력에서 자동 생성합니다. `release.yml` sets `generate_release_notes` when no CHANGELOG entry exists, so GitHub's auto-generated notes are the single source; the PR body (with `Closes #N`) is the human-written record (#1968 찐빠 #3).
+         - Non-auto-tag projects: run the omcustom-release-notes skill (mgr-gitnerd writes the notes file with its Write tool; the orchestrator does not write it, R010 「Exception: Simple Tasks」); the file is consumed by the `gh release create --notes-file` command in item 3.
       3. Adapt release mechanism to project (determines how steps 3-5 execute):
          - Milestone assignment gate (all projects; run BEFORE any PR is created or tag is pushed below): confirm that milestone
            vX.Y.Z exists and is open, and that EVERY issue of this release's scope is assigned to it. The scope includes issues
