@@ -1,7 +1,7 @@
 ---
 title: Systematic Debugging
 type: skill
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - .claude/skills/systematic-debugging/SKILL.md
   - .claude/skills/systematic-debugging/phases/timeline-correlation.md

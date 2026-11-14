@@ -1,7 +1,7 @@
 ---
 title: qa-engineer
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/qa-engineer.md
 related:
@@ -30,7 +30,6 @@ The agent enforces a strict verification discipline before writing any QA report
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local
 - **Effort**: medium
-- **Max Turns**: 20
 - **Limitations**: cannot modify source code in production branches
 
 ## Supported Frameworks

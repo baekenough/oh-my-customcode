@@ -1,7 +1,7 @@
 ---
 title: fe-design-expert
 type: agent
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - .claude/agents/fe-design-expert.md
 related:

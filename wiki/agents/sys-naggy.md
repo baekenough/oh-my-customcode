@@ -1,7 +1,7 @@
 ---
 title: sys-naggy
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/sys-naggy.md
 related:
@@ -24,7 +24,6 @@ Task management and proactive reminder specialist that monitors stale tasks, tra
 - **Tools**: Read, Write, Edit, Grep (no Bash)
 - **Memory**: local
 - **Effort**: low
-- **Max Turns**: 10
 - **Limitations**: cannot modify project files, cannot execute external commands
 
 ## Commands

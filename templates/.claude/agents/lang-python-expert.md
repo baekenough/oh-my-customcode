@@ -1,6 +1,6 @@
 ---
 name: lang-python-expert
-description: Expert Python developer for writing Pythonic, clean code following PEP 8. Use for Python files (*.py, requirements.txt, pyproject.toml), Python-related keywords, designing Python APIs, reviewing Python code, and optimizing Python applications.
+description: Expert Python developer for Pythonic, PEP 8 code. Use for *.py, requirements.txt, pyproject.toml, Python API design, code review, and optimization.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

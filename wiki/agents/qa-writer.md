@@ -1,7 +1,7 @@
 ---
 title: qa-writer
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/qa-writer.md
 related:
@@ -28,7 +28,6 @@ Results are passed to [[qa-engineer]] for execution and archived to [[arch-docum
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash, `disallowedTools: [Bash]`)
 - **Memory**: local (`.claude/agent-memory-local/qa-writer/`, git-untracked — changed from `project` in v1.1.13, #1468, CC v2.1.202~207 compat pass)
 - **Effort**: medium
-- **Max Turns**: 20
 - **Permission Mode**: bypassPermissions
 - **Limitations**: cannot execute tests, cannot modify source code
 

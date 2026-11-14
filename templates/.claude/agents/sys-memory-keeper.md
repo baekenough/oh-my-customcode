@@ -1,6 +1,6 @@
 ---
 name: sys-memory-keeper
-description: Use when you need to manage session memory persistence via native auto-memory, save context before compaction, restore context on session start, collect session summaries, or perform session-end memory operations
+description: Use for session memory persistence via native auto-memory (save before compaction, restore on session start, summaries, session-end ops).
 model: claude-sonnet-5-5
 domain: universal
 memory: local
@@ -12,7 +12,6 @@ tools:
   - Grep
   - Glob
   - Bash
-maxTurns: 15
 limitations:
   - "cannot modify source code"
   - "cannot execute tests"

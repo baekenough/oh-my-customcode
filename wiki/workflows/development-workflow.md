@@ -1,7 +1,7 @@
 ---
 title: Development Workflow
 type: workflow
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-parallel-execution.md
@@ -55,7 +55,7 @@ Per [[wiki/rules/r015]]:
             Agent(lang-golang-expert→file3)   [same message]
 ```
 
-Maximum 4 concurrent agents (soft default; 5 supported with monitoring). When Agent Teams is enabled and the task involves 3+ agents or review cycles, [[wiki/rules/r018]] requires Agent Teams instead.
+Maximum 4 concurrent agents (soft default; 5 supported with monitoring). When Agent Teams is active (the env flag AND the `TeamCreate` tool present; currently dormant per CLAUDE.md) and the task involves 3+ agents or review cycles, [[wiki/rules/r018]] requires Agent Teams instead.
 
 ## Stage 4: Implementation
 
@@ -83,7 +83,7 @@ The `structured-dev-cycle` skill encodes a 6-stage loop: Plan → Verify → Imp
 
 ## Ecomode Activation
 
-For implementation tasks, ecomode activates at 50% context usage (lower than the 80% general default). Agents return `status + summary` only; intermediate steps are suppressed. See [[ecomode-and-context]].
+For implementation tasks, the R013 context-budget threshold is 50% of the window (general tasks 80%); ecomode itself auto-activates at 4+ parallel tasks, batch work, or 80%+ context. Agents return `status + summary` only; intermediate steps are suppressed. See [[ecomode-and-context]].
 
 ## Relationships
 

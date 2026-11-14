@@ -1,7 +1,7 @@
 ---
 title: Skill Taxonomy
 type: architecture
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - .claude/rules/MUST-agent-design.md
   - CLAUDE.md

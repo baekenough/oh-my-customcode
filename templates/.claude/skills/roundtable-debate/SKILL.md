@@ -1,6 +1,6 @@
 ---
 name: roundtable-debate
-description: Multi-agent structured debate with anti-groupthink mechanisms — Devil's Advocate, minority opinion protection, 2-round hard cap. Use when divergent perspectives matter more than consensus (architecture decisions, design tradeoffs, contested specifications).
+description: Multi-agent structured debate with Devil's Advocate, minority protection, 2-round cap. Use when divergent perspectives matter more than consensus.
 scope: core
 context: fork
 version: 1.0.0

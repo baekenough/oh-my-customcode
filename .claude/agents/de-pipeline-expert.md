@@ -1,6 +1,6 @@
 ---
 name: de-pipeline-expert
-description: Expert data pipeline architect for ETL/ELT design, orchestration patterns, data quality, and cross-tool integration. Use for pipeline architecture decisions, data quality frameworks, lineage tracking, and multi-tool coordination.
+description: Expert data pipeline architect for ETL/ELT, orchestration, and data quality. Use for pipeline architecture, lineage tracking, tool integration.
 model: claude-opus-5-5
 domain: data-engineering
 memory: local

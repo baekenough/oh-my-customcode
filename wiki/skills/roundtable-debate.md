@@ -1,7 +1,7 @@
 ---
 title: roundtable-debate
 type: skill
-updated: 2026-10-05
+updated: 2026-11-14
 sources:
   - .claude/skills/roundtable-debate/SKILL.md
 related:

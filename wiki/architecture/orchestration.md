@@ -1,7 +1,7 @@
 ---
 title: Orchestration Model
 type: architecture
-updated: 2026-08-15
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -41,7 +41,7 @@ Routing is enhanced by [[wiki/rules/r015]] intent transparency: the orchestrator
 
 ## Agent Teams
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, qualifying tasks must use Agent Teams instead of sequential Agent tool calls. The decision matrix from [[wiki/rules/r018]]:
+R018 is an L1 rule (`paths:`-scoped, loaded only when its own file is read), so the Detection check below is also the trigger to read it. When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, qualifying tasks must use Agent Teams instead of sequential Agent tool calls. The decision matrix from [[wiki/rules/r018]]:
 
 - **3+ agents OR review cycle OR 2+ issues in same batch** → Agent Teams required
 - **Simple independent subtasks, 1–2 agents** → Agent tool sufficient
@@ -72,7 +72,7 @@ Certain paths require routing through `mgr-creator` exclusively:
 | `.claude/skills/*/SKILL.md` | Skill scope classification |
 | `guides/*/` (new directories) | Cross-reference integrity |
 
-Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-memory*/`, `mgr-gitnerd` handles git operations.
+The delegation pack `.claude/contexts/delegation.md` (R010 detail) is injected once per session and agent by `context-pack-injector.sh` before Agent/Task/SendMessage calls (`OMCUSTOM_CONTEXT_PACKS=off` disables it); delegation sizing is not computed from turn limits — default agents declare no `maxTurns`, and truncation is judged by ground truth (R020). Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-memory*/`, `mgr-gitnerd` handles git operations.
 
 ## Relationships
 
@@ -87,3 +87,4 @@ Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-
 - `.claude/rules/MUST-agent-teams.md` — R018 decision matrix
 - Content-drift resync 2026-08-15 (#1582): recorded that Agent Teams is dormant on current models — `TeamCreate`/`TaskList` are unregistered (v2.1.233), so the env var no longer makes teams reachable and coordination falls back to Agent tool delegation.
 - Content-drift resync 2026-07-29 (v1.1.34): reworded "Subagents cannot spawn other subagents" from a platform-capability claim to a project-policy statement — CC v2.1.217+ changed the nesting default and v2.1.219+ raised the default nested-spawn depth to 3, so the platform itself now permits nesting; oh-my-customcode's flat delegation model remains a deliberate policy choice. See [[wiki/rules/r010]] for the full rationale.
+- Content-drift resync 2026-11-14 (v2.0.26, #1970): noted R018 as an L1 `paths:`-scoped rule, the L2 delegation pack injection, and that default agents carry no `maxTurns`.

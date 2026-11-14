@@ -1,11 +1,10 @@
 ---
 name: mgr-gitnerd
-description: Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices
+description: Use for Git and GitHub workflow management, including commits, branches, PRs, and history management following best practices
 model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: medium
-maxTurns: 20
 limitations:
   - "cannot modify source code"
   - "cannot create agents"

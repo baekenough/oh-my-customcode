@@ -10,7 +10,6 @@ skills:
   - web-design-guidelines
   - diagram-design
 tools: [Read, Write, Edit, Grep, Glob]
-maxTurns: 20
 disallowedTools: [Bash]
 limitations:
   - "cannot modify backend code"

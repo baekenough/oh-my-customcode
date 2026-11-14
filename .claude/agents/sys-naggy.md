@@ -1,11 +1,10 @@
 ---
 name: sys-naggy
-description: Use when you need TODO list management and task tracking with proactive reminders, helping maintain project momentum by monitoring stale tasks and deadlines
+description: Use for TODO list management and task tracking with proactive reminders; monitors stale tasks and deadlines
 model: haiku
 domain: universal
 memory: local
 effort: low
-maxTurns: 10
 limitations:
   - "cannot modify project files"
   - "cannot execute external commands"

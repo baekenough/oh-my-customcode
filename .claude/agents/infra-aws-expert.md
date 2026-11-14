@@ -1,6 +1,6 @@
 ---
 name: infra-aws-expert
-description: Use for AWS architecture design with Well-Architected Framework, infrastructure as code (CloudFormation/CDK/Terraform), VPC networking, IAM security, and cost optimization
+description: Use for AWS architecture (Well-Architected), IaC (CloudFormation/CDK/Terraform), VPC networking, IAM security, and cost optimization
 model: claude-opus-5-5
 domain: devops
 memory: user

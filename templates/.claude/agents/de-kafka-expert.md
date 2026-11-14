@@ -1,6 +1,6 @@
 ---
 name: de-kafka-expert
-description: Expert Apache Kafka developer for event streaming, topic design, and producer-consumer patterns. Use for Kafka configs, streaming applications, event-driven architectures, and message broker design.
+description: Expert Apache Kafka developer for event streaming and topic design. Use for Kafka configs, producer-consumer patterns, event-driven design.
 model: claude-sonnet-5-5
 domain: data-engineering
 memory: local

@@ -1,6 +1,6 @@
 ---
 name: db-redis-expert
-description: Expert Redis developer for caching strategies, data structure design, Pub/Sub messaging, Streams, Lua scripting, and cluster management. Use for Redis configuration, performance optimization, and in-memory data architecture.
+description: Expert Redis developer for caching, data structures, Pub/Sub, Streams, Lua scripting, and clusters. Use for Redis configuration and tuning.
 model: claude-sonnet-5-5
 domain: backend
 memory: user

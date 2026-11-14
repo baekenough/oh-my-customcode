@@ -1,7 +1,7 @@
 ---
 title: lang-golang-expert
 type: agent
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/agents/lang-golang-expert.md
 related:

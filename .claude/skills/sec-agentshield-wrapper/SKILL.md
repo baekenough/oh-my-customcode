@@ -1,6 +1,6 @@
 ---
 name: sec-agentshield-wrapper
-description: Pre-flight security analysis before code changes — identifies trust boundary risks, dangerous patterns, and provides proceed/caution/block advisory before implementation starts
+description: Pre-flight security analysis before code changes — trust boundary risks, dangerous patterns, proceed/caution/block advisory before implementing
 scope: core
 version: 0.1.0
 user-invocable: true

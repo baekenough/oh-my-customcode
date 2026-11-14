@@ -1,7 +1,7 @@
 ---
 title: Ecomode and Context Management
 type: concept
-updated: 2026-04-12
+updated: 2026-11-14
 sources:
   - .claude/rules/SHOULD-ecomode.md
   - .claude/rules/MAY-optimization.md
@@ -102,11 +102,11 @@ Track decisions: `[Pruned] {N} chunks → {M} retained, {K} summarized, {J} drop
 CLAUDE.md and rules/*.md files are auto-injected into context. HTML comments in these files are hidden from the model during auto-injection but visible via the Read tool.
 
 Use cases:
-- Metadata tags: `<!-- agents: 47, skills: 103 -->`
+- Metadata tags: `<!-- agents: 44, skills: 74 -->`
 - Validation checksums: `<!-- validate-docs: hash=abc123 -->`
 - Conditional context: `<!-- detailed-architecture: see guides/architecture/ -->`
 
-This allows metadata to live alongside content without inflating the model's context window.
+This allows metadata to live alongside content without inflating the model's context window. Since v2.0.26 the same mechanism carries the rule rewrite: each rule keeps a short visible norm and its original wording moves losslessly into `<!-- DETAIL: … -->` comments (readable via Read). Loading is also tiered — 15 rules and `CLAUDE.md` always load, 8 rules with `paths:` frontmatter load only when a matching file is touched, and two event packs are injected on demand — and the R016 budget gate is two-stage (always-loaded 50,000 warn / 60,000 error; total 120,000 warn / 140,000 error).
 
 ## Memory vs Context Pruning
 

@@ -1,11 +1,15 @@
 # Claude Code Version Compatibility
 
-> Updated: 2026-10-05
+> Updated: 2026-11-14
 > Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716, #1746, #1747)
 >
 > **Note (compat 노트 이관, v1.1.9~v1.1.76)**: v2.1.161~v2.1.276 구간의 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적되어 있으며, 이 구간은 그대로 보존합니다.
 >
 > **Note (정책 전환, #1717 — v1.1.77+)**: 룰 코퍼스 컨텍스트 예산 초과(#1717 실측: 주석 제외 306,752자, `/memory` 150k자 한도 초과)를 계기로, v2.1.277+부터 신규 CC 버전 노트는 다시 이 가이드로 돌아옵니다. 룰 파일(`.claude/rules/*.md`)에는 현재 행동을 바꾸는 규범이 있을 때만 1줄로 남기고, CHANGELOG 인용·영향 서사·Origin 배경은 이 가이드가 전담합니다(R016 「버전노트 보존정책」).
+
+> **Note (규칙 행 번호 앵커, v2.0.26)**: 버전 절의 `.claude/rules/*.md:N` 행 번호는 그 절을 작성한 시점의 규칙 파일 기준이며, v2.0.26 규칙 재구성(가시 본문 축약·원문 DETAIL 주석화) 뒤에는 현재 행 번호와 다르므로 현행 위치는 절 제목(「…」) 또는 같은 이름으로 시작하는 `DETAIL:` 주석 라벨로 찾습니다.
+
+> **Note (maxTurns, v2.0.26)**: v2.0.26에서 이 저장소 에이전트의 frontmatter `maxTurns`를 모두 제거했으므로 이 가이드 버전 절의 `maxTurns` 관련 서술(20턴 절단, turn 한도를 먼저 확인하라는 안내 포함)은 제거 이전 상태 기준이며, 현행 판정은 R004·R020 「maxTurns 절단 실증」을 따릅니다. `maxTurns`를 설정하지 않은 에이전트가 한 실행에서 도구를 61회 호출한 것이 관측되었습니다 (2026-11-14 세션 관측).
 
 ## Compatibility Baseline
 
@@ -3301,6 +3305,479 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
   (322) Vertex의 global·us·eu 리전에서 빠른 모드가 추가되었고 Vertex가 거부하면 표준 속도로 되돌립니다. 이 저장소의 settings·hooks·src·package.json에서 Vertex를 참조하는 파일은 0개입니다(`git grep -l -i -F 'vertex' f5a68b7c -- .claude/settings.json .claude/hooks src package.json | wc -l`, 대조: R006에서 `Fast Mode`는 5줄). 영향 없음, 룰 변경은 필요하지 않습니다.
 
 **Action items**: 없음.
+
+## v2.1.323 (2026-11-12)
+
+> Issue: #1969 — Claude Code v2.1.323 compatibility documentation
+> (323) 이슈 본문 `## What's changed` 불릿과 릴리즈 본문 불릿은 294개로 완전히 일치합니다(`.claude/outputs/sessions/2026-11-14/cc-note-compare-2.1.323.md`의 비교 결과, 릴리즈 본문 계수 `gh release view v2.1.323 -R anthropics/claude-code --json body --jq .body | grep -c '^- '` = 294). 게시 시각은 `gh release view v2.1.323 -R anthropics/claude-code --json publishedAt --jq .publishedAt` = 2026-11-12T22:12:13Z입니다.
+> (323) 스코프 상한 확인: `gh release view v2.1.324 -R anthropics/claude-code`는 종료 코드 1, "release not found"였습니다(비교 결과 파일 기록). 그보다 늦은 릴리즈는 이 절에서 조사하지 않았습니다.
+> (323) 이 절의 저장소 측정은 삽입 전(22f30c72) 기준이며 명령은 `git grep <pattern> 22f30c72 -- <pathspec>` 형식입니다. 22f30c72는 `git log -1 --format='%h %s' 22f30c72` = "22f30c72 Merge pull request #1967 from baekenough/release/v2.0.25"입니다. `git grep`은 HTML 주석 안도 검색하므로, 자동 주입 텍스트에 관한 주장은 주석을 제거한 텍스트로 계수했다고 따로 적었습니다.
+
+### 컨텍스트 창
+
+- CHANGELOG 원문: "Changed the context window assumed for a model ID that Claude Code doesn't recognize from 200K to 1M; use `/autocompact` to compact earlier, or `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` to keep 200K"
+  (323) Claude Code가 인식하지 못하는 model ID에 가정하는 컨텍스트 창이 200K에서 1M으로 바뀌었고, 더 일찍 compact하려면 `/autocompact`를, 200K를 유지하려면 `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`을 씁니다. 22f30c72의 R013 가시 본문(주석 제거)에는 "미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원)"를 포함한 v2.1.223 노트가 있습니다(`git show 22f30c72:.claude/rules/SHOULD-ecomode.md`를 `re.sub(r'<!--.*?-->','',…,flags=re.S)`로 주석 제거 후 `UNKNOWN_MODEL` 포함 줄 추출 — 1줄) (v2.0.26에서는 이 노트가 R013 DETAIL 주석으로 이동했습니다). 그 "가정 컨텍스트 창"의 크기가 이 릴리즈에서 1M이 되었으므로, 미인식 ID에서 R013 백분율 임계값이 가리키는 절대 토큰량은 이 변경 전보다 5배가 됩니다(200K→1M 산술). 이 저장소 에이전트가 쓰는 full ID(R006 Tier-2 표)가 CC에 인식되는지는 측정하지 않았습니다 [가설 — 인식되므로 이 변경의 영향이 없습니다. 판정 기준은 해당 ID 세션의 `/context` 창 크기 표시입니다]. v2.0.26 작업 트리(미커밋)에서 R013 가시 본문은 "임계값은 창 대비 백분율이므로 절대 토큰량은 창 크기 설정에 따라 달라집니다" 방향으로 재구성 중이며, 그 문장은 이 변경과 같은 방향입니다(작업 트리 수치는 주장하지 않습니다).
+- CHANGELOG 원문: "Changed sessions on other vendors' models with a smaller window: once full, they can fail every turn until `/clear`, so set `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` before they fill"
+  (323) 창이 더 작은 다른 벤더 모델의 세션은 가득 차면 `/clear` 전까지 매 턴 실패할 수 있으므로 차기 전에 `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`을 설정하라는 변경입니다. `CLAUDE_CODE_DISABLE_1M_CONTEXT`를 언급하는 파일은 22f30c72에서 9개입니다(`git grep -l -F CLAUDE_CODE_DISABLE_1M_CONTEXT 22f30c72 -- . | wc -l`). 이 저장소가 다른 벤더 모델로 세션을 실행하는지는 측정하지 않았습니다 [가설].
+
+### permission mode
+
+- CHANGELOG 원문: "Fixed `--permission-mode auto` or a settings `defaultMode: auto` starting in a mode that could allow more when auto mode was unavailable. It now starts in Manual mode, which asks first"
+  (323) auto mode를 쓸 수 없을 때 `--permission-mode auto` 또는 settings `defaultMode: auto`가 더 많이 허용할 수 있는 모드로 시작하던 결함이 수정되어, 이제 먼저 묻는 Manual 모드로 시작합니다. 오늘(2026-11-14) 라이브 파일 측정에서 user scope는 `auto`, project·local은 `bypassPermissions`였습니다(`jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json` = `auto` / `bypassPermissions` / `bypassPermissions`; 추적 파일은 `git show 22f30c72:.claude/settings.json | jq -r .permissions.defaultMode` = `bypassPermissions`). R010 「Universal bypassPermissions」는 이 조합(user=`auto`, project·local=`bypassPermissions`)이 `claude -p`에서 `default`로 귀결된다고 기록하므로(2.1.289 실측, 22f30c72 기준), 이 수정은 user `auto`가 실제로 유효해지는 실행(예: 실행 플래그 `--permission-mode auto`)에서만 관측될 것입니다 [가설 — 2.1.323에서 재측정하지 않았습니다. 판정 기준은 `claude -p` init `permissionMode`]. R010 「Self-Check (MUST)」 1항의 "유효 모드가 bypassPermissions가 아니면 프롬프트 발생을 전제로 계획합니다"는 이 변경과 같은 방향이며, auto 불가 시 Manual로 떨어지면 프롬프트가 발생할 수 있다는 점만 새로 생깁니다(아래 규칙 반영 판정).
+
+### Bash 권한 검사
+
+- CHANGELOG 원문: "Fixed a case where Bash permission checks judged an `rm` from the wrong folder and skipped the dangerous-removal prompt under bypass permissions or a Bash allow rule"
+  (323) Bash 권한 검사가 `rm`을 엉뚱한 폴더 기준으로 판정해 bypass 또는 Bash allow 규칙 아래에서 위험 삭제 프롬프트를 건너뛰던 결함이 수정되었습니다. 22f30c72의 추적 settings allow 규칙 17개 중 Bash 규칙은 14개이며 그중 `Bash(rm:*)`가 있습니다(`git show 22f30c72:.claude/settings.json | jq -r '.permissions.allow[]' | grep -n -F 'Bash('` 출력 10번째 줄). 따라서 이 수정 이후에는 이 저장소에서도 위험 삭제 프롬프트가 나타날 수 있습니다 [가설 — 프롬프트 발생은 관측하지 않았습니다]. R001의 "삭제 명령이 안전 래퍼로 해석되면 래퍼를 쓰거나 보고" 규범과 R005의 지속 `cd` 금지는 이 수정과 같은 방향이며 바뀌지 않습니다.
+- CHANGELOG 원문: "Fixed Bash allow rules with an attached wildcard, such as `Bash(ls*)`, skipping the permission prompt in some cases; a rule that names a variable, such as `Bash(NODE_ENV*)`, now asks"
+  (323) `Bash(ls*)`처럼 와일드카드를 붙여 쓴 allow 규칙이 일부 경우 프롬프트를 건너뛰던 결함이 수정되었고 `Bash(NODE_ENV*)`처럼 변수를 지명한 규칙은 이제 묻습니다. 추적 settings의 Bash allow 규칙은 모두 `:*` 접미 형태입니다(관측한 범위: python `re.match(r'^Bash\([^ :)]*\*', r)` 적중 0개 / 항목 17개, 대조: `r.endswith(':*)')` 14개). 이 형태가 "attached wildcard"에 해당하는지는 원문에 정의가 없습니다 [가설 — 해당하지 않습니다]. 사용자·managed settings는 보지 않았습니다.
+- CHANGELOG 원문: "Added a start-up warning for Bash allow rules with a `*` in a variable's value, such as `Bash(PORT=* npm run dev)`"
+  (323) 변수 값에 `*`가 든 Bash allow 규칙에 시작 경고가 추가되었습니다. 추적 settings에서 `Bash(<이름>=` 형태 규칙은 관측한 범위(python `re.match(r'^Bash\([A-Za-z_]+=', r)` 적중 0개 / 항목 17개, 대조: 같은 목록의 `Bash(` 시작 규칙 14개)에서 적중하지 않았습니다.
+- CHANGELOG 원문: "Fixed Bash deny and ask rules missing some commands run through `sudo`, `env` and similar wrappers"
+  (323) `sudo`·`env` 같은 래퍼로 실행한 일부 명령을 Bash deny·ask 규칙이 놓치던 결함이 수정되었습니다. 추적 settings는 deny·ask 규칙 개수가 0·0입니다(`git show 22f30c72:.claude/settings.json | jq -c '[(.permissions.deny|length),(.permissions.ask|length)]'`, null 길이는 0). 추적 설정 기준으로 영향 규칙이 관측되지 않았습니다.
+- CHANGELOG 원문: "Fixed Bash allow rules written with combined `sudo` flags skipping the permission prompt in some cases"
+  (323) 결합된 `sudo` 플래그로 쓴 Bash allow 규칙이 일부 경우 프롬프트를 건너뛰던 결함이 수정되었습니다. 추적 allow 규칙에서 `sudo` 문자열 적중은 0개입니다(`… | jq -r '.permissions.allow[]?' | grep -c -i 'sudo'` = 0, 대조: 같은 목록 Bash 규칙 14개). R001은 `sudo`를 금지 명령으로 둡니다.
+- CHANGELOG 원문: "Fixed Bash permission prompts offering "don't ask again" for commands that write to sensitive paths such as `.git` or `.claude`, where the saved rule did not stop the next prompt"
+  (323) `.git`·`.claude` 같은 민감 경로에 쓰는 명령에 저장해도 효과가 없는 "don't ask again"을 제안하던 결함이 수정되었습니다. 추적 settings에는 `Edit(.claude/**)`·`Edit(templates/.claude/**)`·`Edit(.claude/outputs/**)` 세 Edit 규칙이 있습니다(`… | jq -r '.permissions.allow[]'`에서 `Bash(`로 시작하지 않는 항목, python 필터 출력). R015 「Advisory 한계」의 "allow 규칙으로는 safety-classifier 차단이 해소되지 않습니다"와 같은 계열의 사실이며, 저장 규칙이 다음 프롬프트를 막지 못하는 경로가 있다는 점은 R002 Sensitive Path 서술(22f30c72 기준, `bypassPermissions`에서 프롬프트 없음)의 범위 밖입니다 [가설 — bypass 밖 세션에서 `.claude` 쓰기 Bash 명령이 저장 규칙과 무관하게 매번 묻는지는 관측하지 않았습니다].
+- CHANGELOG 원문: "Changed "don't ask again" so an allow rule that looks like it holds a secret, or would be saved to a `settings.local.json` that git tracks, lasts for the session only and isn't saved"
+  (323) 비밀값처럼 보이거나 git이 추적하는 `settings.local.json`에 저장될 allow 규칙은 세션 동안만 유지되고 저장되지 않습니다. 이 저장소의 `.claude/settings.local.json`은 추적되지 않고 무시 대상입니다(`git ls-files --error-unmatch .claude/settings.local.json` → "did not match any file(s) known to git", `git check-ignore -v --no-index .claude/settings.local.json` → `.gitignore:40:.claude/*`). 추적 파일 조건의 영향은 관측되지 않았습니다.
+- CHANGELOG 원문: "Improved Bash permission checks: some commands that could run differently from how they were checked now ask for permission"
+  (323) 검사한 방식과 다르게 실행될 수 있는 일부 명령이 이제 권한을 묻습니다. 어떤 명령이 해당하는지는 원문에 없으므로, 무인 실행에서 새 프롬프트가 생길 수 있다는 점만 R010 Self-Check 1(유효 모드 실측) 범위에서 유의합니다 [가설].
+
+### 훅
+
+- CHANGELOG 원문: "Changed what happens when a tool's permission check fails with an error after a `PreToolUse` hook returned "allow": Claude Code now decides the call as if no hook had answered"
+  (323) `PreToolUse` 훅이 "allow"를 반환한 뒤 도구 권한 검사가 오류로 실패하면 이제 훅이 답하지 않은 것처럼 판정합니다. 22f30c72의 `.claude/hooks`에서 `permissionDecision` 적중은 `bash-cd-advisor.sh:30`의 주석 1줄입니다(`git grep -n -F permissionDecision 22f30c72 -- .claude/hooks`, 그 줄은 "permissionDecision/decision 필드를 출력하지 않고"). v2.0.26 작업 트리(미커밋)의 새 PreToolUse 훅 `context-pack-injector.sh`(untracked)의 적중도 주석 1줄("`permissionDecision`/`decision` 필드를 내지 않고", `grep -n -F permissionDecision .claude/hooks/scripts/context-pack-injector.sh`)입니다. 관측한 범위에서 "allow"를 반환하는 훅 코드가 적중하지 않았으므로 영향 경로는 관측되지 않았습니다 [가설 — `"allow"` 문자열 직접 출력은 별도로 계수하지 않았습니다].
+- CHANGELOG 원문: "Changed what happens when a tool's permission check fails on input that a `PermissionRequest` hook rewrote: Claude Code now asks again, or refuses the call where nobody can answer"
+  (323) `PermissionRequest` 훅이 다시 쓴 입력에서 권한 검사가 실패하면 다시 묻거나, 답할 사람이 없으면 호출을 거부합니다. 추적 settings의 훅 이벤트 키 16종에 `PermissionRequest`는 없습니다(`git show 22f30c72:.claude/settings.json | jq -c '.hooks|keys'` 계열 출력 — PreToolUse·SessionStart·UserPromptSubmit·SubagentStart·SubagentStop·CwdChanged·FileChanged·Notification·TeammateIdle·TaskCreated·TaskCompleted·PreCompact·PostCompact·PostToolUse·Stop·PostToolUseFailure). 영향 경로는 관측되지 않았습니다.
+- CHANGELOG 원문: "Fixed `PreCompact`, `PostCompact` and post-compaction `SessionStart` hooks not receiving `agent_id` and `agent_type` when a subagent compacts"
+  (323) 서브에이전트가 compact할 때 `PreCompact`·`PostCompact`·compaction 후 `SessionStart` 훅이 `agent_id`·`agent_type`을 받지 못하던 결함이 수정되었습니다. 추적 settings에서 이 이벤트의 훅은 PreCompact 1개(`task-state-precompact.sh`), PostCompact 1개, SessionStart 7개입니다(`jq -c '.hooks|to_entries|map({(.key):([.value[]?.hooks[]?]|length)})|add'`). `agent_id`를 언급하는 훅 스크립트는 4개이며(`git grep -l -F agent_id 22f30c72 -- .claude/hooks` — r007-r008-drift-advisor·session-env-check·subagent-failure-advisor·task-outcome-recorder), compaction 재주입 경로인 `claude-md-reinject.sh`와 `task-state-precompact.sh`는 `agent_id|agent_type` 적중 0줄입니다(`git grep -n -E 'agent_id|agent_type' 22f30c72 -- <두 파일> | wc -l` = 0, 대조: 같은 두 파일 `subagent_type` 0줄). `session-env-check.sh`의 적중은 stdin 형상 주석(48행)입니다. R021의 서브에이전트 침묵 규약(`agent_id` 존재 시 exit 0, 22f30c72 기준)은 compaction 경로 훅에 배선되어 있지 않으므로, 이 수정으로 서브에이전트 compaction 시 `claude-md-reinject.sh`가 메인과 같은 재주입을 하는지가 바뀌지는 않습니다 [가설 — 서브에이전트 compaction 실행은 관측하지 않았습니다].
+
+### 서브에이전트 · safeguards
+
+- CHANGELOG 원문: "Changed what Claude is told after safeguards stop a forked skill or a workflow agent: retry with a narrower prompt or tell you, instead of doing the work itself"
+  (323) safeguards가 forked skill이나 workflow agent를 멈춘 뒤 Claude가 받는 안내가 "직접 작업" 대신 "더 좁은 프롬프트로 재시도하거나 사용자에게 알림"으로 바뀌었습니다. 이 방향은 R010 「Subagent Scope-Creep STOP Protocol」("redesign the task with a narrower, pre-decomposed scope", `git grep -n -F 'trips the safety classifier' 22f30c72 -- .claude/rules/MUST-orchestrator-coordination.md` → 262행)과 같고, 오케스트레이터 직접 실행 금지(R010 Core Rule)와도 같은 방향입니다. `context: fork` frontmatter 스킬은 10개입니다(`git grep -l -P '^context:\s*fork' 22f30c72 -- ':(glob).claude/skills/*/SKILL.md' | wc -l`). 룰 변경은 필요하지 않다고 판단했습니다.
+- CHANGELOG 원문: "Fixed Claude being told that automatic model switching is off when safeguards stopped a subagent whose model had no other model to switch to"
+  (323) 전환할 다른 모델이 없는 서브에이전트를 safeguards가 멈췄을 때 자동 모델 전환이 꺼져 있다고 잘못 안내하던 결함이 수정되었습니다. 이 저장소 세션에서 이 안내가 나타났는지는 측정하지 않았습니다(not observed). 원인 진단 시 그 안내를 설정 사실로 받아들이지 않는다는 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」과 같은 방향입니다.
+
+### Agent Teams · 세션 간 메시지
+
+- CHANGELOG 원문: "Changed split-pane agent teammates to check that requests come from their team lead: one that outlives its lead has its asks refused, and plan approvals must be re-sent after `/clear` or `/resume`"
+  (323) split-pane teammate가 요청이 team lead에게서 왔는지 확인하며, lead보다 오래 남은 teammate의 요청은 거부되고 `/clear`·`/resume` 뒤에는 plan 승인을 다시 보내야 합니다. R018은 `TeamCreate` 부재로 이 환경에서 휴면이지만 이름 붙인 `Agent` 스폰이 암묵 팀의 teammate가 된다고 기록하므로(R018 Detection 표), 세션 종료 시 teammate 정리 규약(메모리 `feedback_session_end_teammate_cleanup`)의 중요성은 이 변경으로 줄지 않습니다 [가설 — split-pane 실행은 관측하지 않았습니다].
+- CHANGELOG 원문: "Changed how many messages each of your sessions on the same machine can send the others without a prompt from you, from about 20 to 100,000"
+  (323) 같은 머신의 세션들이 사용자 프롬프트 없이 서로 보낼 수 있는 메시지 수가 약 20에서 100,000으로 늘었습니다. R018 「Scope」는 세션 간 전달 성공이 승인 채널도 완료 증거도 아니라고 하며, 그 서술은 이 상한 변경과 무관하게 유지됩니다. 세션 간 메시지 상한이 사실상 사라지므로 자동 루프 간 무한 핑퐁을 막는 플랫폼 측 멈춤이 약해집니다 [가설].
+
+### 플러그인 · 상태줄 설정
+
+- CHANGELOG 원문: "Added `engines["claude-code"]` to `plugin.json`: plugins outside their stated Claude Code version range are not installed, updated or loaded, and install and update pick the newest version that fits"
+  (323) `plugin.json`에 `engines["claude-code"]`가 추가되어 명시 범위 밖의 플러그인은 설치·갱신·로드되지 않습니다. 22f30c72 트리에서 `plugin.json` 파일과 `.claude-plugin/` 경로는 적중하지 않았습니다(`git ls-tree -r --name-only 22f30c72 | grep -E '(^|/)plugin\.json$|marketplace\.json$'` 출력 없음, `grep -c -E '(^|/)\.claude-plugin/'` = 0; 대조: `plugin.json` 문자열은 가이드 2파일에만 적중). `engines` 적중 6파일은 `package.json`의 npm engines와 스크립트·스킬 본문입니다(`git grep -l -F engines 22f30c72 -- .`). 이 저장소가 배포하는 것은 플러그인이 아니라 npm 패키지이므로 영향은 관측되지 않았습니다.
+- CHANGELOG 원문: "Added type checking of a plugin's TypeScript hooks module to `claude plugin validate`; each finding is a warning, and `--strict` fails on it"
+  (323) `claude plugin validate`가 플러그인 TypeScript hooks 모듈을 타입 검사하며 발견은 경고이고 `--strict`에서 실패합니다. R017은 스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 함께 실행하라고 하지만(`.claude/rules/MUST-sync-verification.md`), 이 저장소 훅은 셸 스크립트이고 플러그인 매니페스트가 위 측정에서 적중하지 않았으므로 이 타입 검사가 적용될 표면은 관측되지 않았습니다.
+- CHANGELOG 원문: "Deprecated a plugin's `agent` setting: it still applies, and now warns at startup, in `claude plugin list` and in `claude plugin validate`"
+  (323) 플러그인 `agent` 설정이 deprecated되어 여전히 적용되지만 시작 시·`claude plugin list`·`claude plugin validate`에서 경고합니다. 위 측정대로 22f30c72에 플러그인 매니페스트가 적중하지 않아 영향 조건이 관측되지 않았습니다.
+- CHANGELOG 원문: "Removed the `subagentStatusLine` setting: subagent rows always use the default look, and settings files that still hold the key load as before"
+  (323) `subagentStatusLine` 설정이 제거되었습니다. 22f30c72에서 `subagentStatusLine` 적중은 가이드 2파일(`guides/`·`templates/guides/`의 15-version-compatibility.md, 2.1.293 노트)뿐입니다(`git grep -l -F subagentStatusLine 22f30c72 -- .` = 2, 대조: `-i` 2). 이 저장소 상태줄은 `statusLine` 키입니다(`git show 22f30c72:.claude/settings.json | jq -c '.statusLine|keys'`). R012 영향은 관측되지 않았습니다.
+
+### 세션 저장 · 정리
+
+- CHANGELOG 원문: "Fixed long tool results staying on disk after a session run with `--no-session-persistence`; they are now removed on normal exit, Ctrl+C or SIGTERM"
+  (323) `--no-session-persistence`로 실행한 세션의 긴 도구 결과가 디스크에 남던 결함이 수정되어 정상 종료·Ctrl+C·SIGTERM 시 삭제됩니다. 이 세션(2026-11-14, CC 2.1.325 환경)의 오케스트레이터 프로브는 `--no-session-persistence`에서도 서브에이전트 메타가 `~/.claude/projects` 아래 남는 것을 관측했습니다(오케스트레이터 전달 관측이며 이 writer가 재현하지 않았습니다). 원문은 "long tool results"만 다루므로, 그 관측이 이 수정의 범위 밖인지, 별개 결함인지는 [가설]입니다 — 판정 기준은 같은 프로브에서 남은 파일이 도구 결과 파일인지 서브에이전트 메타 파일인지 구분하는 것입니다.
+- CHANGELOG 원문: "Fixed temporary files of a session that had changed directory being left behind when the session expired under `cleanupPeriodDays`"
+  (323) 디렉터리를 바꾼 세션의 임시 파일이 `cleanupPeriodDays` 만료 시 남던 결함이 수정되었습니다. `cleanupPeriodDays`는 22f30c72에서 R011(`.claude/rules/SHOULD-memory-integration.md`)과 그 템플릿 미러·가이드·위키 등 6파일에 적중합니다(`git grep -l -F cleanupPeriodDays 22f30c72 -- .`). R005의 지속 `cd` 금지(#1778)는 이 수정과 같은 방향이며 바뀌지 않습니다.
+
+### sandbox
+
+- CHANGELOG 원문: "Fixed a case where the Bash sandbox could switch off during a session"
+  (323) Bash sandbox가 세션 도중 꺼질 수 있던 결함이 수정되었습니다. 추적 settings의 `sandbox` 키는 `null`입니다(`git show 22f30c72:.claude/settings.json | jq -r '.sandbox|type'` = null). 사용자·managed settings는 보지 않았으므로 이 저장소 세션의 sandbox 사용 여부는 [가설]입니다.
+- CHANGELOG 원문: "Changed the sandbox on macOS and Linux: `git worktree add`, `move` and `remove` now fail read-only, as do commits in a worktree the session wasn't started in or given, even one inside the project"
+  (323) macOS·Linux sandbox에서 `git worktree add`·`move`·`remove`와 세션이 시작되지 않았거나 받지 않은 worktree의 커밋이 read-only로 실패합니다. 위 측정대로 추적 settings에서 sandbox가 설정되지 않았으므로 영향은 sandbox를 켠 실행에 한정됩니다 [가설]. sandbox를 켠 환경에서 mgr-gitnerd의 worktree 작업이 실패하면 R010 「품질 게이트 우회 금지」·R001 원칙대로 우회하지 않고 보고합니다.
+
+### MCP · 도구 검색
+
+- CHANGELOG 원문: "Changed project (`.mcp.json`) MCP server approvals to match the server's exact name; an approval entry written in another spelling now asks again"
+  (323) 프로젝트 `.mcp.json` MCP 서버 승인이 서버의 정확한 이름과 맞아야 하며 다른 표기의 승인 항목은 다시 묻습니다. 22f30c72의 `.mcp.json`은 추적되며 서버 키는 `["eraser"]`입니다(`git show 22f30c72:.mcp.json | jq -c '.mcpServers|keys'`). 사용자 측 승인 항목의 표기는 측정하지 않았으므로 재승인 프롬프트 발생 여부는 [가설]입니다.
+- CHANGELOG 원문: "Improved `ToolSearch` to say when a tool Claude searched for by its short name is already available, instead of only reporting no match"
+  (323) `ToolSearch`가 짧은 이름으로 찾은 도구가 이미 사용 가능하면 그렇다고 알려 줍니다. R018 「멤버 도구 부재 시 대체 규약」은 `SendMessage` 부재를 전제하지 말고 `ToolSearch`로 먼저 로드를 시도하라고 하며, 이 개선은 그 절차에서 "no match"를 부재로 오판할 여지를 줄이는 같은 방향의 변경입니다. 룰 변경은 필요하지 않다고 판단했습니다.
+
+### 기타 항목
+
+(323) 그 밖의 266건은 이 저장소 구성과 무관하다고 판단했습니다(계수 구간: 릴리즈 본문 `- ` 줄 전체 294개; 계수 명령: 이 절의 `CHANGELOG 원문` 인용 28개를 한 줄 1인용 파일로 모아 `python3 -c` 차집합 — 294 − 28 = 266). 기타 항목(원격 제어·VS Code·Claude Code on the web·Claude Tag·OpenTelemetry·Windows·로그인·mods 항목 포함)은 본문을 읽었으나 항목별로 `git grep`하지 않았습니다 [가설 — 실측이 반대면 반대로 기재: 접점이 없습니다. 판정 기준은 항목의 키워드를 22f30c72에서 `git grep -n -i`로 검색해 히트가 없는지 보는 것입니다].
+
+### 규칙 반영 판정
+
+- (323) R010 「Universal bypassPermissions」 Self-Check 1: 규칙 변경 없음. 현행 문장이 이미 "유효 모드가 bypassPermissions가 아니면 프롬프트 발생을 전제로 계획합니다"를 요구하므로, auto를 쓸 수 없을 때 Manual로 시작하는 경우도 포함됩니다.
+- (323) R013: 규칙 변경 없음. R013 「Context Budget Management」 가시 문장이 이미 일반형("창 크기 설정에 따라 달라집니다 — 창 크기를 먼저 확인")입니다. 서사는 이 가이드가 맡습니다(R016 버전노트 보존정책).
+
+**Action items**: (323) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙 파일을 고치지 않습니다. 그 밖의 인용 항목은 룰 변경이 필요하지 않다고 판단했습니다(근거는 항목별 서술).
+
+## v2.1.325 (2026-11-13)
+
+> Issue: 대응 이슈 없음
+> (325) 이 절의 저장소 측정은 삽입 전(22f30c72, `22f30c72 Merge pull request #1967 from baekenough/release/v2.0.25`) 기준이며 명령은 `git grep <pattern> 22f30c72 -- <pathspec>` 형식입니다. (325)
+> (325) 이 버전은 저장소 이슈가 없으며 v2.1.324는 릴리즈가 없습니다(`gh release view v2.1.324 -R anthropics/claude-code` rc 1). (325)
+
+### 예약 실행·/loop와 권한 흐름
+
+- CHANGELOG 원문: "Changed scheduled tasks and `/loop` to ask before running a skill that declares `allowed-tools` or hooks; add `Skill(name)` to `permissions.allow` to run it unattended"
+  (325) 예약 작업과 `/loop`가 `allowed-tools` 또는 hooks를 선언한 skill을 실행하기 전에 확인을 요구하며, 무인 실행하려면 `Skill(name)`을 `permissions.allow`에 추가해야 합니다. 저장소 측정(`.claude/skills/*/SKILL.md` 프론트매터 정규식 `^allowed-tools:`·`^hooks:`, 삽입 전(22f30c72) `git ls-tree`+`git show` python 파싱): SKILL.md 114개 중 `allowed-tools` 보유 2개(`diagram-design`, `profile`), `hooks` 보유 0개입니다. 대조: 대소문자 무시·`allowed_tools`/`allowed tools` 변형 정규식에서도 같은 2개와 0개였습니다. `/fsd`가 `/loop`을 쓰는 경로(`git grep -n -P '/loop|allowed-tools' 22f30c72 -- .claude/skills/fsd/SKILL.md`)는 `/loop "/pipeline auto-dev -> /homework"` 형태이며, 위 2개 목록에 `fsd`·`pipeline`·`homework`가 포함되지 않았으므로 이 변경으로 `/fsd` 경로가 새 확인을 받을 가능성은 관측한 범위(위 프론트매터 파싱)에서는 낮습니다. 다만 서브 스킬이 호출 시 로드하는 스킬의 프론트매터는 이 측정에 포함되지 않았습니다 [가설]. (325)
+- CHANGELOG 원문: "Changed "Always allow" in Desktop, IDE and SDK hosts: a rule alone is offered only when saving it would allow that command again, so a scheduled task that relied on one can now wait for you"
+  (325) Desktop·IDE·SDK 호스트의 "Always allow"가 규칙 저장으로 같은 명령이 다시 허용될 때만 규칙 단독으로 제시되어, 이에 의존하던 예약 작업이 사용자 입력을 기다릴 수 있습니다. 저장소 영향은 측정하지 않았습니다 [가설: 이 저장소의 `/fsd`는 `claude -p`·인라인 실행 경로가 주이므로 호스트 UI 변경의 직접 영향은 작습니다]. (325)
+- CHANGELOG 원문: "Fixed a slash command's `allowed-tools` grants applying to background agents woken during or after its turn"
+  (325) 슬래시 명령의 `allowed-tools` 허용이 그 턴 중 또는 이후에 깨어난 백그라운드 에이전트에 적용되던 결함이 수정되었습니다. `allowed-tools` 보유 skill은 위 측정의 2개(`diagram-design`, `profile`)이며, 이 저장소에서 해당 skill이 백그라운드 에이전트를 깨우는 경로는 측정하지 않았습니다 [가설: 영향 경로 없음]. (325)
+
+### 컨텍스트 창 (R013)
+
+- CHANGELOG 원문: "Changed `CLAUDE_CODE_MAX_CONTEXT_TOKENS` to also set the context window of unrecognized model IDs that start with `claude-`, such as a gateway's `claude-sonnet-latest`"
+  (325) `CLAUDE_CODE_MAX_CONTEXT_TOKENS`가 `claude-`로 시작하는 미인식 모델 ID(예: 게이트웨이의 `claude-sonnet-latest`)의 컨텍스트 창도 설정합니다. 측정: `git grep -c -i -P 'max[_ -]?context[_ -]?tokens' 22f30c72 -- .`는 일치 파일 0개였습니다(대소문자 무시, 구분자 변형 포함). 따라서 이 저장소 본문은 이 환경 변수를 아직 다루지 않습니다. R013의 임계값은 창 대비 백분율이며 `git grep -n -F '창 대비' 22f30c72 -- .claude/rules/SHOULD-ecomode.md`는 91행(v2.1.223+ 노트) 1건에서 적중했습니다. 그 노트는 `CLAUDE_CODE_DISABLE_1M_CONTEXT`와 `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT`만 다루므로, 창 크기를 정하는 환경 변수 목록에 이 변수를 더하는 1줄 반영 후보였으나 현행 가시 문장이 일반형이므로 반영하지 않습니다(아래 규칙 반영 판정). 이번 릴리즈의 v2.0.26 작업 트리(미커밋)에서 R013 본문이 재구성 중이므로 최종 문안은 그 상태를 읽고 정해야 합니다. (325)
+
+### 스킬·플러그인 로딩
+
+- CHANGELOG 원문: "Changed nested skill loading: `.claude/skills` folders in `--plugin-dir` plugins no longer load from a session started above them; start Claude Code in the plugin folder instead"
+  (325) `--plugin-dir` 플러그인의 `.claude/skills`는 그 위 디렉토리에서 시작한 세션에서는 더 이상 로드되지 않으며 플러그인 폴더에서 시작해야 합니다. 측정: `git grep -c -i -F 'plugin-dir' 22f30c72 -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `guides/claude-code/15-version-compatibility.md`와 `templates/guides/claude-code/15-version-compatibility.md`에서만 각 2건(버전 노트 언급)이고, 관측한 범위(위 pathspec)에서 `.claude/`·`src/`·`templates/.claude`의 실행 경로에는 일치가 없었습니다. 따라서 이 저장소 자체의 skill 로딩은 `--plugin-dir`에 의존하지 않는 것으로 관측했습니다. (325)
+
+### worktree·sandbox
+
+- CHANGELOG 원문: "Changed EnterWorktree to refuse a `WorktreeCreate` hook path that goes through a symlink inside the project; have the hook print the real path"
+  (325) `EnterWorktree`가 프로젝트 내부 symlink를 거치는 `WorktreeCreate` 훅 경로를 거부합니다(훅이 실제 경로를 출력해야 함). 측정: `git grep -c -F 'WorktreeCreate' 22f30c72 -- .claude/hooks/hooks.json .claude/settings.json`은 일치 파일이 없었고, `.claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'` 범위에서는 `.claude/rules/MUST-agent-design.md` 2건, 그 templates 사본 2건, 가이드 15번 문서와 그 templates 사본 각 4건에서 적중했습니다(모두 문서 서술). 관측한 범위(위 pathspec)에서 이 저장소는 `WorktreeCreate` 훅 스크립트를 배선하지 않았습니다. (325)
+- CHANGELOG 원문: "Changed worktree isolation: an isolated worktree session or agent is now refused `git bisect run`, `git maintenance register|start` and `scalar`'s set-up commands, and is told what still works"
+  (325) 격리 worktree 세션·에이전트에서 `git bisect run`, `git maintenance register|start`, `scalar` 설정 명령이 거부됩니다. 측정: `git grep -c -i -P 'git\s+bisect' 22f30c72 -- .`는 일치 파일 0개였습니다(대조: 위 python/`-P` 계수, 공백 변형 `\s+` 포함). (325)
+- CHANGELOG 원문: "Changed the sandbox to refuse sandboxed writes to `.claude` settings, skills, agents, commands and hooks in added directories, as it does in the launch folder"
+  (325) sandbox가 추가 디렉토리(added directories)의 `.claude` settings·skills·agents·commands·hooks 쓰기를 시작 폴더와 같이 거부합니다. 이 저장소의 에이전트·스킬 작업 대부분은 시작 폴더 안 `.claude/`를 대상으로 하므로 직접 영향은 관측하지 않았으나, `--add-dir`로 추가한 외부 프로젝트의 `.claude/`를 편집하는 위임은 sandbox 사용 시 거부될 수 있습니다 [가설]. `--add-dir` 언급은 `git grep -c -F -e '--add-dir' 22f30c72 -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`에서 4개 파일, 6건이었습니다. (325)
+- CHANGELOG 원문: "Changed sandboxed Bash commands to follow the normal permission flow by default; set `sandbox.autoAllowBashIfSandboxed: true` to keep running them without prompts"
+  (325) sandbox된 Bash 명령이 기본값에서 일반 권한 흐름을 따르며, 프롬프트 없이 실행하려면 `sandbox.autoAllowBashIfSandboxed: true`를 설정해야 합니다. 측정: `.claude/settings.json`(삽입 전(22f30c72) `git show` + python JSON 파싱)의 `sandbox` 키는 None이었고, `git grep -c -i -P 'auto[_ -]?allow[_ -]?bash' 22f30c72 -- .`는 일치 파일 0개였습니다. 따라서 이 저장소 설정은 sandbox를 켜지 않은 것으로 관측했으며(관측한 범위: 프로젝트 `.claude/settings.json`; 사용자·managed 설정은 측정하지 않음) 영향은 사용자·managed 설정에 sandbox를 켠 환경에 한정됩니다 [가설]. (325)
+- CHANGELOG 원문: "Changed read-only git commands to ask first in a repository that isn't the project's or one you trusted; name it with `--add-dir`, not the `additionalDirectories` setting, to run them without prompts"
+  (325) 프로젝트가 아니거나 신뢰하지 않은 저장소에서 읽기 전용 git 명령이 먼저 확인을 요구하며, 프롬프트 없이 실행하려면 `additionalDirectories` 설정이 아니라 `--add-dir`로 지정해야 합니다. 측정: `git grep -c -i -P 'additional[_ -]?directories' 22f30c72 -- .`는 일치 파일 0개였습니다. 외부 저장소를 읽는 위임이 새 확인을 받을 수 있습니다 [가설]. (325)
+- CHANGELOG 원문: "Changed `-p` and SDK runs in a worktree or submodule mounted into a container to apply `.claude/settings.local.json` allow rules only once the folder is trusted"
+  (325) 컨테이너에 마운트된 worktree·submodule의 `-p`·SDK 실행은 폴더가 신뢰된 뒤에야 `.claude/settings.local.json` allow 규칙을 적용합니다. 측정: 삽입 전(22f30c72)에서 `git ls-tree 22f30c72 .claude/settings.local.json`은 출력이 없었으므로 이 파일은 추적되지 않습니다(관측한 범위: 위 명령). 무인 `claude -p` 실행이 이 파일의 allow에 의존하는 경우는 R010 「Universal bypassPermissions」 Self-Check 1의 실측 절차로 확인해야 합니다 [가설]. (325)
+
+### deny/ask 규칙 적용 범위 수정
+
+- CHANGELOG 원문: "Fixed relative deny and ask permission rules (e.g. `Read(./.env)`) no longer covering the project after a `cd`; they now also apply in added directories"
+  (325) 상대 경로 deny/ask 규칙이 `cd` 후 프로젝트를 덮지 못하던 결함이 수정되었고 추가 디렉토리에도 적용됩니다. 측정: `.claude/settings.json`(삽입 전(22f30c72))의 `permissions` 키는 `allow`(17개 항목)와 `defaultMode`(와 주석 키 `_comment_defaultMode`)뿐이며 `deny`·`ask`는 None이었습니다(관측한 범위: 위 python JSON 파싱, `.claude/settings.local.json`은 추적되지 않음). 따라서 이 저장소에서 이 수정으로 달라지는 프로젝트 deny/ask 규칙은 관측하지 않았습니다. 이 저장소의 Bash `cd` 지속 금지 규칙(R005 #1778)은 이 수정과 별개 사안입니다. (325)
+- CHANGELOG 원문: "Fixed some deny and ask rules not applying to certain Bash commands"
+  (325) 일부 Bash 명령에 deny/ask 규칙이 적용되지 않던 결함이 수정되었습니다. 위 측정대로 프로젝트 `deny`·`ask`는 None이므로 프로젝트 설정 경로의 영향은 관측하지 않았고, 사용자·managed 설정은 측정하지 않았습니다. (325)
+- CHANGELOG 원문: "Fixed a gap in Bash permission checks where some compound commands could run without asking; these now ask for permission"
+  (325) 일부 복합 명령이 확인 없이 실행되던 Bash 권한 검사 틈이 수정되어 이제 확인을 요구합니다. `&&`·`;`·파이프를 쓰는 위임 명령이 새 확인을 받을 수 있으므로 무인 실행의 프롬프트 증가 가능성을 [가설]로 둡니다. (325)
+- CHANGELOG 원문: "Fixed a case where a Bash allow rule could run a different program than the one it names"
+  (325) Bash allow 규칙이 이름과 다른 프로그램을 실행할 수 있던 경우가 수정되었습니다. 프로젝트 `allow`는 17개 항목이며(위 python JSON 파싱), 개별 항목과의 상호작용은 측정하지 않았습니다 [가설]. (325)
+- CHANGELOG 원문: "Fixed a case where a committed `.claude/settings.local.json` could be treated as the user's own when Claude Code was started in certain subfolders of a repository"
+  (325) 커밋된 `.claude/settings.local.json`이 저장소의 일부 하위 폴더에서 시작할 때 사용자 소유로 취급될 수 있던 결함이 수정되었습니다. 삽입 전(22f30c72)에서 이 파일은 추적되지 않으므로(`git ls-tree 22f30c72 .claude/settings.local.json` 출력 없음) 직접 영향은 관측하지 않았습니다. (325)
+- CHANGELOG 원문: "Fixed deny and ask permission rules starting with `mcp__plugin_*_` missing a plugin's MCP server or tool spelled in another letter case"
+  (325) `mcp__plugin_*_`로 시작하는 deny/ask 규칙이 다른 대소문자로 표기된 플러그인 MCP 서버·도구를 놓치던 결함이 수정되었습니다. 프로젝트 `deny`·`ask`가 None이므로 영향은 관측하지 않았습니다. (325)
+
+### scratchpad 지시
+
+- CHANGELOG 원문: "Changed Claude's instructions to keep files you'll want out of its temporary scratchpad folder, which can be cleared"
+  (325) Claude의 지시가 보존하려는 파일을 비워질 수 있는 임시 scratchpad 폴더 밖에 두도록 바뀌었습니다. 측정: `git grep -c -i -F 'scratchpad' 22f30c72 -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 9개 파일, 26건이며, 적중에는 `.claude/rules/MUST-agent-design.md` 451행(산출물은 `.claude/outputs/sessions/…`에 저장)과 `.claude/skills/pipeline/workflows/auto-dev.yaml`(scratchpad 경로를 하드코딩하지 말고 고유 경로 사용)이 있습니다. 삽입 전(22f30c72) 기준 이 저장소의 임시 파일 지침은 scratchpad를 쓰되 보존 산출물은 별도 경로에 두는 방향과 충돌하지 않는 것으로 관측했으나, 위임서의 "scratchpad에 두십시오" 지시가 보존 대상 파일에까지 적용되는 경우는 측정하지 않았습니다 [가설]. (325)
+
+### 서브에이전트
+
+- CHANGELOG 원문: "Fixed subagents with their own model being moved to the plan-mode model when the model setting is `opusplan` or `haiku`"
+  (325) 자체 모델을 가진 서브에이전트가 모델 설정이 `opusplan` 또는 `haiku`일 때 plan-mode 모델로 옮겨지던 결함이 수정되었습니다. R006 Tier 1에 `opusplan`·`haiku`가 별칭으로 정의되어 있어 에이전트 프론트매터 `model:`의 실행 모델 해석과 관련되나, 본 저장소 측정은 하지 않았습니다 [가설]. (325)
+- CHANGELOG 원문: "Improved subagents cut off at the output token limit: they are now asked for the whole answer again, more briefly, instead of returning only its end"
+  (325) 출력 토큰 한도에서 잘린 서브에이전트에게 전체 답을 더 간결하게 다시 요청합니다. R020 「maxTurns 절단 실증」의 turn 한도 절단과 다른 축(출력 토큰)이므로, 절단 진단 시 두 축을 구분해야 합니다 [가설: 이 저장소 위임의 절단 사례 중 출력 토큰 한도 비율은 측정하지 않음]. (325)
+- CHANGELOG 원문: "Fixed a session sometimes going back to an earlier permission mode after a subagent's plan was approved"
+  (325) 서브에이전트의 plan이 승인된 뒤 세션이 이전 permission mode로 되돌아가던 결함이 수정되었습니다. R010 「Universal bypassPermissions」 Self-Check의 유효 모드 실측은 그대로 유지합니다. (325)
+
+### 기타 항목
+
+- 이 릴리즈 본문의 `- ` 줄 전체는 139건이며(계수 구간: `gh release view v2.1.325 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `grep -c '^- '`), 이 절이 위에서 다룬 항목은 21건이므로 그 밖의 항목은 118건입니다(139 - 21 = 118). 나머지는 보안·인증(OAuth, 아티팩트, 클라우드), VS Code·Desktop·Windows·Linux 표시·UI, MCP 연결 안정화, OpenTelemetry, 플러그인 마켓플레이스, Remote Control 항목이며 이 저장소 측정 대상이 아닙니다 [가설: 직접 영향 경로 미관측]. (325)
+
+### 규칙 반영 판정
+
+- (325) R013 `CLAUDE_CODE_MAX_CONTEXT_TOKENS`: 규칙 변경 없음. R013 「Context Budget Management」 가시 문장이 이미 일반형("창 크기 설정에 따라 달라집니다 — 창 크기를 먼저 확인")이며, 서사는 이 가이드가 맡습니다(R016 버전노트 보존정책).
+- (325) fsd `SKILL.md` `/loop` 주석: 변경 없음. 22f30c72 실측에서 `allowed-tools` 보유 skill은 2개(`diagram-design`, `profile`), `hooks` 보유 skill은 0개이고 `fsd`·`pipeline`·`homework`는 해당하지 않으므로 주석을 추가하지 않습니다.
+
+**Action items**: (325) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙 파일을 고치지 않습니다.
+
+## 규칙 본문에서 이전한 버전 서사 (v2.0.26)
+
+이 절은 v2.0.26에서 규칙 본문(세션에 자동 주입되는 파일)에서 빼낸 Claude Code 버전 서사를 규칙별로 보존한 것이며, 규칙에는 현행 규범만 남았습니다. 일부 버전 노트는 규칙 파일 안의 HTML 주석(DETAIL/ARCHIVED)에 그대로 남아 있으므로 이 절에 없는 노트가 있을 수 있습니다. 서사는 기록 시점의 관측이며, 그 안의 줄 번호 앵커(HEAD L...)는 기록 시점 기준(commit-pinned)입니다.
+
+### R002 — MUST-permissions.md
+
+### R002 「Todo/Task 도구 기본 제거」 측정 서사 (원문)
+
+**실측 (2026-08-15) + CHANGELOG v2.1.277**: 이 저장소 실행 환경(`claude-opus-5[1m]`/`claude-sonnet-5`)의 실제 tools 배열 기준.
+
+이 표(2026-08-15, `claude-opus-5[1m]`/`claude-sonnet-5`)는 2026-10-06 재측정 `claude-opus-5-5` 메인에서도 같았다 — haiku 팀원 1건은 `ToolSearch`로 `TaskCreate`/`TaskList`/`TaskUpdate`/`TaskGet`을 로드했고 sonnet-5-5 팀원 1건은 불가였으며, `TeamCreate`/`TeamDelete`는 측정한 셋 모두 불가였다(CC 2.1.289 실측).
+
+`CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 환경 설정 사안이므로 규칙이 전제하지 않습니다. (R002 「Todo/Task 도구 기본 제거」)
+
+### R002 ‡ 원문 상세
+
+(CHANGELOG 2.1.117: "the `Glob` and `Grep` tools are replaced by embedded `bfs` and `ugrep` available through the Bash tool"; 2.1.162: "explicitly listing Grep/Glob now provides the dedicated search tools on native builds with embedded search"). 실측(CC 2.1.289, 2026-10-05): frontmatter `tools:`에 Grep/Glob을 명시한 `qa-writer`는 전용 `Grep`/`Glob`을 받았고(Bash 없음), 명시 목록이 없는 메인 세션에는 없었다 — frontmatter 명시가 `--tools` 명시와 같은 효과라는 일반화는 이 1건에 근거한 추정이다. (R002 ‡)
+
+### R003 — SHOULD-interaction.md
+
+### R003 버전 노트 (원문)
+
+> **v2.1.237+**: CC 내장 "Concise" output style이 추가됐다(`/config` > Output style에서 선택) — 결과를 먼저 제시하고 preamble·narration을 생략하며 작업 철저성은 유지한다. 위 표의 프로젝트-정의 `concise` 스타일과 이름이 겹치지만 별개다 — 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로(세션 레벨), 내장 "Concise"를 별도로 선택하지 않는다. (R003 「Output Styles」)
+
+> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정되었습니다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당합니다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻입니다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없습니다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있습니다. **다만 이것을 면책으로 쓰지 않습니다**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않습니다. (R003 「Session-Level Style Enforcement」)
+
+> **v2.1.269+**: `/output-style [name]`이 output style을 목록 조회·전환할 수 있게 되었으며, Remote Control과 cloud/headless 세션에서도 동작합니다. 이 저장소의 `korean-engineer` 커스텀 스타일을 세션 도중 `/output-style korean-engineer`로 재선택·재확인할 수 있게 되어, 위 v2.1.238-era 드리프트에 대한 직접 구제 수단이 생겼습니다 — `-p`/cloud 실행에서는 스타일이 실제로 활성 상태인지를 기본값에 의존하지 않고 보장하는 방법이기도 합니다. 참고로 (271) `--resume`/`/teleport` 관련 결함 수정은 R011 소관이므로 여기서 중복 서술하지 않습니다. (R003 「Session-Level Style Enforcement」)
+
+### R003 Session-Level Style Enforcement 레이어 표 (원문 요약)
+
+R003=스타일 선택 기준(prompt-based, advisory), R013 Ecomode=컨텍스트 압박 시 concise 강제(dynamic), Output Styles=세션 전체 기본 어조/포맷(static). (R003 「Session-Level Style Enforcement」)
+
+### R004 — SHOULD-error-handling.md
+
+> **v2.1.246+**: 비대화형 세션(`-p`, SDK, 클라우드 세션)에서 서버 오류·연결 끊김·정체로 중간에 끊긴 응답을 이제 **자동으로 이어서 완료**한다 — 이전에는 오류로 종료됐다. `/fsd` 등 무인 자율 루프의 신뢰성에 직접 영향 — 구버전에서는 네트워크 일시 장애가 자율 루프 전체를 조기 종료시킬 수 있었다. 위 표의 "Retryable" 재시도 전략이 이제 이 경로에서는 플랫폼이 자동 수행하므로, 무인 루프 중단을 관측했을 때 "재시도 로직 부재"로 오진하기 전에 이 자동-이어짐 경계(오류 종류·세션 종류)를 먼저 확인한다.
+
+> **v2.1.257+**: v2.1.246의 자동 이어감이 **서브에이전트**로 확장되어, 절전·연결 끊김·서버 오류로 mid-stream 절단된 서브에이전트 응답이 불완전 종료 대신 자동으로 이어집니다. 위 Retryable 재시도 전략이 서브에이전트 경로에서도 플랫폼이 수행하므로, 위임 에이전트의 중간 종료를 진단할 때 네트워크 절단 축은 후순위로 두고 R020 「maxTurns 절단 실증」의 turn 한도를 먼저 확인합니다(R020 해당 노트 cross-ref).
+
+### R006 — MUST-agent-design.md
+
+- Tier-2 table rows (R006 「Model Specification — 3 Tiers」):
+  - `claude-haiku-4-5` Haiku, previous generation; fast, cheap tasks
+  - `claude-haiku-5-5` Default Haiku model on the Anthropic API (v2.1.293+); 1M context
+  - `claude-sonnet-5` Native 1M context; previous-generation Sonnet (v2.1.197+; on the Anthropic API, `claude-sonnet-5-5` is now the default Sonnet model, v2.1.284+)
+  - `claude-sonnet-5-5` Now the default Sonnet model on the Anthropic API (v2.1.284+); 1M context, $2/$10 per Mtok, $0.10/Mtok cache reads in CC cost figures (v2.1.296; was $0.20)
+  - `claude-opus-4-6` Opus, previous generation
+  - `claude-opus-4-8` Opus, previous generation; supports xhigh effort
+  - `claude-opus-5` Opus, previous generation (GA); native 1M context, fast mode at $10/$50 per Mtok
+  - `claude-opus-5-5` Latest Opus (GA), default Opus model (v2.1.280+); 1M context, $4/$20 per Mtok, $0.20/Mtok cache reads
+  - `claude-fable-5` Mythos-class; tier above Opus (access via CC v2.1.170+)
+  - `claude-fable-5-1` Mythos-class; Fable 5.1, previous generation; 1M context
+  - `claude-fable-5-2` Mythos-class; Fable 5.2, now the default Fable model (v2.1.321+); 1M context, $8/$40 per Mtok with $0.20/Mtok cache reads
+- Full IDs ... Writing the full ID directly pins the agent regardless of future CC default changes. (R006 「Model Specification — 3 Tiers」)
+- Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`, `experimental.cacheTtl` (v2.1.248+). Supported since CC v2.1.63+. See full optional frontmatter via Read tool. (R006 「Optional Frontmatter」)
+- Settings-level 가용성/과부하 failover — per-agent `model:` frontmatter와는 별개이며 `model-escalation` 스킬을 보완합니다. (R006 「Fallback Models」; kept as DETAIL in the rule file)
+- 33개 이벤트 타입, 4개 핸들러 타입(command/prompt/http/agent) 지원 — 전체 목록·트리거·데이터는 Read 도구로 확인. Agent frontmatter `hooks:`는 `--agent`로 실행되는 main-thread agent에서도 발화합니다(서브에이전트 한정 아님). (R006 「Hook Event Types」 / 「Main-Thread Agent Hooks (v2.1.116+)」)
+- Memory: When enabled: first 200 lines of MEMORY.md loaded into system prompt. `soul: true` ... personality/style. (R006 「Memory Scopes」「Soul Identity」)
+- Fast Mode: Activated via `/fast` or `fastMode` setting. See activation, effort interaction, and default effort change details via Read tool. (R006 「Fast Mode」)
+- Skill Scope table: `core` Universal development tools (deployed Yes); `harness` Agent/skill/rule maintenance (Yes); `package` Package-specific (npm publish, etc.) (No). (R006 「Skill Scope」)
+- Naming: Agent file `kebab-case.md` e.g. `fe-vercel-agent.md`; Skill dir `kebab-case/` e.g. `react-best-practices/`; Skill file UPPERCASE `SKILL.md`. (R006 「Naming」)
+
+### R007 — MUST-agent-identification.md
+
+- v1.1.58 session transcript measurement: of 22 responses, 3 had tool_use only with no text block, all of them turns right after a notification. (R007 「빈 응답 금지 (Empty-Response Prohibition)」, #1646)
+- Origin: #1507 (long autonomous release loop: status-line bracket replaced the agent-id bracket). (R007 「Status-Line Bracket ≠ Agent Identification Header」)
+- Origin: #1553 ②: in the 2026-07-30 session, 5 of 7 R007 header omissions started with a `★ Insight` block. (R007 「Insight/분석 블록 선행 ≠ 헤더 면제」)
+
+### R008 — MUST-tool-identification.md
+
+- Measured (1008 cases): the ratio of absent text blocks rose sharply from CC 2.1.251 onward; root cause `[가설]` unconfirmed. (R008 「announce와 헤더는 narration이 아니라 visible text 블록으로」)
+
+### R010 — MUST-orchestrator-coordination.md
+
+From R010 「Universal bypassPermissions」 (verbatim):
+
+| CC version | Per-call `mode: "bypassPermissions"` |
+|------------|---------------------------------------|
+| < 2.1.212 (min supported 2.1.121) | **Required** — the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode` and causes prompts during unattended runs |
+| ≥ 2.1.212 | Ignored — 2.1.212 CHANGELOG (#1497): "Deprecated the Task tool's `mode` parameter (now ignored); subagents inherit the parent session's permission mode by default". The frontmatter override comes from the Agent tool schema observed on CC 2.1.289 (`claude --version`), not from the 2.1.212 entry: "Deprecated; ignored. Subagents inherit the parent session's permission mode; agent-definition frontmatter may override it." |
+
+Keep passing `mode` on every Agent call for compatibility (harmless on 2.1.212+), but never treat its presence as evidence of unattended execution. On 2.1.212+ the inherited parent mode comes from the `permissions.defaultMode` settings (managed, local, project, user) or a launch flag such as `--permission-mode`. Since 2.1.257 the `bypassPermissions` value is narrower: project (`.claude/settings.json`) and local (`.claude/settings.local.json`) `defaultMode: "bypassPermissions"` is ignored, like `"auto"` (2.1.257 CHANGELOG), and an ignored project/local `bypassPermissions` is dropped, so that scope resolves to `default` and overrides a non-bypass user value (user `plan`/`auto`/`acceptEdits` → `default`), whereas with user `bypassPermissions` the result stays `bypassPermissions` (no ignore WARN observed); other values there (measured: `default`, `acceptEdits`; `auto` is ignored per the same CHANGELOG entry, unmeasured `[가설]`; `plan`/`dontAsk` unmeasured) still apply and override the user value, with precedence local > project > user (a project `"default"` overrides a user `auto`/`bypassPermissions`; an absent key leaves the user value in effect) — measured via `claude -p` init `permissionMode` (#1828 comments 5997497206 (E1–E8) / 5998595610 (C0–C9), CC 2.1.289, 2026-10-06). `[가설]` (unobserved): interactive TTY sessions (the 2026-09-02 DETAIL record below, user=auto + project·local=bypass → "auto mode is active", is not reconciled with the `-p` result; a launch flag such as an alias's `--enable-auto-mode` is only a hypothesis), whether `default` actually prompts, managed policy/`--settings` scopes, other CC versions, subagent inheritance. Bypass can still be granted elsewhere, e.g. user or managed settings, `--permission-mode`, or `--dangerously-skip-permissions` (`claude --help` on 2.1.289: "Bypass all permission checks.") (#1644).
+
+From R010 「Self-Check (MUST)」 item 1 (verbatim):
+
+1. **유효 permission mode 실측** — CC ≥ 2.1.212: 부모 모드는 `permissions.defaultMode`(managed·local·
+   project·user 범위)와 실행 플래그(`--permission-mode` 등)가 정한다. 2.1.257+에서 무시되는 것은
+   project/local의 `bypassPermissions` 값(CHANGELOG상 `auto`도, 미측정 `[가설]`)이며 그 범위의 다른 값(예: 사용자가 project에 둔 `"default"`)은
+   여전히 원천이다(위 문단). 세 파일을 함께 실측한다 —
+   `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json`
+   (출력 순서 user·project·local) — managed 설정과 실행 플래그도 원천이므로 별도로 확인한다. 범위 간
+   우선순위는 local > project > user이며 project의 `"default"`는 user의 `auto`/`bypassPermissions`를 덮는다
+   (#1828 comments 5997497206 (E1–E8) / 5998595610 (C0–C9), CC 2.1.289, 2026-10-06, `claude -p` init `permissionMode` 실측). 키가 없으면 user 값이 유지되고,
+   project/local `bypassPermissions`는 무시되어 그 범위는 `default`로 귀결되고 bypass가 아닌 user 값
+   (`plan`/`auto`/`acceptEdits`)을 덮는다; user가 `bypassPermissions`이면 결과는 `bypassPermissions`다.
+   TTY 세션(2026-09-02 DETAIL 기록과 미조정)·`default`의 실제 프롬프트 여부·managed/`--settings`·다른 버전·
+   서브에이전트 상속은 `[가설]` — 미관측.
+   대상 에이전트 frontmatter `permissionMode`가 위에서 실측한 유효 부모 모드를 덮어쓸 수 있다 — 근거는 CHANGELOG 항목이 아니라
+   CC 2.1.289에서 관측한 Agent tool 스키마("agent-definition frontmatter may override it")다. 이 구간에서
+   per-call `mode` 값은 무인 실행의 증거가 아니다(R020 "actual outcome ≠ attempt").
+   CC < 2.1.212: per-call `mode`가 서브에이전트 모드를 정한다 — 생략하면 기본값 `acceptEdits`가
+   frontmatter `permissionMode`를 덮어쓴다(위 버전 표). 어느 구간이든 유효 모드가
+   bypassPermissions 가 아니면 프롬프트 발생을 전제로 계획한다.
+
+From R010 「Universal bypassPermissions」 → 「Common Violation」 (verbatim):
+
+```
+❌ WRONG (CC < 2.1.212): Agent call without mode → acceptEdits default, prompts mid-run
+❌ WRONG (CC ≥ 2.1.212): Prompt appears → assume a missing mode is the cause
+✓ CORRECT: Always pass mode, and diagnose 2.1.212+ prompts via the parent's effective mode
+   and the agent's frontmatter permissionMode
+```
+
+From R010 「Background Agent Permission Mode (`/bg` flow)」 (verbatim):
+
+Background agents (`/bg`, `←←`) keep the current session's permission mode (v2.1.141+); Agent tool calls still follow the CC-version table at the top of 「Universal bypassPermissions」 (per-call `mode` required below 2.1.212, ignored from 2.1.212).
+
+From R010 「Known Limitations (Active Cache)」 row 2, Limitation cell (verbatim):
+
+No Bash, so every search path is the dedicated `Grep`/`Glob` listed in their `tools:` (`sys-naggy` lists `Grep` only). Measured 2026-10-05 on CC 2.1.289: a spawned `qa-writer` received `Read`, `Write`, `Edit`, `Grep`, `Glob` — consistent with 2.1.162 ("explicitly listing Grep/Glob now provides the dedicated search tools on native builds with embedded search"); the main session, which has no explicit list, lacks them (2.1.117). The other five were not spawned to measure
+
+From R010 「Sensitive Path Handling (Historical: pre-CC v2.1.121)」 (verbatim):
+
+Current CC versions (>=2.1.121): direct Write/Edit/Bash on `.claude/**` paths are permitted when the effective permission mode is `bypassPermissions`. The `/tmp/*.sh` script wrapping pattern previously required is no longer necessary. Catastrophic operations (e.g., `rm -rf /`) remain blocked by independent safety guards.
+
+### R012 — SHOULD-hud-statusline.md
+
+- > **v2.1.260+**: 상태줄의 `prompt_cache` 필드(및 `/cost`)가 이제 prompt-cache miss의 **가능성 있는 원인**을 함께 보여줍니다 — 예: 도구 정의나 시스템 프롬프트가 변경됨, TTL을 넘겨 유휴 상태였음. `.claude/statusline.sh`를 확장해 캐시 상태를 노출하려면 이 필드가 캐시 hit/miss 상태의 결정론적 소스입니다 — 함께 표시되는 원인은 플랫폼의 추정 후보이지 확정 원인이 아닙니다. cross-ref R013(context budget), R009(v2.1.229 prefix stagger — 병렬 배치에서 "도구 정의 변경됨"이 원인으로 뜨면 stagger의 캐시 재사용 이득이 소실됐다는 뜻입니다). (R012 「Statusline API (Command-based)」 — HEAD 줄 65; 규칙 본문에는 규범 1줄 "`prompt_cache` 필드는 상태줄 캐시 hit/miss의 결정론적 소스이며 표시되는 원인은 추정 후보입니다."만 남김)
+
+### R013 — SHOULD-ecomode.md
+
+> **v2.1.238+**: 장시간 대화형 세션에서 subagent tool 결과가 최근 표시 윈도우를 벗어나면 이제 메모리에서 해제되는 unbounded memory growth 결함이 수정되었습니다. 구버전 장기 세션(`/fsd` 등 자율 루프 포함)에서는 subagent tool 결과가 무한 누적되어 컨텍스트/메모리 예산 관리가 왜곡될 수 있었습니다 — 위 Context Budget Management의 task-type 임계값 계산이 이 결함으로 인해 부정확했을 가능성을 회고적으로 시사합니다.
+
+> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 native 1M 창을 가진 **모든** Claude 모델을 auto-compaction으로 200K에 유지하도록 확대되었고(이전에는 고정 모델 목록), 미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원). 위 임계값은 **창 대비 백분율**이므로 절대 토큰량은 이 env 설정에 따라 5배까지 달라집니다 — 1M 전제로 예산을 잡기 전 env 설정 여부를 확인합니다(cross-ref R006).
+
+> **v2.1.251+**: Sonnet 5의 기본 auto-compact 창이 **전체 1M 컨텍스트로 변경**되어, 1M 창 세션이 이제 ~934K가 아니라 ~967K 토큰에서 auto-compact됩니다. 위 `CLAUDE_CODE_DISABLE_1M_CONTEXT` 노트와 **직접 상호작용**합니다 — 그 env가 **설정된 환경**에서는 여전히 200K로 강제 유지되지만, **비활성 환경**(기본값)에서는 이번 변경으로 실효 auto-compact 임계값 자체가 상향됩니다. 위 임계값 표의 백분율 계산은 env 설정 여부에 더해 이 CC 버전 여부까지 함께 확인해야 절대 토큰량이 정확합니다. **현재 정정**: 이 노트는 Sonnet 5에 대한 CHANGELOG 항목("Changed Sonnet 5's default auto-compact window to its full 1M context")에 근거하며 실측이 아닙니다. 이 저장소 에이전트는 이제 `claude-sonnet-5-5`로 실행되지만(#1755), 동일한 auto-compact 지점이 5.5에도 적용되는지는 CHANGELOG에 명시되어 있지 않으므로 의존하기 전에 실측합니다.
+
+> **v2.1.260+**: 1M 컨텍스트를 가진 모델의 auto-compact 시점이 확대되어, Opus·Fable 세션도 이제 1M 토큰 한도 직전에 compact되고 매우 큰 컨텍스트에서의 recovery compaction이 더 이상 10분 타임아웃으로 실패하지 않습니다 — 위 v2.1.251 Sonnet 5 노트를 Opus/Fable 계열로 확장하는 것이므로, `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 설정되지 않은 한 이 섹션의 백분율 임계값은 이제 세 모델군 전체에서 절대 토큰량 ~1M에 대응합니다. 같은 릴리즈에서 `/cost`와 statusline의 `prompt_cache` 필드가 prompt-cache miss의 **가능성 있는 원인**(도구 정의·시스템 프롬프트 변경, TTL 경과 idle)을 표시하도록 개선되어, 이 규칙이 다루는 캐시 관련 비용 이상 징후를 진단할 때 그 원인 후보를 출발점으로 삼을 수 있습니다 — 후보이지 확정 원인이 아니므로 R020 Proxy Signal 원칙대로 실측으로 확정합니다(cross-ref R012 statusline).
+
+> **v2.1.261+**: 컨텍스트 비용 진단 도구 2종이 추가되었습니다. `/skill-doctor`는 로드된 스킬 중 사용되지 않는 것과 그 컨텍스트 비용을 표시해 가지치기 대상을 알려줍니다 — 이 저장소의 114개 스킬 열거 블록과 `profile` 스킬의 플러그인 세트 전환에 직접 관련됩니다. `bashOutputMaxChars`/`taskOutputMaxChars` 설정은 command·background-task 출력이 파일로 저장되기 전 모델에 인라인 전달되는 상한을 올릴 수 있습니다(최대 128K자). **v2.1.277+**: `taskOutputMaxChars`는 `TaskOutput` 도구 제거로 더 이상 효과가 없습니다(상세는 `guides/claude-code/15-version-compatibility.md`). 지침: `bashOutputMaxChars`는 기본값으로 올리지 않습니다 — 이 규칙의 압축 원칙(파일 목록 → 개수, 오류 트레이스 → 앞/뒤 줄)이 작은 인라인 출력을 선호하므로, pass/fail 라인이 잘리는 특정 검증에 한해서만 올리고 그 외에는 독립적인 exit-code 조회(R005 #1492)를 우선합니다.
+
+### R016 — MUST-continuous-improvement.md
+
+R016: DETAIL: 구 정책(v1.1.50, 상대폭 기준선) — 원 헤딩 "### 버전노트 보존정책" — v1.1.77에서 위 정책으로 대체(RETIRED, #1717)
+- 규칙 내 CC 버전노트(`> **v2.1.NNN+**:`)는 최근 2-3개 마이너 릴리즈(현행 기준 v2.1.230 이상)만 visible 유지한다.
+- 그 이하 버전노트는 HTML-comment화(무손실 중간 단계) 하거나 `guides/claude-code/15-version-compatibility.md`로 이관한다.
+- `claude-native` 스킬이 생성하는 버전 추적 이슈를 규칙에 반영할 때, 최신만 visible로 두고 구버전은 즉시 은닉한다.
+- **기준선은 고정 상수가 아니라 최신 CC 대비 상대 폭으로 유지한다**: 기준선 v2.1.212가 설정될 당시 CC 최신은 v2.1.233이었으므로 보존 폭은 약 21 patch였다. 이번 상향(v1.1.50, `claude --version` = `npm view @anthropic-ai/claude-code version` 실측 = v2.1.251) 시점에 같은 폭을 유지하려면 기준선이 v2.1.230이어야 한다 — 기준선 갱신 시 "최신 실측값 − 약 20 patch"로 재계산할 것.
+
+폐지 사유: 상대폭 재계산은 매 릴리즈 반복 비용을 낳았고, `/memory` 경고(#1717 실측)가 근본 한계를 드러냈다 — 24개 instruction 파일이 308.8k자로 CC 150k자 한도를 초과했다. 새 정책은 임계값 대신 목적지(가이드 vs 1줄)로 통제한다.
+
+### R018 — MUST-agent-teams.md
+
+ ARCHIVED CC version note (historical):
+> **v2.1.202+**: `/config`에 "Dynamic workflow size" 설정 추가(small/medium/large agent 수 — advisory 가이드) — R018 Agent Teams 규모 판단 신호. 상세는 R009 (MUST-parallel-execution.md) cross-ref.
+
+ DETAIL: Scope cross-session version notes (v2.1.224/225, v2.1.229/232), original wording
+> **v2.1.224/225+**: CC 네이티브 `SendMessage`가 **cross-session으로 확장**되었습니다(다른 머신 포함, macOS/Linux) — `ListAgents`로 대상을 열거하고 `crossSessionInbound` / `dialogExpiry` 설정으로 수신·만료를 제어합니다. 위 표의 "Cross-session = claude-peers-mcp 전용" 구분은 이제 **유일한 수단이 아니며**, 브로커 없이 네이티브 경로를 쓸 수 있습니다. 다만 위 Cross-Session Relay Authority Hardening(v2.1.166)의 권한 비전파 원칙은 네이티브 경로에도 동일하게 적용됩니다 — cross-session 메시지는 조율 신호이지 승인 채널이 아닙니다. (225) cross-session 메시지가 headless 세션·기동 중에 **고지도 만료도 없이 대기**하던 결함이 수정되었으므로, 구버전에서 "응답 없음"은 미수신이 아니라 무기한 대기였을 수 있습니다.
+
+> **v2.1.229/232+**: 네이티브 cross-session 경로의 대상 지정이 쉬워졌습니다 — (229) `ListAgents`가 끊긴 Remote Control 세션을 `offline`, 클라우드 세션을 `cloud`로 표시하므로 **열거 결과에 있다는 사실만으로 도달 가능하다고 가정하지 않습니다**(구버전에서는 살아있는 세션과 끊긴 세션이 구분 없이 나열되어 무응답 원인을 판별할 수 없었습니다). (232) 프롬프트에 `@`로 다른 세션을 이름으로 멘션하면 `SendMessage`가 그 세션에 직접 도달하고, bare name이 **살아있는 세션 1개와 정확히 일치하면 ref 확인 없이 전달**됩니다 — 같은 머신의 세션 이름은 중복 시 `name-word-word` 변형으로 유일성이 보장되므로 이름 기반 전달이 결정론적입니다. 전달 성공은 여전히 조율 신호일 뿐이며, 아래 Member Completion Verification의 ground-truth 원칙과 v2.1.166 권한 비전파 원칙은 그대로 적용됩니다. 또한 (232) interactive session의 background 기본 실행은 **non-teammate 스폰에 한정**되므로 Teams member에는 적용되지 않습니다 — 아래 stall handling의 2분 휴리스틱을 background 지연과 혼동하지 않습니다(cross-ref R010).
+
+ ARCHIVED CC version note (historical):
+> **v2.1.166+**: Messages relayed via `SendMessage` from other Claude sessions no longer carry user authority — receivers refuse relayed permission requests, and auto mode blocks them. A relayed message cannot escalate privilege on the receiving session.
+
+ DETAIL: Relay hardening v2.1.222 note, original wording
+> **v2.1.222+**: auto mode 안전성 개선 — 다른 agent session으로 `SendMessage`가 보내는 메시지가 dispatch 전에 permission classifier로 평가됩니다. v2.1.166의 relay authority hardening이 **수신** 경로를 막았다면, 이번 변경은 **발신** 경로를 게이트합니다. 따라서 SendMessage 전송 자체를 조율 성공의 증거로 삼지 말고, 아래 Member Completion Verification의 결정론적 ground-truth로 확인합니다. classifier가 2회 걸리면 R010 Subagent Scope-Creep STOP Protocol을 적용해 재전송 대신 범위를 재설계합니다.
+
+ ARCHIVED CC version note (historical):
+> **v2.1.183+**: Fixed tmux teammate panes failing to launch when the shell has slow rc-file initialization — a slow `.zshrc`/`.bashrc` no longer prevents Agent Teams teammate panes from launching in tmux. Also fixed WebSearch returning empty results in subagents: a subagent (including a Teams member) using WebSearch now returns results instead of silently empty.
+
+ DETAIL: SendMessage/Teams reliability and maxTurns version notes (v2.1.222~274), original wording
+> **v2.1.224+**: `SendMessage`가 **teammate inbox 쓰기에 실패해도 "Message sent"로 보고**하던 결함이 수정되어, 이제 실패가 오류로 보고됩니다. 위 표의 "SendMessage report = Low reliability"가 **전송 자체에도** 해당했다는 실증입니다 — 구버전에서는 "Message sent"가 수신은커녕 기록 성공조차 보장하지 않았습니다. 수정 후에도 전송 성공은 **수신자가 작업을 수행했다는 증거가 아니므로**, 위 표의 결정론적 ground-truth 확인은 그대로 유지합니다.
+
+> **v2.1.222+**: `SendMessage`가 긴 summary를 문자 수 제한으로 거부하던 동작이 **절단(truncate)**으로 변경되어 전송이 실패하지 않습니다. 전송 실패가 사라진 대신 **조용한 절단**이라는 새 실패 모드가 생겼으므로, 위 표의 "SendMessage report = Low reliability" 원칙이 오히려 강화됩니다. 긴 보고가 필요하면 SendMessage 본문 대신 아티팩트 파일 경로 전달(R006 Artifact Channel Protocol)로 대체합니다.
+
+> **★★ v2.1.246+**: `maxTurns` 한도에 도달해 멈춘 서브에이전트의 결과가 이제 **partial로 표시**되고 `SendMessage`로 이어가라는 힌트가 붙습니다 — **이전에는 완료된 것처럼 보였습니다.**
+>
+> **확정된 것 (v1.1.50 세션 실측)**: `maxTurns` 절단은 R020 「Verification-Delegation Non-Termination」이 누적 14회로 기록한 "서브에이전트가 판정 없이 turn을 종료" 증상의 **실재하는 원인 중 하나**다 — 더 이상 가설이 아니다. v1.1.50 릴리즈 세션에서 오케스트레이터가 4개 그룹을 병렬 위임했고, 그중 **3개 그룹이 20턴 `maxTurns` 한도로 절단**되어 통지에 `stopped at its 20-turn limit (partial result)`이 명시됐다:
+> - 한 건은 문장 중간에서 절단(진행도 불명 — 실측 필요).
+> - 다른 한 건은 "Templates 미러를 동기화합니다" 직후 절단 — 오케스트레이터는 이 문구로 **미실행**을 추정했으나, 재개 후 실측 결과 작업은 **이미 완료돼 있었다**. 절단 위치(마지막 출력 문장)로부터 진행도를 추론하는 것 자체가 불가능함을 재확인한 사례다 — R020 「Verification-Delegation Non-Termination」의 "증상만으로 결과를 넘겨짚지 않는다" 원칙이 관측한 세 방향 중 "(c) 실제가 보고보다 앞섬"의 재현.
+> - 세 번째 건은 "Now R020 — three items. Let's find suitable locations."라는 **다음 작업 예고 직후** 절단 — 착수 여부조차 미실측 상태로 끊겼다.
+>
+> **v2.1.246 이전이었다면 이 partial 표시가 없어 세 건 모두 완료 보고로 읽혔을 것이다.**
+>
+> **확정되지 않은 것**: R020이 기록한 과거 14회 각각이 이 원인이었는지는 미검증이다 — 사례별 귀속은 turn 수·소요 시간을 `maxTurns` 한도와 대조하는 별도 검증이 필요하다.
+>
+> **행동 함의**: 이 원인은 R020의 clause 강화("판정 없이 종료하지 말라")가 14회 내내 실패했던 이유를 설명한다 — **절단 주체가 에이전트의 판단이 아니라 플랫폼의 turn 한도이면, 에이전트를 향한 지시는 애초에 닿지 않는다.** 대칭적으로 R020 「위임 경계를 Phase 개수로 설계」(단일 목표로 분할)가 효과적이었던 이유도 설명된다 — 작업이 작으면 `maxTurns` 안에서 자연히 끝나기 때문이지, 에이전트가 더 순종적이어서가 아니다.
+>
+> **낮추지 말 것**: 원인이 확정됐다고 해서 위 표의 결정론적 ground-truth 검증 원칙을 낮추지 않는다 — 절단이 아닌 원인(위임 경계 미분할, 에이전트 자체 판단 종료)도 계속 존재한다. 또한 **partial 표시는 v2.1.246 이상에서만 나타나므로**, 그 이전 버전에서 관측된 mid-step 종료 사례를 재해석할 때는 이 신호 자체가 부재했다는 것을 전제로 한다 — "partial 표시가 없었다"가 "maxTurns 절단이 아니었다"의 증거는 아니다.
+
+> **v2.1.251+**: Agent Teams 팀원의 최종 답변이 팀 리드에 도달하지 못하던 결함이 수정되어, 이제 idle notification에 실려 도착합니다(이전에는 내용 없는 "available" 알림만 떴습니다). 위 v2.1.224 "SendMessage teammate inbox 쓰기 실패 시에도 Message sent로 보고" 수정의 **후속 실증**입니다 — 구버전에서는 팀원이 정상 완료해도 리드가 그 답변을 못 받을 수 있었으므로, "결정론적 ground-truth로 확인"이라는 위 표의 원칙이 이 시점 이전 세션에서는 특히 중요했습니다.
+
+> **v2.1.234+**: `/config`의 "Default teammate model" 설정이 **제거**되어, agent-team teammate는 이제 spawn이 모델을 지정하지 않는 한 **leader의 모델**을 사용합니다. 이전에는 teammate 모델을 전역 설정값으로 지정할 수 있었으므로, 과거 세션의 "teammate가 어떤 모델로 실행됐는지" 서술은 이 변경 이전 버전 기준일 수 있습니다.
+
+> **v2.1.257+**: 세 건이 함께 수정되었습니다. (a) leader의 mailbox 쓰기가 잠시 잠긴 사이 teammate permission request가 **두 번 응답**되던 결함 수정 — v2.1.224/251 SendMessage·inbox 신뢰성 계열의 연장이며, 구버전에서 승인이 2회 적용된 흔적은 이중 승인 의도의 증거가 아닙니다. (b) tmux/iTerm2 pane의 teammate가 shutdown 확인 후에도 열려 있던 결함 수정 — 위 Lifecycle의 `TeamDelete` 이후 pane 잔존은 더 이상 정상이 아닙니다. (c) `/fork`가 원 대화의 prompt cache를 새 background 세션에서 유지하도록 개선(worktree briefing이 system-prompt 변경 대신 메시지로 도착) — R009 fork 컨텍스트 상속 노트의 비용 각도. 이 저장소는 `TeamCreate` 미등록으로 R018이 dormant이므로 (a)(b)는 기록용, (c)는 fork 사용 시 즉시 해당합니다.
+
+> **v2.1.260+**: `SendMessage`/teams 신뢰성 계열에서 세 건이 추가로 수정되었습니다 — 다른 에이전트를 `SendMessage`로 resume한 서브에이전트가 그 에이전트의 완료 알림을 받지 못하고(알림이 대신 main conversation으로 갔습니다), in-process teammate의 트랜스크립트가 긴 API 재시도 대기(`CLAUDE_CODE_RETRY_WATCHDOG` 등) 중 재시도 알림에 실제 메시지가 덮여 유실되거나 비어 보였으며, background로 이동한 세션이 `ListAgents`에 동일 이름의 "interactive" 유령 쌍둥이로 **두 번** 나타나 뷰어 쪽이 `SendMessage` 전달을 받는 문제가 있었습니다 — 위 v2.1.229 `ListAgents` 노트("열거됐다고 도달 가능하다고 가정하지 않는다")를 확장합니다: 나열된 이름이 단일 실제 대상이라는 보장조차 없었습니다. 결론은 그대로입니다 — 결정론적 ground-truth만이 완료 증거입니다.
+
+> **v2.1.261+**: 다른 머신의 OFFLINE Remote Control 세션으로 `SendMessage`를 보내면 전송됨으로 읽혔으나, 이제 그 머신이 재연결될 때까지 전달이 큐잉된다는 결과를 반환합니다 — v2.1.224 inbox 쓰기 실패·v2.1.251 최종 답변 유실에 이은 이 계열의 세 번째 사례이며, 구버전의 "Message sent"는 상대가 온라인이라는 보장조차 아니었습니다. 같은 릴리즈에서 in-process agent-team teammate가 두 번째 턴에 첫 턴의 도구·스킬 announcement를 재전송해 요청 prefix가 바뀌고 prompt cache를 놓치던 결함도 수정되었고, (265) teammate·resumed 서브에이전트가 `SubagentStart` 훅 컨텍스트와 preloaded skill을 prompt prefix 밖으로 이동시키던 결함도 수정되었습니다. 이 저장소의 R018은 `TeamCreate` 부재로 dormant이므로, 이 노트는 cross-session `SendMessage` 경로에 한해 기록합니다.
+
+> **v2.1.268/271+**: (268) 신뢰하지 않은 폴더의 동일 이름 agent 파일에서 tools나 system prompt를 물려받은 채 respawn되던 in-process teammate 결함이 수정되었습니다 — agent 정의에 대한 trust boundary이며 R001과 교차합니다. 같은 릴리즈에서 `claude remote-control`로 서빙되는 Remote Control 세션이 `ListAgents`에 세션 제목 대신 생성된 이름으로 표시되던 결함도 수정되었습니다. (271) 수신 세션의 permission-mode 정책에 의해 보류된 cross-session 메시지가 흔적 없이 사라지던 결함이 수정되어, 이제 headless 발신자는 전달 통지를 받고 `SendMessage` 결과가 더 이상 "읽힘"을 함의하지 않습니다 — v2.1.224/251/260/261 SendMessage 신뢰성 계열에 "전달됨 ≠ 읽힘"이 명시적으로 추가됩니다. 같은 릴리즈에서 `claude mcp serve`가 30초마다 진행 업데이트를 보내 장시간 무음 도구 호출이 idle 타임아웃으로 중단되지 않도록 개선되었습니다.
+
+> **v2.1.273/274+**: (273) 최종 스트리밍 응답에 토큰 사용량이나 model id가 빠졌을 때 서브에이전트/백그라운드 에이전트가 FAILED로 보고되고 결과가 전달되지 않던 결함이 수정되었습니다(R020 「Failure/Interrupt Report ≠ Actual Failure」cross-ref). (274) 서브에이전트가 메인 세션에 보낸 메시지가 relaunch 후 Claude Desktop 트랜스크립트에서 사라지던 결함이 수정되었고, headless/SDK 세션이 완료된 background task마다 개별 모델 호출을 하던 것이 이미 큐잉된 완료건은 한 번의 호출로 응답하도록 바뀌었습니다(R009 fan-out의 비용 각도). (273) `/tui`가 이미 완료된 agent-team teammate 때문에 재시작을 거부하던 결함도 수정되었습니다. 결론은 그대로입니다 — 결정론적 ground-truth만이 완료 증거이며, 이 수정들은 잘못된 "failed"/"idle" 신호를 줄일 뿐 검증을 대체하지 않습니다.
+
+ ARCHIVED CC version note (historical):
+> **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
+
+> **CC v2.1.169+**: `claude agents --json` now includes blocked and just-dispatched background sessions (previously omitted), adds `--all` to include completed sessions, and adds `id` and `state` fields. This strengthens the deterministic ground-truth for member completion verification — `state` distinguishes blocked/running/completed directly, and `--all` confirms a member actually completed (rather than just disappearing from the active list). Use `--all` + `state` as the ground-truth signal instead of inferring completion from a member's absence.
+
+> **v2.1.198+**: Agent Teams에서 teammate가 API 오류로 죽으면 이제 lead에 "failed"를 보고하고, stuck teammate에게 메시지를 보내면 즉시 wake시켜 retry하게 합니다. 이는 v2.1.169 `state` 필드 기반 deterministic ground-truth를 보강하지만, SendMessage report 자체는 여전히 low-reliability 신호로 취급한다(위 표의 원칙 불변).
+
+> **v2.1.199+**: subagent가 rate limit/server error로 잘리면 partial work를 parent에 반환하며, subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류를 parent agent에 정확히 보고합니다. 플랫폼이 false-success 자가보고를 줄였으나, deterministic ground-truth(`git status`/`grep`/validation scripts) 검증 원칙은 여전히 유효하다.
+
+ ARCHIVED CC version note (historical):
+> **v2.1.186+**: Added the `teammateMode: "iterm2"` setting (warns when auto mode cannot find the `it2` CLI), and added status filtering (press `f`) to the `/workflows` agent detail view. Relevant to Agent Teams teammate launch configuration (cf. v2.1.183 tmux teammate-pane fix).
+
+### R020 — MUST-completion-verification.md
+
+### Failure/Interrupt Report ≠ Actual Failure — visible table rows (HEAD L528-532)
+
+| 증상 | 실제 상태 | 확인 수단 |
+|------|-----------|-----------|
+| **v2.1.246+**: 매우 큰 기존 파일을 덮어쓴 뒤 Write 도구가 "Out of memory"를 보고하거나 오래 멈춤 | **파일 자체는 정상적으로 쓰여 있었다** | 도구의 실패 보고 대신 파일 내용/크기를 직접 재확인 |
+| **v2.1.246+**: 헤드리스/원격 세션에서 수신 메시지로 인터럽트된 MCP 도구 호출이 "출력 없이 완료됨"으로 보고됨(v2.1.246 이전) | 실제로는 **인터럽트**됐다 — 정상 완료가 아니었다 | v2.1.246+는 명시적 interrupted 에러로 보고하도록 수정됨; 구버전 세션의 "빈 출력 완료"는 무음 인터럽트였을 수 있음 |
+| **v2.1.246+**: 실행 중 인터럽트된 셸 명령이 "Ran 1 shell command"로만 표시(잘렸다는 표시 없음, v2.1.246 이전) | 명령이 **완주하지 못했다** | 출력 완결성을 별도로 확인(예상 출력 패턴 대조) 없이 "실행됨"만으로 성공 단정 금지 |
+
+Visible intro (HEAD L526): 위 항목들은 대체로 "성공 보고 ≠ 실제 성공"을 다루지만, **역방향**도 동일하게 검증 대상이다 — "실패/중단 보고"를 받았을 때도 ground-truth를 확인하기 전에는 실제로 실패했다고 단정하지 않는다.
+
+### v2.1.257 버전노트 (HEAD L186-188, DETAIL)
+
+> **v2.1.257+**: 서브에이전트가 컴퓨터 절전·연결 끊김·서버 오류로 응답이 mid-stream 절단될 때 불완전 응답으로 그대로 종료하던 동작이 **자동 이어감**으로 수정되었습니다. 즉 "판정 없이 종료" 증상의 원인 축 중 **네트워크/서버 절단 축은 v2.1.257부터 소멸**하며, 남는 실재 원인은 `maxTurns` 한도(위 실증)·위임 경계 미분할·에이전트 자체 판단 종료·훅 피드백 잠식(8항)입니다. 따라서 v2.1.257+ 환경에서 mid-step 종료를 관측하면 네트워크 절단을 원인 후보에서 먼저 제외하고 `maxTurns` partial 표시 유무를 확인합니다 — 단 원인 축 하나가 사라졌다고 ground-truth 실측 원칙을 낮추지 않습니다. 같은 릴리즈에서 턴을 백그라운드로 보낼 때(`←`/Ctrl+B) 실행 중이던 도구가 거부된 것으로 처리되던 결함도 수정되어, 구버전 background 세션의 "도구 거부됨" 기록은 실제 거부의 증거가 아닐 수 있습니다.
+
+### v2.1.199 / v2.1.200 (HEAD L192-196, unlabeled comment)
+
+> **v2.1.199+**: subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류가 parent agent에 정확히 보고됩니다. 플랫폼 수정으로 false-success 자가보고 빈도는 줄지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지된다 — subagent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인한다.
+
+> **v2.1.200+**: rate limit으로 어떤 텍스트 출력도 내기 전에 잘린 subagent가 이전에는 빈 결과(empty result)를 반환하던 것을 clean failure로 반환하도록 수정되었습니다 — v2.1.199 partial-work 반환에 이어, 출력 이전 rate-limit 차단 시 조용한 빈 결과 대신 명시적 실패를 parent에 보고합니다. 플랫폼이 false-success/silent-empty 자가보고를 추가로 줄였으나, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지됩니다 — subagent 보고를 그대로 신뢰하지 말고 git status/grep/validation script로 재확인합니다.
+
+### RETIRED v2.1.211 (HEAD L198)
+
+RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.211+**: CC의 background agent 결과 보고가 개선되어, Claude가 아직 실행 중인 agent의 상태를 그대로 보고하고 **결과를 지어내지 않고 실제 완료를 기다립니다**(previously fabricated results). v2.1.199/200(false-success·silent-empty 자가보고 감소)에 이은 플랫폼 개선으로 오케스트레이터의 fabricated-completion 리스크를 추가로 낮추지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(Core Rule)은 여전히 유지됩니다 — subagent/background agent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인합니다.
+
+### v2.1.252/257/258 버전노트 (HEAD L534-536, DETAIL)
+
+> **v2.1.252/257/258+**: 실패/중단 관련 보고 무결성 결함 3건이 추가로 수정되었습니다. (252) 매우 큰 실패 출력(디스크 풀 상태의 git 오류 등)을 실은 background task 알림이 대화를 API 요청 크기 한도 밖으로 밀어내던 결함 — R021 v2.1.247 훅 출력 폭주 계열의 background task 각도이며, 구버전에서 "Prompt is too long"으로 세션이 멈춘 것은 작업 자체의 실패가 아니라 실패 **알림의 크기** 때문일 수 있었습니다. (257) `claude -p`가 모델이 armed한 Monitor가 아직 도는 중인데도 최종 결과 약 5초 뒤 종료하던 결함이 수정되어, 이제 감시가 발화하거나 타임아웃될 때까지 대기합니다 — 무인 `-p` 실행에서 Monitor 결과 부재는 이제 "감시 미발화"로 해석하며 "조기 종료"로 오판하지 않습니다. (258) 원격·예약 세션이 재전송된 permission approval을 적용하지 못한 뒤 "user messages must have non-empty content"로 실패하던 결함이 수정되었습니다 — R010 v2.1.234 "background subagent 승인·거부가 드롭될 수 있던 결함" 계열의 원격 세션 각도이며, 구버전 `/schedule`·remote 세션의 이 오류 문구는 프롬프트 자체의 결함이 아니라 승인 채널의 결함이었습니다.
+
+### v2.1.234 버전노트 (HEAD L538-540, DETAIL)
+
+> **v2.1.234+**: print/SDK 모드에서 SIGTERM 수신 시 더 이상 interrupted turn이나 synthetic tool denial을 기록하지 않는다(명령은 여전히 종료되고 프로세스는 exit code 143). 무인 실행(`-p` 모드) 강제 종료 후 트랜스크립트를 완료 판정 근거로 쓸 때, v2.1.234+에서는 SIGTERM에 의한 중단이 트랜스크립트 상에 "interrupted"로 남지 않는다는 점을 전제해야 한다 — 트랜스크립트가 깨끗해 보여도 실제로는 SIGTERM으로 잘렸을 수 있다.
+
+### v2.1.259/261 버전노트 (HEAD L546-548, DETAIL)
+
+> **v2.1.259/261+**: "정지 보고 ≠ 실제 정지" 결함 3건이 수정되었습니다. (259) Stop이 remote-control 세션의 background agent·workflow를 실제로 멈추지 못했던 결함 — 이제 kill된 task는 프로세스가 종료될 때까지 계속 표시되고 재정지 가능합니다. (261) SDK·cloud 세션이 첫 프롬프트 직후, turn이 시작하기 전에 도착한 Stop/interrupt를 무시하고 turn을 끝까지 실행하던 결함이 수정되었습니다. (261) 터미널 진행 표시(iTerm2, Ghostty, ConEmu)가 background workflow/agent가 아직 실행 중인데도 세션을 완료된 것으로 표시하던 결함이 수정되었습니다. 세 건 모두 이 섹션 원칙의 **역방향 쌍둥이**입니다 — "정지됨"/"완료됨" 신호도 ground-truth가 아니므로, 인터럽트가 실제로 적용됐다고 단정하기 전에 프로세스/run 상태(`gh run list`, task 패널, `pgrep`)로 확인합니다. 같은 릴리즈에서 (259) 이전 정지 실행이 종료 중인 상태에서 workflow run을 재개하면 그 에이전트들이 **중복 실행**될 수 있던 결함도 수정되었습니다(cross-ref R023 Workflow resume).
+
+### v2.1.265/267 버전노트 (HEAD L550-552, DETAIL)
+
+> **v2.1.265/267+**: (265) 이전 프로세스가 도구 실행 중 죽은 뒤 재개하면 마지막 프롬프트를 더 이상 재작성하지 않고, 중단된 도구 호출을 유지하며 **interrupted로 명시 표시**합니다 — 위 v2.1.246 행(인터럽트된 셸 명령이 단순 "실행됨"으로만 표시)의 연장선으로, 이 경로에서는 이제 트랜스크립트에 명시적 interrupted 마커가 남으므로 v2.1.265+에서는 그 부재가 유의미한 증거지만 구버전에서는 아닙니다. (267) `/compact` 또는 다른 슬래시 커맨드 직후 `-p --resume`으로 재개할 때 가짜 "Continue from where you left off." turn이 더 이상 삽입되지 않습니다 — `/fsd` 류 `-p` 루프에서 이런 turn을 사용자 입력으로 오인할 수 있었던 경로와 관련됩니다(R015: 이것은 지시가 아닙니다). 또한 큰 세션(트랜스크립트 5MB 초과)을 재개할 때 병렬 도구 호출과 그 훅 출력이 재로드된 대화에서 누락되던 결함도 수정되었습니다(cross-ref R021) — 회고적 트랜스크립트 계수(「Self-Violation Counting Is Also Diagnosis」)에서, 구버전으로 재개된 5MB 초과 세션은 도구 호출이 유실됐을 수 있으므로 그런 트랜스크립트의 계수는 **하한값**으로 취급합니다.
+
+### v2.1.269 버전노트 (HEAD L554-556, DETAIL)
+
+> **v2.1.269+**: 원격·헤드리스 세션이 background agent가 아직 실행 중인데도 "waiting for your input"을 보고하던 결함이 수정되었습니다(`CLAUDE_CODE_BG_TASKS_REPORT_RUNNING=0`으로 구동작 복원 가능) — 구버전 `-p`/원격 실행에서 idle 보고는 백그라운드 작업 완료의 증거가 아니었습니다. 같은 릴리즈에서 compaction 이후 Claude에 전달되는 git status가 세션 시작 시점이 아니라 **현재** 상태로 바뀌었습니다 — R017 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」와 직접 교차: v2.1.269 이전에는 compaction 후 오케스트레이터가 stale git 스냅샷으로 추론할 수 있었으므로, compaction 직후 HEAD/브랜치 재실측은 선택이 아니었습니다. 또한 (269) `/goal` 실행이 API 오류·네트워크 끊김·토큰 한도 후 무음으로 멈추던 결함이 수정되어, 이제 backoff로 재시도하거나 중단 사유를 명시합니다 — `/goal`을 감싸는 `/fsd`에도 해당합니다.
+
+### v2.1.273 버전노트 (HEAD L558-560, DETAIL)
+
+> **v2.1.273+**: 서브에이전트/백그라운드 에이전트가 스트리밍 최종 응답에 토큰 사용량이 빠졌거나 model id가 없을 때 **FAILED로 보고되고 결과가 전달되지 않던** 결함이 수정되었습니다 — 작업은 완료됐으나 전달만 실패한, 이 섹션이 다루는 "실패 보고 ≠ 실제 실패"의 정확한 사례입니다. 같은 릴리즈에서 SDK와 `--output-format stream-json` 출력이, 실행 도중(예: `CLAUDE_AUTO_BACKGROUND_TASKS`로) background로 이동한 서브에이전트의 남은 메시지와 최종 보고를 누락하던 결함도 수정되었고, context meter와 auto-compact가 advisor 도구 턴을 실제 크기의 약 2배로 계상해 auto-compact가 실제 창의 절반 지점에서 발동하던 결함도 수정되었습니다(cross-ref R013). 위 v2.1.246 `maxTurns` partial 표시와 함께, 이들은 「위임 경계를 Phase 개수로 설계」가 다루는 "판정 없이 종료" 증상의 추가 플랫폼 원인입니다 — 위 Core Rule의 ground-truth 원칙은 그대로 유지됩니다.
+
+### v2.1.274 버전노트 (HEAD L562-564, DETAIL)
+
+> **v2.1.274+**: background agent 알림이, 에이전트가 여전히 자신의 백그라운드 작업을 기다리며 재개 예정인데도 "실행 중인 백그라운드 작업 없음"으로 보고하던 결함이 수정되었습니다. 재개된 background agent가 인터럽트된 도구 배치 중 하나가 메시지와 함께 승인됐을 때 배치의 절반을 유실하던 결함도 수정되었습니다. "unexpected tool_use_id" 400 오류를 끝없이 재시도하며 멈추던 세션도 수정되어, 손상된 트랜스크립트는 가능하면 자가 복구하고 그렇지 않으면 `/rewind` 힌트가 붙은 명확한 오류로 루프를 끝냅니다. compaction을 거친 세션을 `--continue`/`--resume`으로 재개할 때 활성 `/goal`이 유실되던 결함과, 훅 기반 세션(활성 `/goal`)이 2차 overflow에서 compaction 대신 "Prompt is too long"으로 종료되던 결함도 모두 수정되었습니다 — `/goal`을 감싸는 `/fsd`에서, 구버전의 재개 후 goal 유실은 수렴 신호가 아니라 플랫폼 결함이었습니다. 같은 릴리즈에서 서브에이전트의 진행 요약이 폭주하는 다단락 응답으로 대체되던 결함도 수정되었습니다.
+
+### v2.1.275 버전노트 (HEAD L566-568, DETAIL)
+
+> **v2.1.275+**: (275) CHANGELOG 원문: "Fixed self-hosted runners with `--drain-wait-sec` losing the final result of a turn that finished during a SIGTERM drain; the runner now waits briefly for the turn to be reported." 위 v2.1.234 SIGTERM 노트의 runner 각도 확장이며, 275 이전 drain 중 종료된 턴의 결과 부재는 미완료의 증거가 아니었습니다. (275) CHANGELOG 원문: "Fixed `--resume` and `--continue` dropping a conversation's earlier thinking when a built-in tool it started with has since been switched off by a server-side flag." 재개된 대화에서 이전 reasoning 부재는 원본 부재의 증거가 아니며, R021 「Enforcement Tiers」의 5번째 각도("발화 ≠ 재개 후 보존")와 같은 계열입니다(cross-ref R021). (275) CHANGELOG 원문: "Changed hosted sessions to keep an unanswered permission prompt up after a container restart, instead of asking again." hosted 세션에서 컨테이너 재시작 후 "재요청 없음"은 승인이 적용됐다는 뜻이 아니라 프롬프트가 유지된 것이므로, 승인 여부는 ground-truth로 확인해야 합니다(R010 v2.1.234 승인 드롭 노트 계열).
+
+### R023 — SHOULD-verification-ladder.md
+
+R023: DETAIL: v2.1.232 background-agent note, original wording
+> **v2.1.232+**: `/code-review`가 high·xhigh·max effort에서도 **background agent로 실행**됩니다(다른 레벨과 동일). 즉 Tier 3 검증 호출의 반환은 착수 신호이지 검증 결과가 아니므로, 다음 tier 진행이나 통과 판정 전에 background agent의 실제 완료와 결과를 실측합니다 — 구버전에서는 고effort 레벨만 전경 실행이라 "반환 = 결과"가 성립했고, 그 전제로 ladder를 진행하면 미완료 검증을 통과로 오판합니다(R020 "attempt ≠ outcome", cross-ref R010 non-teammate background 기본 실행).
+
+R023: DETAIL: Workflow Script Sanity Check version notes (v2.1.223~274), original wording
+> **v2.1.223+**: workflow script가 동적 `import()`로 workflow 샌드박스 **밖의 코드를 실행**할 수 있던 결함이 수정되었습니다. 위 표의 체크는 프롬프트 조립·문법·런타임 계열을 다루지만 **샌드박스 탈출은 다루지 않았고**, 구버전에서는 `node --check` 통과 + 프롬프트 정상 조립 상태에서도 스크립트가 경계 밖 코드를 끌어올 수 있었습니다. 외부에서 받은 workflow script를 실행하기 전 동적 `import()` 사용 여부를 grep으로 확인합니다(Tier-1 결정론 검사).
+
+> **v2.1.259/260+**: Workflow 도구 견고성 수정 3건입니다. (259) 워크플로 실행 재개 시 직전 stop된 실행의 프로세스가 아직 종료 중이면 그 agent들이 **중복 실행**될 수 있던 결함이 수정되었습니다 — 구버전에서는 `resumeFromRunId`를 stop 직후 바로 호출하는 것이 안전하지 않았으므로, stop → 프로세스 종료 확인 → resume 순서를 지킵니다. (260) Workflow `agent({schema})`가 이제 **충족 불가능한 JSON Schema를 사전 거부**하고, 재시도 한도 초과 에러에 마지막 검증 실패 내용을 포함합니다 — 플랫폼이 스스로 수행하는 Tier-1 결정론 사전 점검이며, 위 표의 sanity-check 항목에 "충족 불가능한 schema는 어떤 agent도 실행되기 전에 거부됨"을 추가로 간주할 수 있습니다. (260) 장시간 context compaction이 진행 중인 Workflow subagent가 "stalled"로 재시작되던 결함이 수정되었습니다 — R009 Adaptive Parallel Splitting과 교차 참조: compaction 대기는 stall이 아닙니다.
+
+> **v2.1.267+**: auto mode에서 **큰 출력 스키마**를 가진 Workflow `agent()` 호출이 safety classifier의 검토 대신 **거부**되던 결함이 수정되었습니다. 구버전에서 큰 스키마 `agent()` 호출의 거부는 classifier 판정이 아니라 플랫폼 크기 제약의 산물이었으므로, R010 Subagent Scope-Creep STOP Protocol의 trip 횟수에 계상하지 않습니다. 또한 (261) `bashOutputMaxChars`/`taskOutputMaxChars` 설정(최대 128K자)이 신설되어 명령/백그라운드 작업 출력이 파일로 저장되기 전 모델에 인라인으로 도달하는 양을 조정합니다 — Tier-1 검증 스크립트의 출력이 파일로 잘려 pass/fail 라인이 유실될 때 관련됩니다; 한도를 올리기보다 exit code를 단독으로 읽는 방식(R005 #1492)을 우선합니다.
+
+> **v2.1.269+**: `claude plugin eval`이 플러그인의 eval suite를 Claude Code 자체로 실행해 점수화·재현 가능한 결과(JSON + HTML 리포트)를 냅니다 — 이 ladder에 스킬 품질 검증을 위한 새 Tier-1/2 도구가 추가된 것입니다(cross-ref `skill-creator`, R006). `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`(1~256)가 신설되어 Workflow 도구의 실행당 동시 agent 한도를 조정할 수 있게 되었습니다 — 플랫폼 상한은 이제 설정 가능하지만, 이 저장소의 R009 정책 상한(동시 5, soft 4)은 그대로 적용됩니다. `--output-format stream-json`의 `permission_denials`가 경로 스코프 deny 규칙에 걸린 Read/Edit/Write 호출도 이제 포함합니다 — 구버전 `-p` 검증 실행에서는 이런 거부가 denial 계측에서 누락됐을 수 있습니다. `bashEditDiffEnabled`가 Bash 명령이 변경한 파일의 diff를 Bash 도구 결과에 함께 실어, 셸을 통한 편집을 Tier-1 결정론적으로 사후 점검할 수 있게 합니다.
+
+> **v2.1.271/274+**: (271) `claude plugin install`/`update`에 `--accept-command <sha256>`이 추가되어, `-y`(blanket yes) 대신 이전 `--json` 실행이 표시한 명령을 정확히 그 sha256으로만 승인할 수 있습니다 — 콘텐츠 주소화된 결정론적(Tier 1) 승인이 blanket yes보다 우선됩니다. dynamic workflow가 usage limit에 도달하면 이제 agent를 드롭하는 대신 **일시정지 후 한도 리셋 시 재개**합니다(cross-ref 위 「Workflow Script Sanity Check」의 resume 관련 항목). (274) Monitor 도구 통지가 스크립트의 최종 출력과 exit을 **하나의 통지**로 묶어 전달합니다(모델 턴 절약). `CLAUDE_CODE_MCP_STARTUP_WAIT_MS`가 신설되어 첫 non-interactive 턴이 연결 중인 MCP 서버를 기다리는 시간을 제한합니다(`0`=대기 안 함) — Tier-1 검증용 `-p` 실행이 MCP 기동으로 지연되지 않아야 할 때 관련됩니다.
 
 ## Known Platform Issues & Workarounds
 

@@ -5,7 +5,6 @@ model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: medium
-maxTurns: 20
 limitations:
   - "cannot modify source code in production branches"
 tools:

@@ -2,6 +2,30 @@
 
 > **Priority**: MUST | **ID**: R002
 
+<!-- DETAIL: [MUST] Permission Rules original wording
+# [MUST] Permission Rules
+
+> **Priority**: MUST | **ID**: R002
+-->
+
+## Tool Permission Tiers
+
+| Tier | Tools | Policy |
+|------|-------|--------|
+| 1: Always | Read, Glob‡, Grep‡, ToolSearch§ | Free use, read-only |
+| 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
+| 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite†, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
+| 4: Approval | Bash, PowerShell, WebFetch, WebSearch | Request user approval on first use |
+| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop | Available when Agent Teams enabled; `SendMessage` to a named agent works without `TeamCreate` |
+| 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
+
+> **†** 현행 기본 실행 환경에 존재하지 않습니다(「Todo/Task 도구 기본 제거」). 이 표는 카탈로그이지 가용성 보증이 아니므로, 도구 호출을 의무화하기 전에 도구 목록/`ToolSearch`로 실측합니다.
+
+> **‡** 전용 `Glob`/`Grep`은 네이티브 빌드에서 frontmatter `tools:`에 명시해야 제공됩니다(1건 실측, CC 2.1.289; 일반화는 추정). 없으면 읽기 전용 Bash(`git grep`·`find`)로 대체하며(R005 #1307, #1590) Tier 4 정책(첫 사용 시 승인)을 적용받습니다. Bash도, 명시된 검색 도구도 없을 때(예: `sys-naggy`는 Grep만 명시 — Glob 검색)에만 오케스트레이터가 사전 수집해 전달합니다(R010 「Known Limitations (Active Cache)」).
+
+> **§** `ToolSearch`도 멤버 환경에 없을 수 있으며(#1817) 없으면 지연 도구는 부재로 취급합니다(R018 「멤버 도구 부재 시 대체 규약」).
+
+<!-- DETAIL: Tool Permission Tiers original wording
 ## Tool Permission Tiers
 
 | Tier | Tools | Policy |
@@ -18,7 +42,19 @@
 > **‡** 네이티브 빌드(macOS/Linux)에서는 전용 `Glob`/`Grep`이 Bash 내장 `bfs`/`ugrep`으로 대체되고(CHANGELOG 2.1.117: "the `Glob` and `Grep` tools are replaced by embedded `bfs` and `ugrep` available through the Bash tool"), `--tools`로 명시하면 전용 도구가 제공된다(2.1.162: "explicitly listing Grep/Glob now provides the dedicated search tools on native builds with embedded search"). 실측(CC 2.1.289, 2026-10-05): frontmatter `tools:`에 Grep/Glob을 명시한 `qa-writer`는 전용 `Grep`/`Glob`을 받았고(Bash 없음), 명시 목록이 없는 메인 세션에는 없었다 — frontmatter 명시가 `--tools` 명시와 같은 효과라는 일반화는 이 1건에 근거한 추정이다. 전용 도구가 없으면 읽기 전용 Bash(`git grep`·`find`)로 대체한다(R005: 가용성 미확인 시 Bash 우선 #1307, 전수조사 `git grep` 표준 #1590). 이 대체는 Tier 1 작업을 Tier 4로 옮기므로 Tier 4 정책("Request user approval on first use")이 적용된다. Bash도, frontmatter에 명시된 해당 검색 도구도 없는 경우(예: `sys-naggy`는 Grep만 명시 — Glob 검색)에만 오케스트레이터가 사전 수집해 내용으로 전달한다(R010 「Known Limitations (Active Cache)」).
 
 > **§** `ToolSearch`도 멤버 실행 환경에 없을 수 있다(#1817 QA teammate 관측) — 없으면 지연 도구를 로드할 수 없으므로 그 지연 도구는 부재로 취급한다(R018 「멤버 도구 부재 시 대체 규약」).
+-->
 
+## File Access
+
+| Operation | Allowed | Prohibited |
+|-----------|---------|-----------|
+| Read | All source, configs, docs | - |
+| Write | Source code, new project files, `.claude/**` (`bypassPermissions`) | .env, .git/config, paths outside project |
+| Delete | Temp files created by agent | Existing files (without request), entire directories |
+
+`.claude/`·`.git/`·`.vscode/`는 `bypassPermissions`에서 프롬프트 없이 쓸 수 있으며 파괴적 작업은 계속 차단됩니다.
+
+<!-- DETAIL: File Access original wording
 ## File Access
 
 | Operation | Allowed | Prohibited |
@@ -27,10 +63,9 @@
 | Write | Source code, new files in project, `.claude/**` (CC v2.1.121+ under `bypassPermissions`) | .env, .git/config, paths outside project |
 | Delete | Temp files created by agent | Existing files (without request), entire directories |
 
-<!-- DETAIL: Sensitive paths note (full rationale)
-> **Sensitive paths note**: As of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01), `.claude/`, `.git/`, `.vscode/` are no longer prompted for Write/Edit/Bash under `mode: "bypassPermissions"`. The legacy `/tmp/*.sh` script bypass (R010 historical section) is deprecated for CC >= v2.1.121. Catastrophic operations (`rm -rf /`) remain blocked. See #1101.
--->
+
 CC v2.1.121+: `.claude/`·`.git/`·`.vscode/`는 `bypassPermissions`에서 프롬프트 없음(레거시 `/tmp/*.sh` 우회는 폐기, #1101). 파괴적 작업(`rm -rf /`)은 계속 차단됩니다.
+-->
 
 ## Permission Request Format
 
@@ -40,11 +75,29 @@ Action: {action} | Required: {tool} | Reason: {why} | Risk: Low/Medium/High
 Approve?
 ```
 
+권한이 부족하면 시도하지 않고 사용자에게 알린 뒤 대안을 제안합니다.
+
+<!-- DETAIL: Permission Request Format original wording
+## Permission Request Format
+
+```
+[Permission Request]
+Action: {action} | Required: {tool} | Reason: {why} | Risk: Low/Medium/High
+Approve?
+```
+
 On insufficient permission: do not attempt, notify user, suggest alternative.
+-->
 
 ## Deny Rule Glob Patterns (CC v2.1.166+)
 
-<!-- ARCHIVED CC version note (historical): v2.1.166+: Deny rules support glob patterns in the tool-name position — `"*"` in a deny rule denies all tools. Allow rules reject non-MCP globs (only MCP tool-name globs are accepted in the allow position). Unknown tool names in deny rules emit a startup warning. -->
+deny 규칙 tool-name은 glob을 지원하고(`"*"` = 전체 거부), allow 규칙은 MCP glob만 허용하며, 알 수 없는 도구는 시작 경고입니다.
+`"*"` deny + 허용 규칙으로 deny-by-default를 구성하며 플랫폼이 독립 평가합니다.
+
+<!-- DETAIL: Deny Rule Glob Patterns (CC v2.1.166+) original wording
+## Deny Rule Glob Patterns (CC v2.1.166+)
+
+
 
 | Position | Glob support |
 |----------|-------------|
@@ -53,25 +106,64 @@ On insufficient permission: do not attempt, notify user, suggest alternative.
 | Unknown tool in deny rule | Startup warning |
 
 Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, then add specific allow rules. Complements the Tier-based policy above — settings.json deny rules are evaluated by the CC platform, independent of the advisory tier table.
+-->
 
+### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
+
+| 상태 | 도구 |
+|------|------|
+| 미등록 | `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`; 별도 게이팅: `TeamCreate`, `TeamDelete` |
+| 잔존 | `TaskStop`, `SendMessage` |
+| 제거됨 (v2.1.277+) | `TaskOutput` — Read로 직접 읽습니다 |
+
+`TeamCreate`/`TeamDelete` 부재로 R018은 비활성입니다(R018 Detection). 규칙은 존재하지 않는 도구의 호출을 의무화하지 않으며, 도구 의존 의무에는 부재 시 대체 규약을 함께 규정합니다(R018 Member TaskUpdate Discipline). `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` 설정도 규칙이 전제하지 않습니다. Origin: #1582.
+
+<!-- DETAIL: Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 † original wording
+### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
+
+
+
+
+**실측 (2026-08-15) + CHANGELOG v2.1.277**: 이 저장소 실행 환경(`claude-opus-5[1m]`/`claude-sonnet-5`)의 실제 tools 배열 기준.
+
+| 상태 | 도구 |
+|------|------|
+| 미등록 (CHANGELOG 명시) | `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate` |
+| 미등록 (CHANGELOG 미명시 — 별도 게이팅) | `TeamCreate`, `TeamDelete` |
+| 잔존 | `TaskStop`, `SendMessage` |
+| 제거됨 (v2.1.277+) | `TaskOutput` — background task output은 Read로 직접 읽는다; `taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 무효 |
+
+이 표(2026-08-15, `claude-opus-5[1m]`/`claude-sonnet-5`)는 2026-10-06 재측정 `claude-opus-5-5` 메인에서도 같았다 — haiku 팀원 1건은 `ToolSearch`로 `TaskCreate`/`TaskList`/`TaskUpdate`/`TaskGet`을 로드했고 sonnet-5-5 팀원 1건은 불가였으며, `TeamCreate`/`TeamDelete`는 측정한 셋 모두 불가였다(CC 2.1.289 실측).
+
+
+
+
+`TeamCreate`/`TeamDelete`도 별도로 부재 — R018은 이 환경에서 비활성입니다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않으며**, 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정합니다(R018 Member TaskUpdate Discipline이 그 예). `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 환경 설정 사안이므로 규칙이 전제하지 않습니다. Origin: #1582.
+-->
+
+## Agent Tool Permission Mode
+
+> Canonical source: R010 "Universal bypassPermissions". 2.1.212 미만은 호출마다 `mode: "bypassPermissions"`가 필요하고, 이후는 무시되며 부모 모드를 상속합니다(frontmatter `permissionMode`가 덮어쓸 수 있음). `mode`는 계속 전달하되 무인 실행 전 유효 모드를 실측합니다(R010 Self-Check 1).
+
+<!-- DETAIL: Agent Tool Permission Mode original wording
+## Agent Tool Permission Mode
+
+> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the guidance, self-check, and version history. Core: below CC 2.1.212, per-call `mode: "bypassPermissions"` is required (the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode`); from 2.1.212 it is ignored and subagents inherit the parent session's mode, which frontmatter `permissionMode` may override. Keep passing `mode` for compatibility, but measure the effective mode before unattended runs (R010 Self-Check 1).
+-->
+
+<!-- DETAIL: Sensitive paths note (full rationale)
+> **Sensitive paths note**: As of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01), `.claude/`, `.git/`, `.vscode/` are no longer prompted for Write/Edit/Bash under `mode: "bypassPermissions"`. The legacy `/tmp/*.sh` script bypass (R010 historical section) is deprecated for CC >= v2.1.121. Catastrophic operations (`rm -rf /`) remain blocked. See #1101.
+-->
+<!-- ARCHIVED CC version note (historical): v2.1.166+: Deny rules support glob patterns in the tool-name position — `"*"` in a deny rule denies all tools. Allow rules reject non-MCP globs (only MCP tool-name globs are accepted in the allow position). Unknown tool names in deny rules emit a startup warning. -->
 <!-- ARCHIVED CC version note (historical): v2.1.208+: Permission rule matchers (deny/ask rules) are now compiled once and cached, fixing multi-second per-turn slowdowns in sessions with many rules. Complements the deny-by-default posture above — a large deny/allow rule set no longer costs per-turn latency. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.183+: Fixed MCP servers requiring authentication exposing auth-stub tools to the model in headless/SDK mode — unauthenticated MCP auth-stub tools are no longer surfaced to the model in `-p` / SDK runs (they would fail on call). Relevant to the Tier-6 MCP tier: a headless run no longer offers auth-stub MCP tools. Separately, v2.1.181 added the `sandbox.allowAppleEvents` opt-in setting, letting sandboxed commands send Apple Events on macOS (default off) — a deliberate sandbox-scope widening, complementing the Tier-based policy above. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.186+: Added `claude mcp login <name>` / `claude mcp logout <name>` to authenticate MCP servers from the CLI without the interactive `/mcp` menu (`--no-browser` stdin redirect for SSH). Also fixed `Agent(type)` deny rules and `Agent(x,y)` allowed-types restrictions not being enforced for named subagent spawns — extends the v2.1.178 `Tool(param:value)` per-parameter permission syntax (Agent model/param deny) to reliable enforcement on named spawns. Relevant to Tier-6 MCP and the Agent Tool Permission Mode section. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.178+: Permission rules now support `Tool(param:value)` syntax to match a tool's input parameters, with `*` wildcard — e.g. `Agent(model:opus)` denies Opus subagents, or a parameter glob to constrain a tool's arguments. This extends the v2.1.166 tool-name glob support down to per-parameter granularity. Relevant to the Agent Tool Permission Mode below: a deny rule can now block specific subagent models/parameters at the platform level, complementing `availableModels` (R006) and the universal `mode: "bypassPermissions"` requirement (R010). A `Agent(model:...)` parameter deny is evaluated by the CC platform independent of the advisory tier table. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.191+: Sandbox network permission dialog now REMEMBERS hosts allowed with "Yes" for the rest of the session (no per-connection re-prompt). Also: `/permissions` Recently-denied tab now PERSISTS an approved denial on close (previously discarded); managed `forceRemoteSettingsRefresh` now takes effect via MDM/file policy with `Cache-Control: no-cache`; MCP capability discovery (`tools/list`/`prompts/list`/`resources/list`) and OAuth token requests now retry transient network errors with backoff (headless skips the browser popup). Relevant to Tier-4/Tier-6 (sandbox network + MCP) permission flows. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.193+: `autoMode.classifyAllShell` 설정은 모든 Bash/PowerShell 명령(Tier-4)을 arbitrary-code-execution 패턴만이 아니라 전부 auto-mode classifier로 보냅니다. auto-mode 거부 사유가 transcript / 거부 토스트 / `/permissions` recent denials에 노출됩니다. MCP 서버가 인증이 필요하면 시작 시 `/mcp`를 가리키는 알림을 표시하고, MCP `headersHelper` 인증은 tool 호출이 401/403을 반환하면 자동 재실행·재연결합니다(Tier-6). 이 섹션의 tier 기반 정책과 병존하는 플랫폼-레벨 동작입니다. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.195+: 프로젝트 `.claude/settings.json`으로만 활성화된 외부 플러그인이 이제 모든 loader 경로에서 명시적 설치 동의를 요구합니다(이전에는 일부 경로에서 우회됨). Tier-6 MCP/플러그인 신뢰 경계 강화. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.187+: Org-configured model restrictions now apply to the model picker, `--model`, `/model`, and `ANTHROPIC_MODEL`, surfacing a "restricted by your organization's settings" message for a restricted model. Extends the v2.1.175 `enforceAvailableModels` managed-setting scope to the model picker/env entry points. Also added the `sandbox.credentials` setting (blocks sandboxed reads of credential files/secret env) — cross-ref R001. -->
-
 <!-- ARCHIVED CC version note (historical): v2.1.196+: 조직 기본 모델(org default models)이 추가되어 관리자가 org 콘솔에서 설정하며, 사용자가 직접 고르지 않으면 `/model`에 "Org default"(또는 "Role default")로 표시됩니다 — v2.1.187 org model restriction 범위를 기본 모델 해석까지 확장(cross-ref R006). 보안: `claude mcp list`/`get`이 self-approved `.mcp.json` 서버를 spawn하지 않고 신뢰되지 않은 워크스페이스는 `⏸ Pending approval` 표시(Tier-6, cross-ref R001). 또한 `claude agents --dangerously-skip-permissions`가 조용히 auto mode로 폴백하던 문제를 수정 — 이제 bypass 고지를 표시하고 spawned agent에도 bypass 모드를 적용합니다(R010 Universal bypassPermissions와 정합). -->
-
 <!--
 > **v2.1.200+**: `default` permission mode가 CLI·`--help`·VS Code·JetBrains 전반에서 "Manual"로 표기되도록 변경되었습니다 — `--permission-mode manual`과 `"defaultMode": "manual"`이 기존 `default`와 병행 허용됩니다(동일 동작, 라벨만 변경). 위 tier 표의 `default` 모드는 그대로 유효하며 UI 표기만 "Manual"로 노출됩니다(cross-ref R006 Permission Mode Guidance). 또한 `AskUserQuestion` 다이얼로그가 기본적으로 auto-continue하지 않도록 변경되어(이전에는 idle 시 자동 진행), idle timeout은 `/config`로 opt-in해야 합니다 — **자율/비대화 흐름(FSD 등)에서 AskUserQuestion 호출은 이제 사용자 응답까지 블록되므로, 무인 실행 중 질문 도구 사용을 지양하고 best-judgment로 진행하는 R015 directive persistence와 정합**. 그리고 `.claude.json`의 `disabledMcpServers`/`enabledMcpServers`가 non-array 값일 때 발생하던 시작 크래시가 수정되었습니다(Tier-6 MCP).
 
@@ -79,9 +171,7 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.207+**: Auto mode가 Bedrock/Vertex/Foundry에서 `CLAUDE_CODE_ENABLE_AUTO_MODE` opt-in 없이 사용 가능해졌습니다(설정 `disableAutoMode`로 비활성화 가능). 또한 `-p`/SDK 비대화 실행의 remote managed settings가 consent 다이얼로그 없이 동의로 기록되던 문제가 수정되었습니다. Tier-3/4 권한 흐름 관련.
 -->
-
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: `Write(path)`/`NotebookEdit(path)`/`Glob(path)` 형태의 permission rule은 시작 시 경고를 발생시킵니다 — 파일 쓰기 rule은 `Edit(path)`, 읽기 rule은 `Read(path)` matcher로 작성합니다. 위 Tier 표의 Write/NotebookEdit/Glob은 도구명일 뿐 path-scoped rule matcher가 아닙니다(위 v2.1.166 unknown-tool startup warning 연장선). -->
-
 <!-- DETAIL: Permission-check CC version notes (historical/diagnostic)
 > **v2.1.214+**: 단일 세그먼트 `dir/**` allow rule(예: `Edit(src/**)`)이 트리 어디에나 있는 중첩 `dir/`까지 auto-approve하던 버그가 수정되어 이제 `<cwd>/dir`에만 매칭됩니다(hook `if:` 조건도 동일 — 임의 깊이 매칭이 필요하면 `**/dir/**`로 작성). **`deny`/`ask` permission rule은 any-depth 매칭을 유지**(allow만 `<cwd>`로 좁아짐). settings.json 스코프 설계 시 이 비대칭(allow 좁게 / deny·ask 넓게)을 전제로 삼습니다. 위 v2.1.210 `Edit(path)`/`Read(path)` matcher 권고의 연장선.
 
@@ -132,30 +222,14 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.246/248+**: (246) 끝에 매달린 `&&`/`||`가 있는 손상된(malformed) 명령에 대해 Bash 권한검사가 이제 **항상 승인을 요구**합니다 — 구버전에서는 이런 형태가 검사를 우회할 수 있었습니다. (248) `--restricted`(또는 `CLAUDE_CODE_RESTRICTED=1`) 모드가 신설되어 명령/코드 실행 도구와 `WebFetch`를 제거하고(`--tools`에 명시 시 예외), 파일 도구를 작업 디렉토리 내부로 제한하며, `bypassPermissions`를 거부하고, user/project/local settings 파일을 무시합니다. 이 저장소는 프로젝트 settings에 `bypassPermissions`를 선언하지만 v2.1.257부터 그 선언은 무시되므로(R010 Universal bypassPermissions의 ★ v2.1.257 노트 — 2026-09-02 실측 유효 모드는 user settings `auto`), `--restricted`와의 상호 배타성은 **user/managed scope에서 bypass를 켠 경우에 한해** 성립합니다 — 이 저장소 워크플로우에는 적용하지 않되, 신규 안전 모드 옵션으로 존재를 기록합니다.
 -->
-
-### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
-
 <!-- DETAIL: Todo/Task CHANGELOG quote + agent-count rationale
 CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/List, TodoWrite) are no longer available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, and newer models; set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to bring them back"*. 이 저장소 에이전트 **49개 중 46개**(`claude-sonnet-5` 41 + `claude-opus-5` 5)가 대상 모델이므로 실행 환경의 기본값은 **부재**다(잔여 3개는 `haiku`).
 -->
-
 <!-- DETAIL: Todo/Task measurement caption (full wording; table kept visible below)
 **실측 (2026-08-15 — `claude -p --output-format stream-json` init 이벤트의 `tools` 배열, `claude-opus-5[1m]`/`claude-sonnet-5` 3회 동일 결과)**:
 -->
-**실측 (2026-08-15) + CHANGELOG v2.1.277**: 이 저장소 실행 환경(`claude-opus-5[1m]`/`claude-sonnet-5`)의 실제 tools 배열 기준.
-
-| 상태 | 도구 |
-|------|------|
-| 미등록 (CHANGELOG 명시) | `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate` |
-| 미등록 (CHANGELOG 미명시 — 별도 게이팅) | `TeamCreate`, `TeamDelete` |
-| 잔존 | `TaskStop`, `SendMessage` |
-| 제거됨 (v2.1.277+) | `TaskOutput` — background task output은 Read로 직접 읽는다; `taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 무효 |
-
-이 표(2026-08-15, `claude-opus-5[1m]`/`claude-sonnet-5`)는 2026-10-06 재측정 `claude-opus-5-5` 메인에서도 같았다 — haiku 팀원 1건은 `ToolSearch`로 `TaskCreate`/`TaskList`/`TaskUpdate`/`TaskGet`을 로드했고 sonnet-5-5 팀원 1건은 불가였으며, `TeamCreate`/`TeamDelete`는 측정한 셋 모두 불가였다(CC 2.1.289 실측).
-
 <!-- DETAIL: TaskOutput 2026-08-15 측정 당시 잔존 표기(v2.1.233 기준) — CC v2.1.277 CHANGELOG: "Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the `taskOutputMaxChars` setting and `TASK_MAX_OUTPUT_LENGTH` no longer have any effect" Origin: #1714.
 -->
-
 <!-- DETAIL: Todo/Task gate-function measurement + TeamCreate/env-var rationale + Origin
 바이너리(`2.1.233`) 게이트 함수 실측도 이를 뒷받침한다 — 게이트 대상 도구 배열은 **정확히 5개**(CHANGELOG 명시 5종)이며 `TaskOutput`은 포함되지 않는다.
 
@@ -165,16 +239,9 @@ CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/Lis
 
 Origin: #1582. Cross-ref: R018 「Task 도구 부재 시 대체 규약」(Member TaskUpdate Discipline 하위 절), R020("도구가 있다"는 가정도 실측 대상).
 -->
-`TeamCreate`/`TeamDelete`도 별도로 부재 — R018은 이 환경에서 비활성입니다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않으며**, 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정합니다(R018 Member TaskUpdate Discipline이 그 예). `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 환경 설정 사안이므로 규칙이 전제하지 않습니다. Origin: #1582.
-
-## Agent Tool Permission Mode
-
-> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the guidance, self-check, and version history. Core: below CC 2.1.212, per-call `mode: "bypassPermissions"` is required (the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode`); from 2.1.212 it is ignored and subagents inherit the parent session's mode, which frontmatter `permissionMode` may override. Keep passing `mode` for compatibility, but measure the effective mode before unattended runs (R010 Self-Check 1).
-
 <!-- DETAIL: Agent tool mode deprecation rationale (canonical: R010)
 > **v2.1.212+**: CC가 Agent(구 Task) tool의 `mode` 파라미터를 deprecated 처리했습니다(이제 무시) — subagent는 부모 세션의 permission mode를 기본 상속합니다. 위 canonical 요약의 default `mode`(`acceptEdits`)가 frontmatter `permissionMode`를 override한다는 서술 및 항상 `mode: "bypassPermissions"`를 넘기라는 요건은 이 버전부터 stale이며(파라미터가 무시됨), 무인 실행의 실질 게이트는 부모 세션의 permission mode입니다. 요건 재조정은 R010 "Universal bypassPermissions"가 canonical — R002는 이 flag만 유지합니다.
 -->
-
 <!-- DETAIL: defaultMode project-scope-ignored rationale (canonical: R010)
 > **v2.1.257+**: `.claude/settings.json`·`.claude/settings.local.json`의 `defaultMode: "bypassPermissions"`
 > 값이 `"auto"`처럼 무시됩니다(CHANGELOG 2.1.257 — 다른 값은 이 항목의 대상이 아님; bypass는 user/managed

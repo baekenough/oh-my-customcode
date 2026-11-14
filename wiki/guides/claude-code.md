@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-11-12
+updated: 2026-11-14
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -130,3 +130,5 @@ See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[a
 - Content-drift resync 2026-11-11 (v2.0.23, #1952, #1953): `15-version-compatibility.md` gained the v2.1.321 and v2.1.322 sections (summarized above); `16-fable5-prompting.md` overview now names Fable 5.2 as the default Fable model (previous default Fable 5.1).
 - Content-drift resync 2026-11-11 (v2.0.24, #1960): `15-version-compatibility.md` gained a top note that ontology-rag (package, MCP server, `.claude/ontology` data, R019 Layer 1) was removed in v2.0.24; the dated ontology-rag mentions in the guide (including the v2.1.307 `.mcp.json` server note summarized above) are historical records.
 - Content-drift resync 2026-11-12 (v2.0.25): `15-version-compatibility.md` changed one measurement sentence in the (302) Read-image-limit item: the repository's tracked images are now 18 (was 14) and the largest is 743,283 bytes, `assets/diagrams/09-workflow-engine.png` (was 1,294,475 bytes, `03-routing-architecture.png`), from the same `git ls-files ... | stat | sort -n | tail -1` command; the conclusion (no tracked image is near the 128 MB refusal limit) is unchanged. This page does not summarize that item.
+- Content-drift resync 2026-11-14 (v2.0.26): `15-version-compatibility.md` gained the `## v2.1.323 (2026-11-12, #1969)` and `## v2.1.325 (2026-11-13)` sections (v2.1.324 has no release), a section `규칙 본문에서 이전한 버전 서사 (v2.0.26)` that preserves, per rule, the Claude Code version narratives moved out of rule bodies (rules keep current norms only), and two top notes: rule-file line-number anchors in older version sections predate the v2.0.26 rule restructuring (find current positions by section title), and the repository's agents no longer set frontmatter `maxTurns`, so the 20-turn truncation wording in older sections describes the pre-removal state. Key facts: v2.1.323 covers the unrecognized-model context window (200K to 1M, `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` keeps 200K) and Bash permission-check fixes; v2.1.325 covers scheduled tasks and `/loop` asking before running a skill that declares `allowed-tools` or hooks (2 of 114 skills declare `allowed-tools`, 0 declare hooks), sandbox and worktree isolation changes, and deny/ask rule coverage fixes. No tracked project deny/ask rules were observed, and neither section required a rule change.
+- Content-drift resync 2026-11-14 (citation fix): `15-version-compatibility.md` re-pointed two heading-quote citations (R020 「Verification-Delegation Non-Termination」, R021 「Enforcement Tiers」) to real headings; no behaviour change, and this page does not restate them.

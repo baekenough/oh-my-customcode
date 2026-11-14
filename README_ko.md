@@ -237,7 +237,7 @@ R018 (Agent Teams)은 조건부입니다: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=
 
 ## 보안
 
-oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 42개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
+oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 43개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
@@ -299,10 +299,10 @@ your-project/
 │   ├── agents/                 # 50개 에이전트 정의
 │   ├── skills/                 # 114개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
-│   ├── hooks/                  # 42개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
+│   ├── hooks/                  # 43개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
-│   └── contexts/               # 4개 공유 컨텍스트 파일
+│   └── contexts/               # 6개 공유 컨텍스트 파일
 └── guides/                     # 56개 레퍼런스 문서
 ```
 

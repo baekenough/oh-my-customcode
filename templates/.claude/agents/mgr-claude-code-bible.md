@@ -1,11 +1,10 @@
 ---
 name: mgr-claude-code-bible
-description: Fetches latest Claude Code official documentation from code.claude.com and verifies agents/skills compliance against the official spec. Use when you need to check official Claude Code documentation or verify frontmatter fields.
+description: Fetches Claude Code official docs from code.claude.com and verifies agents/skills against the spec. Use to check official docs or frontmatter fields.
 model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: medium
-maxTurns: 20
 skills:
   - claude-code-bible
 tools:

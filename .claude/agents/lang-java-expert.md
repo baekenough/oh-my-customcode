@@ -1,6 +1,6 @@
 ---
 name: lang-java-expert
-description: Expert Java 25 LTS developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions.
+description: Expert Java 25 developer (Virtual Threads, Pattern Matching, Records). Use for *.java, pom.xml, build.gradle, concurrent systems, Java migration.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

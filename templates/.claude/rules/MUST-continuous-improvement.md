@@ -1,15 +1,35 @@
+---
+paths:
+  - ".claude/rules/**"
+  - "templates/.claude/rules/**"
+  - "CLAUDE.md"
+  - "templates/CLAUDE.md"
+  - "guides/claude-code/15-version-compatibility.md"
+---
+
 # [MUST] Continuous Improvement Rules
 
 > **Priority**: MUST | **ID**: R016 | **Trigger**: User points out rule violation
 
 ## Core Rule
 
+위반 지적 시 관련 규칙을 갱신 → 커밋 → 원작업 계속합니다. 인정에 그치지 않고 규칙 자체를 갱신합니다. 자체 감지 위반은 즉시 수정하고 규칙 갱신을 검토하며, 모호하면 질문 후 필요 시 갱신합니다.
+
+<!-- DETAIL: Core Rule, original wording
+## Core Rule
+
 When user points out a violation: update the relevant rule → commit → then continue original task. Update the rule itself, not just acknowledge the violation.
+-->
 
 <!-- DETAIL: Core Rule, original 2nd sentence
 Update the relevant rule rather than just acknowledging the violation.
 -->
 
+## Workflow
+
+1. 위반 인정 2. 근본 원인 3. 규칙 갱신 4. 배선 확인 — 신설 조항이 위임서를 규율하면 이번 반복의 위임서에 즉시 적용 5. 커밋 6. 원작업 계속
+
+<!-- DETAIL: Workflow, original wording
 ## Workflow
 
 1. Acknowledge violation
@@ -18,6 +38,7 @@ Update the relevant rule rather than just acknowledging the violation.
 4. Wiring check (see below) — when the new clause governs delegation prompts, apply it to this iteration's own delegation prompts before continuing
 5. Commit
 6. Continue original task
+-->
 
 <!-- DETAIL: Workflow, original wording
 1. Acknowledge violation
@@ -30,11 +51,17 @@ Update the relevant rule rather than just acknowledging the violation.
 
 ### Rule Wiring Check (배선 확인)
 
+텍스트 추가와 실행 경로 배선은 별개이며 누락 시 동일 결함이 재발합니다. 판단: (1) 실행 경로(워크플로우/스킬/훅/CI) 존재 (2) 반영 여부 (3) 없으면 "배선 불요" 명시. 신설 조항의 동일 반복 self-check: 오케스트레이터 자신의 산문·신설 조항에도 같은 반복 내 즉시 적용합니다.
+
+<!-- DETAIL: Rule Wiring Check (배선 확인), original wording
+### Rule Wiring Check (배선 확인)
+
 텍스트 추가와 실행 경로 배선은 별개다. 배선 누락 시 동일 결함이 재발한다. 판단: (1) 실행 경로(워크플로우/스킬/훅/CI) 존재 여부 (2) 반영 여부 (3) 없으면 "배선 불요" 명시. 오케스트레이터 자신의 산문·신설 조항의 동일 반복 내 즉시 적용에도 대칭 적용.
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 조항만 추가하고 커밋 → 발동 지점 없어 재발 | 발동 실행 경로 명시 + 반영 확인; 없으면 "배선 불요" |
+-->
 
 <!-- DETAIL: Rule Wiring Check intro, original wording
 규칙 텍스트를 추가하는 것과, 그 규칙이 실행 경로에서 발동되게 배선하는 것은 **별개 작업**이다. 텍스트만 추가하고 배선을 누락하면 동일 결함이 재발한다.
@@ -65,6 +92,9 @@ Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), 
 **적용 범위 확장 (Origin: #1698 #1 — v1.1.72)**: 이 self-check는 서브에이전트에 **요구하는** 규율뿐 아니라 오케스트레이터가 **스스로 작성하는 산문(룰 문안·요약·수치)**에도 대칭 적용됩니다. 상세·인용은 R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 항목 참조.
 -->
 
+
+
+<!-- DETAIL: Integration, original wording
 ## Integration
 
 | Situation | Action |
@@ -72,7 +102,13 @@ Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), 
 | User points out violation | Update rule → Continue |
 | Self-detected violation | Fix immediately, consider rule update |
 | Ambiguous situation | Ask user, then update if needed |
+-->
 
+## Defect Response Matrix
+
+결함 조치: 규칙 위반=규칙; CI/인프라=메모리+이슈; 프로세스 갭=규칙+메모리+이슈; 반복 버그=메모리+이슈; 에이전트 선택 실패=메모리+라우팅 스킬; 외부 컨벤션 미준수=규칙+메모리. Skill 승격: candidacy ≥2회, 확정 ≥3회. 프로세스 갭·외부 컨벤션 미준수는 3회+, 반복 버그는 구조적일 때 승격을 검토합니다. CI/process/repeatable은 memory+issue 둘 다 필수. 릴리즈 결함은 자동 이슈 등록, 반복 실패는 feedback + `/omcustom:adaptive-harness --learn`.
+
+<!-- DETAIL: Defect Response Matrix, original wording
 ## Defect Response Matrix
 
 | Defect Type | Rule | Memory | Issue | Skill |
@@ -85,6 +121,7 @@ Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), 
 | Ext. convention miss | ✅ | ✅ | — | ⚠️3회+ |
 
 Skill 승격: candidacy ≥2회, 확정 ≥3회. CI/process/repeatable은 memory+issue 둘 다 필수. 릴리즈 결함은 자동 이슈 등록. 반복 실패는 feedback + `/omcustom:adaptive-harness --learn`.
+-->
 
 <!-- DETAIL: Defect Response Matrix, original table
 | Defect Type | Rule Update | Memory | Issue | Skill Promotion |
@@ -121,7 +158,13 @@ This connects R016's continuous improvement loop with the adaptive-harness skill
 
 ## Rule Clause Retirement (조항 은퇴 메커니즘)
 
+은퇴 루프를 승격 루프와 대칭 운용해 코퍼스 크기를 정상 상태로 유지합니다.
+
+<!-- DETAIL: Rule Clause Retirement (조항 은퇴 메커니즘), original wording
+## Rule Clause Retirement (조항 은퇴 메커니즘)
+
 승격 루프(위반 지적 → 조항 추가)만 돌면 코퍼스가 단조 성장한다. 은퇴 루프를 대칭으로 운용해 코퍼스 크기를 정상 상태로 유지한다.
+-->
 
 <!-- DETAIL: Rule Clause Retirement intro, original wording (stale "~49.5k 토큰" figure — replaced by #1717 문자 단위 실측, see 예산 게이트 DETAIL below)
 R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **단조 성장**을 낳는다. 은퇴 루프를 대칭으로 신설해 코퍼스 컨텍스트 비용(세션당 고정 주입 ~49.5k 토큰)의 무한 증가를 차단한다. 승격 루프는 실증된 편익이 있으므로 유지하고, 은퇴 루프만 신설한다 — 두 루프의 대칭이 코퍼스 크기를 정상 상태로 유지한다.
@@ -129,10 +172,16 @@ R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **
 
 ### 은퇴 대상
 
+수정 완료된 플랫폼 버그 서사(가치 소멸), 장기 무발동 조항(마이너 2릴리즈 미발동).
+
+<!-- DETAIL: 은퇴 대상, original wording
+### 은퇴 대상
+
 | 대상 | 판정 기준 |
 |------|-----------|
 | 수정 완료된 플랫폼 버그 서사 | 행동 지시 가치 소멸 |
 | 장기 무발동 조항 | 마이너 2릴리즈 미발동 |
+-->
 
 <!-- DETAIL: 은퇴 대상, original wording
 | 대상 | 판정 기준 |
@@ -143,7 +192,13 @@ R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **
 
 ### 은퇴 절차
 
+1. 발동 추적(feedback memory) 2. 후보 선정 3. HTML 주석으로 감싸 RETIRED 표식(릴리즈·사유) 부착(무손실, R005) 4. 재발 시 uncomment 복원
+
+<!-- DETAIL: 은퇴 절차, original wording
+### 은퇴 절차
+
 1. 발동 추적(feedback memory) 2. 후보 선정(무발동+가치소멸) 3. HTML 주석으로 감싸 RETIRED 표식(릴리즈·사유)을 붙여 제외(무손실, Read 열람 — R005) 4. 재발 시 uncomment 복원
+-->
 
 <!-- DETAIL: 은퇴 절차, original wording
 1. **발동 추적**: `/homework` 회고·위반 지적 시 인용된 규칙 ID/조항을 feedback memory에 기록한다 (가벼운 추적 — 완전 자동화는 불요).
@@ -154,7 +209,13 @@ R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **
 
 ### 버전노트 보존정책 (v1.1.77 개정 — 서사는 가이드, 룰은 1줄만)
 
+CC 릴리즈 지식은 `guides/claude-code/15-version-compatibility.md`에 규칙별 절로 기록합니다. 룰 본문에는 **현재 행동을 바꾸는 규범일 때만** 최대 1줄 — 버전 나열·서사는 가이드로 보냅니다(`claude-native` 이슈 포함, auto-dev.yaml `implement` 스텝 4사본 배선).
+
+<!-- DETAIL: 버전노트 보존정책 (v1.1.77 개정 — 서사는 가이드, 룰은 1줄만), original wording
+### 버전노트 보존정책 (v1.1.77 개정 — 서사는 가이드, 룰은 1줄만)
+
 CC 릴리즈 지식은 `guides/claude-code/15-version-compatibility.md`에 규칙별 절로 기록한다. 룰 본문에는 **현재 행동을 바꾸는 규범일 때만** 최대 1줄 — 버전 나열·근거 서사는 가이드로, 룰에 쌓지 않는다. `claude-native` 버전 추적 이슈의 액션 아이템도 이 목적지를 따른다. auto-dev.yaml `implement` 스텝의 규칙 목록(4사본)에 이 목적지 규범을 배선했다.
+-->
 
 <!-- DETAIL: 구 정책(v1.1.50, 상대폭 기준선) — 원 헤딩 "### 버전노트 보존정책" — v1.1.77에서 위 정책으로 대체(RETIRED, #1717)
 - 규칙 내 CC 버전노트(`> **v2.1.NNN+**:`)는 최근 2-3개 마이너 릴리즈(현행 기준 v2.1.230 이상)만 visible 유지한다.
@@ -167,9 +228,17 @@ CC 릴리즈 지식은 `guides/claude-code/15-version-compatibility.md`에 규�
 
 ### 예산 게이트 (Tier 1, Origin: #1717)
 
+상시분(`CLAUDE.md` + `paths:` frontmatter 없는 `.claude/rules/*.md`, 주석 제외): 경고 > 50,000자 / 오류 > 60,000자. 전체(`CLAUDE.md` + 모든 규칙): 경고 > 120,000자 / 오류 > 140,000자(validate-docs CI 강제). 초과 시 같은 커밋에서 다른 조항을 은퇴·DETAIL화 — 순증 커밋 금지. `globs:` 키는 조건으로 인정되지 않습니다.
+
+측정: `python3 -c "import re,glob;f=['CLAUDE.md']+sorted(glob.glob('.claude/rules/*.md'));t={x:open(x).read() for x in f};n=lambda s:len(re.sub(r'<!\-\-.*?\-\->','',s,flags=re.S));c=lambda s:'paths:' in (re.match(r'---\n(.*?)\n---',s,re.S) or [0,''])[1];print('always',sum(n(t[x]) for x in f if not c(t[x])),'total',sum(n(t[x]) for x in f))"`
+
+<!-- DETAIL: 예산 게이트 (Tier 1, Origin: #1717), original wording
+### 예산 게이트 (Tier 1, Origin: #1717)
+
 `CLAUDE.md` + `.claude/rules/*.md` 주석 제외 합계는 **≤140,000자**(하드 한도 150,000자, validate-docs CI 강제). 초과 시 같은 커밋에서 다른 조항을 은퇴·DETAIL화 — 순증 커밋 금지.
 
 측정: `python3 -c "import re,glob; f=['CLAUDE.md']+glob.glob('.claude/rules/*.md'); print(sum(len(re.sub(r'<!\-\-.*?\-\->','',open(x).read(),flags=re.S)) for x in f))"`
+-->
 
 <!-- DETAIL: #1717 실측 근거, 이슈 원문 인용
 실측 (2026-09-24, develop `aee1e50e`). 측정 명령: `python3`로 `CLAUDE.md` + `.claude/rules/*.md` 각 파일의 (a) 원문 길이, (b) `<!\-\-.*?\-\->` 제거 후 길이, (c) 주석 제거본에서 `^> \*\*(★+ )?v2\.1` 로 시작하는 blockquote 문단 길이를 합산.
@@ -186,6 +255,11 @@ R016이 적어 두었던 "세션당 고정 주입 ~49.5k 토큰"은 낡은 수�
 
 ### 은퇴 판정 기준 (후보 선정 ≠ 자동 은퇴)
 
+3조건 **모두** 충족해야 은퇴, 하나라도 거짓이면 유지+사유 기록: (a) 다른 visible 노트의 인용 부재 (b) 현행 동작 비규정 (c) 회고적 재해석 근거 소멸.
+
+<!-- DETAIL: 은퇴 판정 기준 (후보 선정 ≠ 자동 은퇴), original wording
+### 은퇴 판정 기준 (후보 선정 ≠ 자동 은퇴)
+
 3조건 **모두** 충족해야 은퇴 — 하나라도 거짓이면 유지+사유 기록.
 
 | 조건 | 판정 |
@@ -193,6 +267,7 @@ R016이 적어 두었던 "세션당 고정 주입 ~49.5k 토큰"은 낡은 수�
 | (a) 인용 부재 | 다른 visible 노트가 인용하지 않는가 |
 | (b) 비현행 | 현행 동작을 규정하지 않는가 |
 | (c) 진단 함의 소멸 | 회고적 재해석 근거가 없는가 |
+-->
 
 <!-- DETAIL: 은퇴 판정 기준, original table
 | 조건 | 판정 |
@@ -214,11 +289,17 @@ Origin: #1563 찐빠 #4 — R016이 보존 기준을 v2.1.212로 규정했으나
 
 ### 판정 기준 조정 시 전 룰 파일 스윕
 
+판정 기준이 조정되면 같은 릴리즈에서 룰 파일 전수를 3조건으로 판정합니다(전량 은퇴 아님, 이월 금지). 범위 `.claude/rules/**`+`templates/.claude/rules/**`, 잔존은 주석 안/밖 구분해 visible만 계수합니다.
+
+<!-- DETAIL: 판정 기준 조정 시 전 룰 파일 스윕, original wording
+### 판정 기준 조정 시 전 룰 파일 스윕
+
 은퇴 판정 기준이 조정될 때 **같은 릴리즈에서 룰 파일 전수를 판정**(전량 은퇴 아닌 위 3조건 전수 검토, 이월 금지) — 예산 초과 자체의 remedy는 위 예산 게이트(같은 커밋에서 초과분만 은퇴·DETAIL화)이며 이 절과 별개다. 범위 `.claude/rules/**`+`templates/.claude/rules/**`, 잔존은 주석 안/밖 구분 실측.
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 판정 없이 전량 은닉/이월, `grep -c`로 잔존 판정 | 3조건 항목별 판정 후 같은 릴리즈에서 완료; 주석 안/밖 구분해 visible만 계수 |
+-->
 
 <!-- DETAIL: 예산 초과·기준 변경 시 전 룰 파일 스윕, original anti-pattern table
 | Anti-pattern | Required |
@@ -232,15 +313,25 @@ Origin: #1563 찐빠 #4 — R016이 보존 기준을 v2.1.212로 규정했으나
 보존 기준선을 상향하면 **같은 릴리즈에서 23개 룰 파일 전수를 스윕**한다 — "스윕"은 기준 미만 노트의 **전량 HTML-comment화**가 아니라, 위 「은퇴 판정 기준」 3조건에 따른 **전수 검토**(각 노트를 은퇴/유지로 판정하고 유지 시 사유를 기록)를 의미한다. 기준만 올리고 검토 자체를 다음 릴리즈로 이월하면 코퍼스가 기준과 불일치한 상태로 남고, 그 불일치는 다음 회고에서 "잔존 N건" 부채로 재발견될 때까지 보이지 않는다 — **이월 금지는 변하지 않는다**, 변하는 것은 "전수 은퇴"가 아니라 "전수 판정"이 의무라는 점이다. 스윕 범위는 `.claude/rules/**`와 `templates/.claude/rules/**` 양쪽이며, 잔존 여부는 **HTML 주석 안/밖을 구분해** 실측한다 — 단순 `grep`은 이미 은퇴한 주석 내부 노트까지 세어 판정을 왜곡한다.
 -->
 
+
+
+<!-- DETAIL: Cross-References, original wording
 ### Cross-References
 
 R005(HTML-comment 최적화), R017(버전 노트 반영 전 실측 게이트), R023(폐기 참조 탐지), Origin #1473, #1717.
+-->
 
 <!-- DETAIL: Cross-References, original wording
 R005(HTML-comment 컨텍스트 최적화), R023(Deprecated-Platform-Feature Staleness Check — 폐기 참조를 결정론적으로 탐지하여 은퇴 후보를 조기 발굴), Origin #1473.
 -->
 
+## External Repo Contribution Pre-Check
+
+외부 저장소 기여 전 CONTRIBUTING.md/AGENTS.md/도메인 체크리스트/검증 명령을 구현 전 첫 라운드에 반드시 읽습니다(MUST).
+
+<!-- DETAIL: External Repo Contribution Pre-Check — Before contributing to an external repo, MUST read CONTRIBUTING.md/AGENTS.md/domain checklist/validation commands FIRST round, before implementation. See file table + self-check via Read tool., original wording
 ## External Repo Contribution Pre-Check — Before contributing to an external repo, MUST read CONTRIBUTING.md/AGENTS.md/domain checklist/validation commands FIRST round, before implementation. See file table + self-check via Read tool.
+-->
 
 <!-- DETAIL: External Repo Contribution Pre-Check, original wording
 Before starting work on contributing to an external repository (skill submission, agent contribution, plugin development), MUST read these files in the target repo FIRST round:
@@ -271,7 +362,13 @@ Before first implementation commit on external contribution:
 Reference issues: #1188 item #5, #1188 item #7, #1198 item #5.
 -->
 
+## Anti-Patterns
+
+"나중에 갱신" 등 5가지 — 표는 Read 도구로 열람합니다.
+
+<!-- DETAIL: Anti-Patterns — 5 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first", "calibration during action-oriented tone". See table via Read tool., original wording
 ## Anti-Patterns — 5 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first", "calibration during action-oriented tone". See table via Read tool.
+-->
 
 <!-- DETAIL: Anti-Patterns
 | Anti-Pattern | Why It's Wrong | Correct Action |
@@ -283,7 +380,13 @@ Reference issues: #1188 item #5, #1188 item #7, #1198 item #5.
 | "Calibration/humility during action-oriented tone (auto mode, ㄱㄱ, 계속해)" | Self-questioning wastes time when user signals action; action-mode preempts meta-reflection | Defer calibration to post-task feedback memory; respond with short action confirmation |
 -->
 
+## Timing
+
+규칙 갱신은 원작업을 계속하기 **전**, 같은 세션에서 수행해야 합니다(MUST).
+
+<!-- DETAIL: Timing — Rule updates MUST happen before continuing original task, in the same session., original wording
 ## Timing — Rule updates MUST happen before continuing original task, in the same session.
+-->
 
 <!-- DETAIL: Timing
 Rule updates MUST happen:

@@ -1,6 +1,6 @@
 ---
 name: mgr-creator
-description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
+description: Use to create new agents following design guidelines; researches authoritative references first to ensure a high-quality knowledge base
 model: claude-sonnet-5-5
 domain: universal
 memory: local
@@ -14,7 +14,6 @@ tools:
   - Grep
   - Glob
   - Bash
-maxTurns: 25
 permissionMode: bypassPermissions
 ---
 

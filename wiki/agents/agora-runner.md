@@ -1,7 +1,7 @@
 ---
 title: agora-runner
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/agora-runner.md
 related:

@@ -1,6 +1,6 @@
 ---
 name: lang-golang-expert
-description: Expert Go developer for writing idiomatic, performant Go code. Use for Go files (*.go, go.mod, go.sum), Go-related keywords, implementing concurrent systems, reviewing Go code, and optimizing Go applications.
+description: Expert Go developer for idiomatic, performant code. Use for *.go, go.mod, go.sum, concurrent systems, Go code review, and optimization.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

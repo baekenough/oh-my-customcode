@@ -1,7 +1,7 @@
 ---
 title: System Architecture Overview
 type: architecture
-updated: 2026-11-06
+updated: 2026-11-14
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -56,7 +56,7 @@ The main Claude Code conversation acts as the **sole orchestrator**. It uses fou
 ├── skills/          # 114 skill directories (each with SKILL.md)
 ├── rules/           # R000-R023 rule files
 ├── hooks/           # PreToolUse/PostToolUse enforcement scripts
-├── contexts/        # Ecomode context files
+├── contexts/        # Context files (ecomode, L2 event packs: delegation, commit-release)
 └── agent-memory*/   # Per-agent persistent memory
 
 guides/              # 56 reference topic directories

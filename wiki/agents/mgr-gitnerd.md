@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -32,7 +32,6 @@ Capabilities include conventional commit messages, branch naming enforcement, PR
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/mgr-gitnerd/`, git-untracked — changed from `project` scope in v1.1.13 / #1468)
 - **Effort**: medium
-- **Max Turns**: 20
 - **Permission Mode**: bypassPermissions
 - **Limitations**: cannot modify source code, cannot create agents
 

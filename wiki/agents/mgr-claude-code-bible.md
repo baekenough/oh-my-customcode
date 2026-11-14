@@ -1,7 +1,7 @@
 ---
 title: mgr-claude-code-bible
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/mgr-claude-code-bible.md
 related:
@@ -30,7 +30,6 @@ This agent is invoked by [[mgr-sauron]] during Phase 1 verification ([[r017]]) a
 - **Skills**: `claude-code-bible`
 - **Memory**: local (`.claude/agent-memory-local/mgr-claude-code-bible/`, git-untracked — changed from `project` in PR #1468 / v1.1.13)
 - **Effort**: medium
-- **Max Turns**: 20
 - **Permission Mode**: bypassPermissions
 
 ## Official Frontmatter Reference

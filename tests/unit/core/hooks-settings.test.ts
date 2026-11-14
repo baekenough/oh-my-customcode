@@ -272,7 +272,7 @@ describe('convertHooksJson (real .claude/hooks/hooks.json)', () => {
     // Redundant fixed assertion: catches unnoticed drift in hooks.json entry count.
     // Update this literal (and re-verify the 12-entry classification table) if
     // hooks.json intentionally gains/loses entries.
-    expect(sourceCount).toBe(58);
+    expect(sourceCount).toBe(60);
 
     const { hooks, warnings } = convertHooksJson(hooksJson);
     expect(warnings).toEqual([]);

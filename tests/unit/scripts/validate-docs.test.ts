@@ -19,9 +19,12 @@ import {
   extractNamesFromReadme,
   extractSlashCommandsFromReadme,
   HOOK_COUNT_DOC_FILES,
+  hasPathsFrontmatter,
   type ImplementationStats,
-  INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT,
-  INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT,
+  INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT,
+  INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT,
+  INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT,
+  INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT,
   type InstructionFileInput,
   measureInstructionBudget,
   programmaticValidation,
@@ -993,37 +996,200 @@ describe('measureInstructionBudget', () => {
     expect(result.totalVisibleLength).toBe(1000);
   });
 
-  test('total > 150,000 visible chars produces an error', () => {
-    const files = makeFiles([['CLAUDE.md', 'a'.repeat(150_001)]]);
-    const result = measureInstructionBudget(files);
+  // A path-conditional rule file: `paths:` frontmatter, padded so the whole file is
+  // exactly `visibleLength` visible chars (no HTML comments, so raw === visible).
+  const PATHS_HEADER = '---\npaths:\n  - "src/**/*.ts"\n---\n';
+  const conditionalRule = (visibleLength: number): string =>
+    PATHS_HEADER + 'a'.repeat(visibleLength - PATHS_HEADER.length);
+  const hasMessage = (messages: string[], needle: string): boolean =>
+    messages.some((m) => m.includes(needle));
 
-    expect(result.totalVisibleLength).toBe(150_001);
-    expect(result.errors.some((e) => e.includes('Instruction budget exceeded'))).toBe(true);
-    expect(result.warnings).toEqual([]);
+  test('limits are the session-decided two-tier values', () => {
+    expect(INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT).toBe(50_000);
+    expect(INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT).toBe(60_000);
+    expect(INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT).toBe(120_000);
+    expect(INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT).toBe(140_000);
   });
 
-  test('total exactly at 150,000 does not error (boundary is exclusive)', () => {
-    const files = makeFiles([['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT)]]);
-    const result = measureInstructionBudget(files);
-
-    expect(result.errors).toEqual([]);
-  });
-
-  test('total in (140,000, 150,000] range produces a warning only, no error', () => {
-    const files = makeFiles([['CLAUDE.md', 'a'.repeat(140_001)]]);
+  test('total > 140,000 visible chars produces a total-tier error only', () => {
+    // Small always-loaded CLAUDE.md + conditional rule so only the total tier is over.
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(1000)],
+      ['.claude/rules/MUST-big.md', conditionalRule(139_001)],
+    ]);
     const result = measureInstructionBudget(files);
 
     expect(result.totalVisibleLength).toBe(140_001);
-    expect(result.errors).toEqual([]);
-    expect(result.warnings.some((w) => w.includes('Instruction budget warning'))).toBe(true);
+    expect(result.alwaysVisibleLength).toBe(1000);
+    expect(hasMessage(result.errors, 'Instruction budget exceeded (total tier')).toBe(true);
+    expect(hasMessage(result.errors, 'always-loaded')).toBe(false);
+    expect(result.warnings).toEqual([]);
   });
 
-  test('total exactly at 140,000 does not warn (boundary is exclusive)', () => {
-    const files = makeFiles([['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT)]]);
+  test('total exactly at 140,000 does not error (boundary is exclusive) but still warns', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(1000)],
+      [
+        '.claude/rules/MUST-big.md',
+        conditionalRule(INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT - 1000),
+      ],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(INSTRUCTION_VISIBLE_LENGTH_TOTAL_ERROR_LIMIT);
+    expect(result.errors).toEqual([]);
+    expect(hasMessage(result.warnings, 'Instruction budget warning (total tier')).toBe(true);
+  });
+
+  test('total in (120,000, 140,000] range produces a total-tier warning only, no error', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(1000)],
+      ['.claude/rules/MUST-big.md', conditionalRule(119_001)],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(120_001);
+    expect(result.errors).toEqual([]);
+    expect(hasMessage(result.warnings, 'Instruction budget warning (total tier')).toBe(true);
+    expect(hasMessage(result.warnings, 'always-loaded')).toBe(false);
+  });
+
+  test('total exactly at 120,000 does not warn (boundary is exclusive)', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(1000)],
+      [
+        '.claude/rules/MUST-big.md',
+        conditionalRule(INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT - 1000),
+      ],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(INSTRUCTION_VISIBLE_LENGTH_TOTAL_WARN_LIMIT);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('always-loaded > 60,000 produces an always-tier error (total tier under limit)', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(60_001)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.alwaysVisibleLength).toBe(60_001);
+    expect(hasMessage(result.errors, 'Instruction budget exceeded (always-loaded tier')).toBe(true);
+    expect(hasMessage(result.errors, 'total tier')).toBe(false);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('always-loaded exactly at 60,000 does not error (boundary is exclusive) but warns', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_ALWAYS_ERROR_LIMIT)],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.errors).toEqual([]);
+    expect(hasMessage(result.warnings, 'Instruction budget warning (always-loaded tier')).toBe(
+      true
+    );
+  });
+
+  test('always-loaded in (50,000, 60,000] range produces an always-tier warning only', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(50_001)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.alwaysVisibleLength).toBe(50_001);
+    expect(result.errors).toEqual([]);
+    expect(hasMessage(result.warnings, 'Instruction budget warning (always-loaded tier')).toBe(
+      true
+    );
+  });
+
+  test('always-loaded exactly at 50,000 does not warn (boundary is exclusive)', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_ALWAYS_WARN_LIMIT)],
+    ]);
     const result = measureInstructionBudget(files);
 
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
+  });
+
+  test('a paths: frontmatter file is excluded from the always-loaded tier but kept in total', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(100)],
+      ['.claude/rules/MUST-cond.md', conditionalRule(70_000)],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[1].alwaysLoaded).toBe(false);
+    expect(result.alwaysVisibleLength).toBe(100);
+    expect(result.totalVisibleLength).toBe(70_100);
+    // 70,000 visible chars would breach the 60,000 always error if it were counted.
+    expect(result.errors).toEqual([]);
+  });
+
+  test('a rule file without frontmatter is counted in the always-loaded tier (paired existence)', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'a'.repeat(100)],
+      ['.claude/rules/MUST-plain.md', 'b'.repeat(70_000)],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[1].alwaysLoaded).toBe(true);
+    expect(result.alwaysVisibleLength).toBe(70_100);
+    expect(hasMessage(result.errors, 'always-loaded tier')).toBe(true);
+  });
+
+  test('a scalar `paths: "glob"` frontmatter also makes the file conditional', () => {
+    const content = '---\npaths: "src/**/*.ts"\n---\nbody';
+    const result = measureInstructionBudget(makeFiles([['.claude/rules/MUST-s.md', content]]));
+
+    expect(result.files[0].alwaysLoaded).toBe(false);
+    expect(result.alwaysVisibleLength).toBe(0);
+  });
+
+  test('a globs:-only frontmatter file stays in the always-loaded tier', () => {
+    const content = `---\nglobs:\n  - "src/**/*.ts"\n---\n${'a'.repeat(100)}`;
+    const result = measureInstructionBudget(makeFiles([['.claude/rules/MUST-g.md', content]]));
+
+    expect(result.files[0].alwaysLoaded).toBe(true);
+    expect(result.alwaysVisibleLength).toBe(content.length);
+  });
+
+  test('`paths:` text outside the frontmatter does not make a file conditional', () => {
+    const cases: Array<[string, string]> = [
+      ['no frontmatter, paths: in body', 'Intro\n\npaths: not a key here\n'],
+      ['frontmatter without paths, paths: in body', '---\nname: x\n---\nuse paths: in prose\n'],
+      ['paths: before the first --- (not at file start)', 'preamble\n---\npaths: x\n---\nbody'],
+      ['horizontal rules in the body', '# Title\n\n---\npaths: x\n---\nbody'],
+      ['paths: only as a suffix of another key', '---\nsubpaths: x\n---\nbody'],
+    ];
+    for (const [label, content] of cases) {
+      const result = measureInstructionBudget(makeFiles([['.claude/rules/MUST-b.md', content]]));
+      expect({ label, alwaysLoaded: result.files[0].alwaysLoaded }).toEqual({
+        label,
+        alwaysLoaded: true,
+      });
+    }
+  });
+
+  test('CLAUDE.md is always loaded even with a paths: frontmatter', () => {
+    const result = measureInstructionBudget(makeFiles([['CLAUDE.md', '---\npaths: x\n---\nbody']]));
+
+    expect(result.files[0].alwaysLoaded).toBe(true);
+  });
+
+  test('hasPathsFrontmatter: positive and negative pair', () => {
+    expect(hasPathsFrontmatter('---\npaths:\n  - a\n---\nbody')).toBe(true);
+    expect(hasPathsFrontmatter('---\r\npaths: a\r\n---\r\nbody')).toBe(true);
+    expect(hasPathsFrontmatter('---\nglobs: a\n---\nbody')).toBe(false);
+    expect(hasPathsFrontmatter('body only')).toBe(false);
+  });
+
+  test('respects custom alwaysErrorLimit/alwaysWarnLimit options', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(50)]]);
+    const result = measureInstructionBudget(files, { alwaysErrorLimit: 40, alwaysWarnLimit: 20 });
+
+    expect(hasMessage(result.errors, 'always-loaded tier')).toBe(true);
+    expect(hasMessage(result.errors, 'total tier')).toBe(false);
   });
 
   test('a stray --> outside any comment produces an error', () => {

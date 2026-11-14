@@ -1,7 +1,7 @@
 ---
 title: infra-aws-expert
 type: agent
-updated: 2026-10-06
+updated: 2026-11-14
 sources:
   - .claude/agents/infra-aws-expert.md
 related:

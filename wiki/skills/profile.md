@@ -1,7 +1,7 @@
 ---
 title: Profile
 type: skill
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/skills/profile/SKILL.md
 related:

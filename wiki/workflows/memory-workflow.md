@@ -1,7 +1,7 @@
 ---
 title: Memory Workflow
 type: workflow
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/rules/SHOULD-memory-integration.md
   - CLAUDE.md

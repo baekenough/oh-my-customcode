@@ -1,6 +1,6 @@
 ---
 name: profile
-description: Load a skill profile to switch active plugin set. Use when user wants to focus on a specific workflow (web-app/data-eng/harness-dev/minimal) and reduce skill enumeration block size per #1041.
+description: Load a skill profile to switch the plugin set (web-app/data-eng/harness-dev/minimal). Use to focus a workflow and shrink the skill list (#1041).
 scope: core
 user-invocable: true
 argument-hint: "<profile-name> | list | current"

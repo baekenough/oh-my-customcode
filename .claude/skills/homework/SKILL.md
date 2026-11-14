@@ -1,6 +1,6 @@
 ---
 name: homework
-description: On explicit /homework invocation, analyze the current and linked previous sessions, extract mistakes (찐빠), and report them via omcustom-feedback with a confirmation gate. Auto-activation on session cleanup/session-end signals is OPT-IN (default OFF) — requires an explicit project/user directive. Use when explicitly auditing recent work for harness gaps.
+description: On explicit /homework, analyze current/linked sessions, extract mistakes (찐빠), report via omcustom-feedback (confirm gate). Auto-activation OPT-IN.
 scope: harness
 user-invocable: true
 argument-hint: "[--dry-run] [--days <n>] [--severity <critical|high|medium|low>]"

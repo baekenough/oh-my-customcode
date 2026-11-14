@@ -38,7 +38,7 @@
       "name": "contexts",
       "path": ".claude/contexts",
       "description": "Context configuration files",
-      "files": 4
+      "files": 6
     }
   ],
   "source": "https://github.com/baekenough/oh-my-customcode"

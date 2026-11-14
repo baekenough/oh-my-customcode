@@ -1,7 +1,7 @@
 ---
 title: Output Styles
 type: guide
-updated: 2026-10-05
+updated: 2026-11-14
 sources:
   - .claude/output-styles/korean-engineer.md
   - .claude/rules/SHOULD-interaction.md

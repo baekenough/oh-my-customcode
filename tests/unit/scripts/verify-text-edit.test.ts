@@ -112,6 +112,9 @@ const NEG_HAP = [
 ];
 const POS_NOUN = ['확인함', '정정 필요', '완료됨.', '검토 필요'];
 const NEG_NOUN_HAP = ['확인했습니다.', '필요합니다.', '완료되었습니다.', '검토하겠습니다'];
+// 3 family hits (따른다 / 했다 / 있다, each followed by a space) on ONE line; the line ends in a
+// 합쇼체 verb, so the line-final and noun-ending counters stay 0.
+const MULTI_HIT = '규칙을 따른다 그리고 했다 그리고 있다 라고 적었습니다';
 
 interface Counts {
   fam: number;
@@ -236,6 +239,61 @@ describe('Korean checks via --stdin', () => {
     const noun = script(['--stdin'], linesOf(['확인함']));
     expect(parseGrep(noun.stdout)).toEqual({ fam: 0, lf: 0, noun: 1 });
     expect(noun.code).toBe(1);
+  });
+
+  // Counting unit: grep -c counts matching LINES, so python3 must count matching lines as well.
+  // len(re.findall(...)) counted every hit and gave DISAGREE (rc 3) on a line with 2+ family hits.
+  describe('counting unit: matching lines, not hits', () => {
+    test('a line with 3 family hits -> grep 1, python3 1, rc 1 (FAIL), no DISAGREE', () => {
+      const r = script(['--stdin'], linesOf([MULTI_HIT]));
+      expect(parseGrep(r.stdout)).toEqual({ fam: 1, lf: 0, noun: 0 });
+      expect(parsePython(r.stdout)).toEqual({ fam: 1, lf: 0, noun: 0 });
+      expect(r.code).toBe(1);
+      expect(r.stderr).toContain('[korean] FAIL');
+      expect(r.stderr).not.toContain('DISAGREE');
+    });
+
+    test('multi-hit and single-hit lines together: both count LINES (2), not hits (4)', () => {
+      const r = script(['--stdin'], linesOf([MULTI_HIT, '확인한다 라고 적었습니다']));
+      expect(parseGrep(r.stdout)).toEqual({ fam: 2, lf: 0, noun: 0 });
+      expect(parsePython(r.stdout)).toEqual({ fam: 2, lf: 0, noun: 0 });
+      expect(r.code).toBe(1);
+      expect(r.stderr).not.toContain('DISAGREE');
+    });
+
+    test('a 합쇼체 line stays 0 for family (no hit, no DISAGREE, rc 0)', () => {
+      const r = script(['--stdin'], linesOf(['확인했습니다 그리고 정정하겠습니다']));
+      expect(parsePython(r.stdout)).toEqual({ fam: 0, lf: 0, noun: 0 });
+      expect(r.code).toBe(0);
+    });
+
+    // line-final / noun-ending end in a `$` anchor: at most one match per line, so a line with two
+    // 다-endings or two 함-endings counts once in both tools (the [가설] of the defect report).
+    test('line-final and noun-ending count a repeated ending once per line in both tools', () => {
+      const lf = script(['--stdin'], linesOf(['정정했다 그리고 정정했다']));
+      expect(parseGrep(lf.stdout).lf).toBe(1);
+      expect(parsePython(lf.stdout).lf).toBe(1);
+      expect(lf.stderr).not.toContain('DISAGREE');
+      const noun = script(['--stdin'], linesOf(['확인함 그리고 확인함']));
+      expect(parseGrep(noun.stdout)).toEqual({ fam: 0, lf: 0, noun: 1 });
+      expect(parsePython(noun.stdout)).toEqual({ fam: 0, lf: 0, noun: 1 });
+      expect(noun.stderr).not.toContain('DISAGREE');
+    });
+
+    // Existence counterpart: DISAGREE still fires when python3 really gives another value, so the
+    // fixed unit does not turn the cross-check into a no-op (see also the shim tests below).
+    test('a python3 that reports 3 hits for the multi-hit line still gives DISAGREE and rc 3', () => {
+      const shim = join(dir, 'shim-hits');
+      mkdirSync(shim, { recursive: true });
+      const py = join(shim, 'python3');
+      writeFileSync(py, '#!/bin/sh\ncat >/dev/null\necho "3 0 0"\n');
+      chmodSync(py, 0o755);
+      const r = script(['--stdin'], linesOf([MULTI_HIT]), {
+        PATH: `${shim}:${process.env.PATH ?? ''}`,
+      });
+      expect(r.code).toBe(3);
+      expect(r.stderr).toContain("[korean] DISAGREE: grep '1 0 0' vs python3 '3 0 0'");
+    });
   });
 
   test('grep and python3 agree on all four sets, also under LC_ALL=C', () => {
@@ -1342,6 +1400,28 @@ describe('script == yaml (Korean checks)', () => {
     expect(koreanParityHolds(spec)).toBe(true);
   });
 
+  // The yaml python3 snippet counts LINES like `grep -c` (the script's unit); on a line with 3
+  // family hits grep and the yaml python3 both give 1.
+  test('yaml grep and yaml python3 both count the multi-hit line once (counting unit)', () => {
+    const y = yamlCounts(spec, linesOf([MULTI_HIT]));
+    expect(y.grep).toEqual({ fam: 1, lf: 0, noun: 0 });
+    expect(y.python).toEqual({ fam: 1, lf: 0, noun: 0 });
+    const s = script(['--stdin'], linesOf([MULTI_HIT]));
+    expect(parsePython(s.stdout)).toEqual(y.python);
+  });
+
+  test('a yaml python3 that counts hits (findall) disagrees with grep on the multi-hit line', () => {
+    const yaml = readText(AD);
+    const mutated = yaml.replace(
+      /fam=sum\(1 for l in text\.split\(chr\(10\)\) if re\.search\((r'[^\n]*?'), l\)\)/,
+      'fam=len(re.findall($1, text))'
+    );
+    expect(mutated).not.toBe(yaml);
+    const y = yamlCounts(extractYamlKorean(mutated), linesOf([MULTI_HIT]));
+    expect(y.grep.fam).toBe(1);
+    expect(y.python.fam).toBe(3);
+  });
+
   test('every script pattern literal appears in all 4 auto-dev.yaml copies', () => {
     const literals = [
       '(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "(]',
@@ -1468,6 +1548,27 @@ describe('mutation proofs', () => {
     );
     const s = run(['bash', p, '--quotes', qf, '--target', target]);
     expect(s.stdout).not.toBe(b.stdout);
+  });
+
+  test('findall (hit count) instead of per-line search turns the multi-hit line into DISAGREE rc 3', () => {
+    const lineUnit = 'fam=sum(1 for l in text.split(chr(10)) if re.search(';
+    expect(SCRIPT_TEXT).toContain(lineUnit);
+    const p = mutatedCopy('findall', (t) =>
+      t.replace(
+        /fam=sum\(1 for l in text\.split\(chr\(10\)\) if re\.search\((r'[^\n]*?'), l\)\)/,
+        'fam=len(re.findall($1, text))'
+      )
+    );
+    expect(readFileSync(p, 'utf8')).toContain('fam=len(re.findall(');
+    const mutated = run(['bash', p, '--stdin'], linesOf([MULTI_HIT]));
+    expect(parseGrep(mutated.stdout).fam).toBe(1);
+    expect(parsePython(mutated.stdout).fam).toBe(3);
+    expect(mutated.code).toBe(3);
+    expect(mutated.stderr).toContain('[korean] DISAGREE');
+    // the tracked script gives rc 1 and no DISAGREE on the same input
+    const real = run(['bash', SCRIPT, '--stdin'], linesOf([MULTI_HIT]));
+    expect(real.code).toBe(1);
+    expect(real.stderr).not.toContain('DISAGREE');
   });
 
   test('removing the python3 cross-check comparison turns the disagreement case red', () => {

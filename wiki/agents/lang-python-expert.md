@@ -1,7 +1,7 @@
 ---
 title: lang-python-expert
 type: agent
-updated: 2026-11-09
+updated: 2026-11-14
 sources:
   - .claude/agents/lang-python-expert.md
 related:

@@ -1,45 +1,27 @@
+---
+paths:
+  - ".claude/statusline.sh"
+  - "templates/.claude/statusline.sh"
+  - ".claude/settings.json"
+  - ".claude/settings.local.json"
+  - ".claude/hooks/hooks.json"
+  - "templates/.claude/hooks/hooks.json"
+---
 # [SHOULD] HUD Statusline Rules
 
 > **Priority**: SHOULD | **ID**: R012
 
 ## Two-System Architecture
 
-| Aspect | HUD Events | Statusline API |
-|--------|-----------|----------------|
-| Channel | stderr (hooks) | stdout (dedicated statusline) |
-| Location | Inline in conversation log | Persistent bar at screen bottom |
-| Trigger | PreToolUse (Agent/Task matcher) | Message update cycle (~300ms) |
-| Role | Event notifications | Persistent session status |
+HUD 이벤트(hook, stderr)와 Statusline API(stdout 전용 statusline, 약 300ms 갱신)는 별개 채널입니다.
 
-## HUD Events (Hook-based)
+## HUD Events
 
-Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.
-
-<!-- ARCHIVED CC version note (historical): v2.1.141+ — Hook JSON output can include `terminalSequence` field to emit window title changes or terminal bells without terminal control. Complementary to HUD stderr channel — e.g., update window title on task completion or ring bell after long parallel run. Modifying `.claude/hooks/` requires explicit user approval (R001). -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.157+ — `tool_decision` telemetry events now include `tool_parameters` (bash commands, MCP/skill names) when `OTEL_LOG_TOOL_DETAILS=1`. Complements R012 observability — enables per-tool parameter tracking in monitoring dashboards. See `monitoring-setup` skill. -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.161+ — `OTEL_RESOURCE_ATTRIBUTES` values are now emitted as labels on metric datapoints — usage metrics can be sliced by custom dimensions (e.g., team, repo). Extends R012 observability from per-tool parameters (v2.1.157) to per-dimension metric slicing; configure via the `monitoring-setup` skill's `OTEL_RESOURCE_ATTRIBUTES` env. Separately, `claude agents` rows now show `done/total` progress before the detail when work is fanned out, and peek surfaces the longest-running item — complements the HUD parallel-spawn display and R009 `[N]` correlation. -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.174+ — The `/usage` (Account & usage) dialog now shows usage attribution — cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24h or 7d (surfaced in the VSCode integration). Extends R012 observability from OTEL metric slicing (v2.1.161) to an interactive in-client attribution view — complements the `monitoring-setup` skill by giving per-skill/agent/plugin/MCP cost visibility without standing up an OTEL backend. -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.176+ — Added the `footerLinksRegexes` setting — regex-matched link badges rendered in the footer row, configurable via user or managed settings. Relevant to R012 statusline composition: the footer can now surface contextual link badges alongside the `.claude/statusline.sh` segments. Also in v2.1.176, session titles are generated in the conversation's language (pin via the `language` setting). -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.172+ — Added a `model` attribute to the `claude_code.lines_of_code.count` OTEL metric — lines-of-code telemetry can now be sliced by model. Extends the per-dimension metric slicing (v2.1.161) in the `monitoring-setup` skill. -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.193+: `claude_code.assistant_response` OpenTelemetry 로그 이벤트가 추가되어 모델의 응답 텍스트를 포함합니다. `OTEL_LOG_ASSISTANT_RESPONSES=1`이 아니면 redacted 되지만, 이 변수가 unset이면 `OTEL_LOG_USER_PROMPTS`를 따릅니다 — 보안 주의: 이미 프롬프트 내용을 로깅하는 배포는 업그레이드 즉시 응답 내용도 수신하기 시작합니다. 프롬프트만 유지하려면 `OTEL_LOG_ASSISTANT_RESPONSES=0`으로 설정하세요. v2.1.157 tool_parameters / v2.1.161 metric slicing에 이은 `monitoring-setup` 스킬 OTEL 관측성 확장이며, 응답 텍스트 로깅은 명시적 opt-out이 필요한 민감 항목입니다. -->
-
-<!-- ARCHIVED CC version note (historical): v2.1.196+: 여러 병렬 요청이 사용량 한도에 도달하는 순간 rate-limit 경고가 깜빡이며 꺼지고 rate-limit telemetry가 과다 집계되던 문제를 수정. R012 관측성의 rate-limit 계측 정확도 개선입니다. -->
-
-<!--
+Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.<!-- ARCHIVED CC version note (historical): v2.1.141+ — Hook JSON output can include `terminalSequence` field to emit window title changes or terminal bells without terminal control. Complementary to HUD stderr channel — e.g., update window title on task completion or ring bell after long parallel run. Modifying `.claude/hooks/` requires explicit user approval (R001). --><!-- ARCHIVED CC version note (historical): v2.1.157+ — `tool_decision` telemetry events now include `tool_parameters` (bash commands, MCP/skill names) when `OTEL_LOG_TOOL_DETAILS=1`. Complements R012 observability — enables per-tool parameter tracking in monitoring dashboards. See `monitoring-setup` skill. --><!-- ARCHIVED CC version note (historical): v2.1.161+ — `OTEL_RESOURCE_ATTRIBUTES` values are now emitted as labels on metric datapoints — usage metrics can be sliced by custom dimensions (e.g., team, repo). Extends R012 observability from per-tool parameters (v2.1.157) to per-dimension metric slicing; configure via the `monitoring-setup` skill's `OTEL_RESOURCE_ATTRIBUTES` env. Separately, `claude agents` rows now show `done/total` progress before the detail when work is fanned out, and peek surfaces the longest-running item — complements the HUD parallel-spawn display and R009 `[N]` correlation. --><!-- ARCHIVED CC version note (historical): v2.1.174+ — The `/usage` (Account & usage) dialog now shows usage attribution — cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24h or 7d (surfaced in the VSCode integration). Extends R012 observability from OTEL metric slicing (v2.1.161) to an interactive in-client attribution view — complements the `monitoring-setup` skill by giving per-skill/agent/plugin/MCP cost visibility without standing up an OTEL backend. --><!-- ARCHIVED CC version note (historical): v2.1.176+ — Added the `footerLinksRegexes` setting — regex-matched link badges rendered in the footer row, configurable via user or managed settings. Relevant to R012 statusline composition: the footer can now surface contextual link badges alongside the `.claude/statusline.sh` segments. Also in v2.1.176, session titles are generated in the conversation's language (pin via the `language` setting). --><!-- ARCHIVED CC version note (historical): v2.1.172+ — Added a `model` attribute to the `claude_code.lines_of_code.count` OTEL metric — lines-of-code telemetry can now be sliced by model. Extends the per-dimension metric slicing (v2.1.161) in the `monitoring-setup` skill. --><!-- ARCHIVED CC version note (historical): v2.1.193+: `claude_code.assistant_response` OpenTelemetry 로그 이벤트가 추가되어 모델의 응답 텍스트를 포함합니다. `OTEL_LOG_ASSISTANT_RESPONSES=1`이 아니면 redacted 되지만, 이 변수가 unset이면 `OTEL_LOG_USER_PROMPTS`를 따릅니다 — 보안 주의: 이미 프롬프트 내용을 로깅하는 배포는 업그레이드 즉시 응답 내용도 수신하기 시작합니다. 프롬프트만 유지하려면 `OTEL_LOG_ASSISTANT_RESPONSES=0`으로 설정하세요. v2.1.157 tool_parameters / v2.1.161 metric slicing에 이은 `monitoring-setup` 스킬 OTEL 관측성 확장이며, 응답 텍스트 로깅은 명시적 opt-out이 필요한 민감 항목입니다. --><!-- ARCHIVED CC version note (historical): v2.1.196+: 여러 병렬 요청이 사용량 한도에 도달하는 순간 rate-limit 경고가 깜빡이며 꺼지고 rate-limit telemetry가 과다 집계되던 문제를 수정. R012 관측성의 rate-limit 계측 정확도 개선입니다. --><!--
 > **v2.1.198+**: `claude agents`에 background agent notifications가 추가되어, 입력이 필요하거나 완료된 세션이 `Notification` hook을 발화합니다(`agent_needs_input` / `agent_completed`). R012 관측성을 백그라운드 subagent 상태 알림까지 확장 — HUD 이벤트 채널과 결합해 백그라운드 위임 작업의 대기/완료 상태를 놓치지 않게 합니다.
 
 > **v2.1.202+**: workflow-spawned agent 텔레메트리에 `workflow.run_id`/`workflow.name` OTel 속성이 추가되어 workflow run 활동을 OTel 데이터로 재구성할 수 있습니다. R012 관측성 확장(monitoring-setup 스킬).
--->
-
-<!-- RETIRED (은퇴 릴리즈 v1.1.44, 보존 기준 v2.1.212 미만): > **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above. -->
-
-<!-- DETAIL: HUD Events full spec
+--><!-- RETIRED (은퇴 릴리즈 v1.1.44, 보존 기준 v2.1.212 미만): > **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above. --><!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:
 ─── [Agent] secretary | [Parallel] 4 ───
@@ -51,9 +33,7 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 Format: `{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%`
 
-Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh\""` (anchored form written by the installer; the old bare `.claude/statusline.sh` default is migrated on update/init). Requires CC v2.1.80+ for RL/WL segments. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
-
-<!-- DETAIL: Statusline configuration JSON and color coding
+Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh\""` (anchored form; old bare default migrated on update/init). RL/WL segments require CC v2.1.80+; `statusLine.refreshInterval` needs v2.1.97+.<!-- DETAIL: Statusline configuration JSON and color coding
 ```json
 { "statusLine": { "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh\"", "padding": 0 } }
 ```
@@ -62,16 +42,23 @@ Countdown format: >=1d → "{d}d{h}h", >=1h → "{h}h{m}m", <1h → "{m}m", unav
 RL/WL segments omitted on CC older than v2.1.80.
 -->
 
-> **v2.1.260+**: 상태줄의 `prompt_cache` 필드(및 `/cost`)가 이제 prompt-cache miss의 **가능성 있는 원인**을 함께 보여줍니다 — 예: 도구 정의나 시스템 프롬프트가 변경됨, TTL을 넘겨 유휴 상태였음. `.claude/statusline.sh`를 확장해 캐시 상태를 노출하려면 이 필드가 캐시 hit/miss 상태의 결정론적 소스입니다 — 함께 표시되는 원인은 플랫폼의 추정 후보이지 확정 원인이 아닙니다. cross-ref R013(context budget), R009(v2.1.229 prefix stagger — 병렬 배치에서 "도구 정의 변경됨"이 원인으로 뜨면 stagger의 캐시 재사용 이득이 소실됐다는 뜻입니다).
+`prompt_cache` 필드는 상태줄 캐시 hit/miss의 결정론적 소스이며 표시되는 원인은 추정 후보입니다.
 
-## Integration
+**External Plugin Statusline Conflict**: 외부 플러그인 상태줄은 보조이거나 비활성으로 둡니다. cc-token-saver Live Status Line과는 R012 `.claude/statusline.sh`가 우선하며, 중복 방지를 위해 비활성화합니다.
 
-Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).
+<!-- DETAIL: HEAD visible wording of sections compressed in the L1 conversion (lossless backup; the v2.1.260 prompt_cache note is preserved verbatim in the moved-r017-r022-r012 artifact)
 
-## External Plugin Statusline Conflict
+Two-System Architecture table (HEAD):
+| Channel | stderr (hooks) | stdout (dedicated statusline) |
+| Location | Inline in conversation log | Persistent bar at screen bottom |
+| Trigger | PreToolUse (Agent/Task matcher) | Message update cycle (~300ms) |
+| Role | Event notifications | Persistent session status |
 
-| Plugin | Component | Resolution |
-|--------|-----------|------------|
+Config sentence tail (HEAD): the old bare `.claude/statusline.sh` default is migrated on update/init. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
+
+## Integration (HEAD): Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).
+
+## External Plugin Statusline Conflict (HEAD):
 | cc-token-saver | Live Status Line | R012 `.claude/statusline.sh` has priority. Disable cc-token-saver statusline to avoid duplicate status bars. |
-
 Internal statusline (`.claude/statusline.sh`) is the primary status display. External plugin status lines are supplementary or disabled.
+-->

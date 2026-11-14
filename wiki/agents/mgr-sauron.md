@@ -1,7 +1,7 @@
 ---
 title: mgr-sauron
 type: agent
-updated: 2026-09-29
+updated: 2026-11-14
 sources:
   - .claude/agents/mgr-sauron.md
 related:
@@ -34,7 +34,6 @@ Cost-aware verification ([[r023]] shift-left, added v1.1.15/#1475): Round 3-4 re
 - **Skills**: `sauron-watch`
 - **Memory**: local (`.claude/agent-memory-local/mgr-sauron/`, git-untracked — changed from `project` scope in v1.1.13 / #1468)
 - **Effort**: medium
-- **Max Turns**: 25
 - **Permission Mode**: bypassPermissions
 
 ## Commands

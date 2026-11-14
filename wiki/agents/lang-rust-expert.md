@@ -1,7 +1,7 @@
 ---
 title: lang-rust-expert
 type: agent
-updated: 2026-11-10
+updated: 2026-11-14
 sources:
   - .claude/agents/lang-rust-expert.md
 related:

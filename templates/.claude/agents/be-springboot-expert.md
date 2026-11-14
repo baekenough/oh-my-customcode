@@ -1,6 +1,6 @@
 ---
 name: be-springboot-expert
-description: Expert Spring Boot 4.0 developer for enterprise-grade Java 25 LTS applications. Use for Spring Boot projects, Java/Kotlin enterprise apps, RESTful APIs, microservices architecture, Spring Data, security patterns, virtual threads, and GraalVM native images.
+description: Expert Spring Boot 4.0 developer for Java 25 apps. Use for Spring Boot projects, REST APIs, microservices, Spring Data, security, native images.
 model: claude-sonnet-5-5
 domain: backend
 memory: local

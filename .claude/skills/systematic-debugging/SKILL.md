@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior. Enforces a strict reproduce-first, root-cause-first, failing-test-first debugging workflow before fixing.
+description: Use when encountering any bug, test failure, or unexpected behavior. Enforces reproduce-first, root-cause-first, failing-test-first debugging.
 version: 1.0.0
 user-invocable: false
 ---

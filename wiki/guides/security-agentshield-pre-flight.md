@@ -1,7 +1,7 @@
 ---
 title: Security — AgentShield Pre-flight Guide
 type: guide
-updated: 2026-05-18
+updated: 2026-11-14
 sources:
   - guides/security/agentshield-pre-flight.md
   - .claude/skills/sec-agentshield-wrapper/SKILL.md

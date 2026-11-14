@@ -2,14 +2,30 @@
 
 > **Priority**: SHOULD | **ID**: R011
 
+<!-- DETAIL: # [SHOULD] Memory Integration Rules original wording
+# [SHOULD] Memory Integration Rules
+> **Priority**: SHOULD | **ID**: R011
+
 > **Note**: This project uses **native auto memory ONLY** (memory/MEMORY.md + agent frontmatter `memory:`). claude-mem and agentmemory MCP are NOT used in this project. Decision: issue #1253.
+-->
 
 ## Architecture
 
+백엔드는 네이티브 auto memory(frontmatter `memory:`)뿐입니다(#1253).
+
+<!-- DETAIL: ## Architecture original wording
+## Architecture
 **Sole backend**: Native auto memory (`memory` field in agent frontmatter). No external MCP dependencies.
+-->
 
 ## Native Auto Memory
 
+`memory: project|user|local`이면 MEMORY.md 첫 200줄이 프롬프트에 로드됩니다(`autoMemoryDirectory`로 경로 변경 가능).
+
+`user`는 `~/.claude/agent-memory/<name>/`, `project`는 `.claude/agent-memory/<name>/`(git 추적), `local`은 `.claude/agent-memory-local/<name>/`입니다.
+
+<!-- DETAIL: ## Native Auto Memory original wording
+## Native Auto Memory
 Agent frontmatter `memory: project|user|local` enables persistent memory:
 - System creates memory directory, loads first 200 lines of MEMORY.md into prompt
 - Read/Write/Edit tools auto-enabled for memory directory
@@ -20,39 +36,38 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 | `user` | `~/.claude/agent-memory/<name>/` | No |
 | `project` | `.claude/agent-memory/<name>/` | Yes |
 | `local` | `.claude/agent-memory-local/<name>/` | No |
+-->
 
 ## Subagent memory:project Source-Tree Pollution Guard
 
+메모리 쓰기는 프로젝트 루트 `.claude/`에 귀결돼야 합니다. 커밋 전 `find . -path '*/src/*/.claude' -o -path '*/main/*/.claude'`로 소스 트리 내 중첩 `.claude/agent-memory/`를 확인·제거합니다.
 
 <!-- DETAIL: Origin #1335 pollution guard
 > Origin: #1335 ② — lang-kotlin-expert with `memory: project`, working in a Kotlin source subdirectory, wrote memory to `mobile/.../com/baekenough/secondbrain/.claude/agent-memory/` — INSIDE the source package. Caught and removed just before commit.
 -->
 
-`memory: project` 서브에이전트가 하위 디렉토리에서 실행되면 `.claude/agent-memory/`가 소스 트리 안에 잘못 생성될 수 있습니다 — 메모리는 항상 프로젝트 루트 `.claude/`로 귀결해야 합니다.
-
 <!-- DETAIL: subagent memory pollution norm
 A subagent with `memory: project` working in a SUBDIRECTORY can create `.claude/agent-memory/` relative to its current working directory, polluting the source tree (e.g., inside a source package). Memory MUST resolve to the PROJECT ROOT `.claude/`, never a nested working dir.
 -->
 
+<!-- DETAIL: nested memory check command
+Check for nested `.claude/agent-memory/` (e.g., `find . -path '*/src/*/.claude' -o -path '*/main/*/.claude'`) before committing subagent work.
+-->
+
+<!-- DETAIL: ## Subagent memory:project Source-Tree Pollution Guard original wording
+## Subagent memory:project Source-Tree Pollution Guard
+`memory: project` 서브에이전트가 하위 디렉토리에서 실행되면 `.claude/agent-memory/`가 소스 트리 안에 잘못 생성될 수 있습니다 — 메모리는 항상 프로젝트 루트 `.claude/`로 귀결해야 합니다.
 
 | Anti-pattern | Required |
 |--------------|----------|
 | Accept a subagent's `.claude/agent-memory/` written under a source package | Verify memory writes land at project-root `.claude/`; remove any nested `.claude/agent-memory/` from source dirs before commit |
 
 커밋 전 `find . -path '*/src/*/.claude' -o -path '*/main/*/.claude'`로 중첩 생성 여부를 확인합니다.
-
-<!-- DETAIL: nested memory check command
-Check for nested `.claude/agent-memory/` (e.g., `find . -path '*/src/*/.claude' -o -path '*/main/*/.claude'`) before committing subagent work.
 -->
-
 
 ## Best Practices
 
-- Consult memory before starting work
-- Update after discovering patterns
-- Keep MEMORY.md under 200 lines
-- Do not store sensitive data or duplicate CLAUDE.md content
-- Memory write failures should not block main task
+작업 전 메모리를 참조하고, MEMORY.md는 200줄 이하로 유지하며, 민감 데이터와 CLAUDE.md 중복은 저장하지 않습니다.
 
 <!-- DETAIL: Confidence-Tracked Memory (sys-memory-keeper reference)
 
@@ -292,9 +307,18 @@ User Model data feeds into intent-detection (R015) and routing skill confidence 
 
 -->
 
+<!-- DETAIL: ## Best Practices original wording
+## Best Practices
+- Consult memory before starting work
+- Update after discovering patterns
+- Keep MEMORY.md under 200 lines
+- Do not store sensitive data or duplicate CLAUDE.md content
+- Memory write failures should not block main task
+-->
+
 ## Attention-Weight Memory Tiering
 
-메모리 항목은 confidence(신뢰도)와 attention weight(접근성) 두 축으로 관리하며, Hot/Warm/Cold/Archived 4-tier로 200줄 MEMORY.md 예산을 배분합니다. sys-memory-keeper에 메모리 갱신을 위임할 때는 위임서에 "압축·정리·티어 재평가 불요 — 지시한 항목만 기록"을 명시합니다(정리는 별도 위임, #1660).
+confidence·attention weight 두 축, Hot/Warm/Cold/Archived 4-tier로 200줄 예산을 배분합니다.
 
 <!-- DETAIL: Attention-Weight Memory Tiering full detail (Origin #1279 through delegation-prompt rationale)
 > Origin: #1279 (Dual-Brain scout:internalize 부분 내재화 — attention-weight tiering만)
@@ -367,25 +391,18 @@ Temporal Decay(시간 경과 기반)와 Attention-Weight Tiering(접근 빈도 �
 **위임서 표준 문안 (Origin: #1660 하네스 제안)**: sys-memory-keeper에 세션 메모리 갱신을 위임할 때 위임서에 "**압축·정리·티어 재평가 불요 — 지시한 항목만 기록**"을 명시합니다(정리가 필요하면 별도 위임으로 분리). 명시하지 않으면 에이전트가 자체적으로 MEMORY.md 압축을 목표에 추가해 턴 예산을 소진합니다 — v1.1.63 반복(#1660)에서 이 원인으로 15턴 절단이 2회 발생했습니다(R020 「maxTurns 절단 실증」의 메모리 위임 각도). 위 Tier 승강·archive 이동은 세션 종료 시 **별도 단일 목표 위임**으로 수행합니다.
 -->
 
+<!-- DETAIL: ## Attention-Weight Memory Tiering original wording
+## Attention-Weight Memory Tiering
+메모리 항목은 confidence(신뢰도)와 attention weight(접근성) 두 축으로 관리하며, Hot/Warm/Cold/Archived 4-tier로 200줄 MEMORY.md 예산을 배분합니다. sys-memory-keeper에 메모리 갱신을 위임할 때는 위임서에 "압축·정리·티어 재평가 불요 — 지시한 항목만 기록"을 명시합니다(정리는 별도 위임, #1660).
+-->
+
 ## Mid-Session Immediate Save
 
-Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.
-
-| Trigger | Action | Rationale |
-|---------|--------|-----------|
-| Repeated pattern observed (2nd time) | Save `feedback_*.md` now | Pattern will recur within session |
-| Unexpected tool behavior / workaround | Save `feedback_*.md` now | Session state defense |
-| Subagent false-positive detected | Save `feedback_*.md` now | Prevent repeat in same session |
-| User correction / feedback | Save `feedback_*.md` now | Honor correction immediately |
-| Root-cause hypothesis (원인 진단) | Save `feedback_*.md` ONLY with a `[hypothesis: <unverified-basis summary>]` first-line tag until the code path has been read and the decision logic reproduced 1:1; promote to plain fact only after that verification | Statistical correlation from transcript counts is NOT code causation — an unverified cause saved as fact propagates to issues and future sessions (#1652 #1; R020 「통계적 상관 ≠ 코드 인과」) |
-
-`[hypothesis: …]` 태그 규약(#1652 #1): 원인 진단을 메모리에 즉시 저장할 때는 본문 첫 줄에 `[hypothesis: <미검증 근거 요약>]`를 붙이고, 코드 경로 대조·판정 로직 1:1 재현으로 검증한 뒤에만 태그를 제거합니다 — 검증 전에는 결론이 아니라 트리거로만 사용합니다.
+놀라운 발견은 즉시 `feedback_*.md`로 저장합니다(트리거: 같은 패턴 2회째, 예상 밖 도구 동작, 서브에이전트 오탐, 사용자 교정). 원인 진단은 첫 줄 `[hypothesis: <미검증 근거 요약>]` 태그로만 저장하고, 코드 경로 대조·판정 로직 1:1 재현 뒤에만 태그를 제거하며, 검증 전에는 결론이 아니라 트리거로만 사용합니다(#1652 #1, R020).
 
 <!-- DETAIL: hypothesis tag full rationale with 실증 examples
 **`[hypothesis: …]` 태그 규약 (Origin: #1652 #1)**: 원인 진단을 메모리에 즉시 저장할 때는 본문 첫 줄에 `[hypothesis: <미검증 근거 요약>]`를 붙인다. 검증(코드 경로 대조·판정 로직 1:1 재현) 완료 시 태그를 제거하거나 파일을 정정한다. 태그가 남아 있는 항목은 후속 세션에서 전제로 쓰지 않고 **검증 트리거로만** 사용한다 — 위 「Safety-Related Feedback Memory Framing」과 같은 원리(결론형이 아니라 검증 의무형)다. 실증: v1.1.59 세션에서 #1643 원인을 트랜스크립트 통계(첫 레코드 thinking 13/21)만으로 "advisor가 thinking 전용 첫 레코드를 병합하지 못함"이라 확정 저장했다가 jq 1:1 재현으로 반박됐고(실제 원인은 레이블 문구 모호성), 같은 세션에서 `gh pr merge --delete-branch` 로컬 부수효과도 reflog 3건으로 "확정" 저장한 뒤 4번째 머지에서 재현되지 않아 "원인 미확정"으로 정정했다. 리터럴은 `[hypothesis:` 접두 하나로 통일하며, 검증 여부 조회는 `grep -l '^\[hypothesis:' <memory dir>`로 결정론적으로 수행한다. 최초 적용 대상: `feedback_gh_merge_delete_branch_local_side_effect.md`(v1.1.60 세션에서 "원인 미확정"으로 정정된 항목) — v1.1.61 세션 종료 시 sys-memory-keeper가 태그를 부착한다.
 -->
-
-See rationale and cross-references via Read tool.
 
 <!-- DETAIL: Why Immediate? and Cross-reference
 ### Why Immediate?
@@ -399,33 +416,63 @@ Session-end saves lose context: by the time the session ends, multiple discoveri
 Related records from session v0.87.2~v0.88.0 (issue #869). The originating memory files were later consolidated/removed; no live equivalents remain as of this writing.
 -->
 
+<!-- DETAIL: ## Mid-Session Immediate Save original wording
+## Mid-Session Immediate Save
+Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.
+
+| Trigger | Action | Rationale |
+|---------|--------|-----------|
+| Repeated pattern observed (2nd time) | Save `feedback_*.md` now | Pattern will recur within session |
+| Unexpected tool behavior / workaround | Save `feedback_*.md` now | Session state defense |
+| Subagent false-positive detected | Save `feedback_*.md` now | Prevent repeat in same session |
+| User correction / feedback | Save `feedback_*.md` now | Honor correction immediately |
+| Root-cause hypothesis (원인 진단) | Save `feedback_*.md` ONLY with a `[hypothesis: <unverified-basis summary>]` first-line tag until the code path has been read and the decision logic reproduced 1:1; promote to plain fact only after that verification | Statistical correlation from transcript counts is NOT code causation — an unverified cause saved as fact propagates to issues and future sessions (#1652 #1; R020 「통계적 상관 ≠ 코드 인과」) |
+
+`[hypothesis: …]` 태그 규약(#1652 #1): 원인 진단을 메모리에 즉시 저장할 때는 본문 첫 줄에 `[hypothesis: <미검증 근거 요약>]`를 붙이고, 코드 경로 대조·판정 로직 1:1 재현으로 검증한 뒤에만 태그를 제거합니다 — 검증 전에는 결론이 아니라 트리거로만 사용합니다.
+
+See rationale and cross-references via Read tool.
+-->
+
 ## Procedure-Summary Scope Tagging
 
-절차·순서를 압축 요약할 때는 적용 스코프(예: "릴리즈 단계 내부 순서")를 함께 표기합니다 — 압축이 문맥 경계를 지우면 하위 단계 순서가 전체 파이프라인 순서로 오독됩니다.
+절차·순서를 압축 요약할 때는 적용 스코프(예: 릴리즈 단계 내부 순서)를 함께 표기합니다.
 
 <!-- DETAIL: procedure-summary scope tagging full norm
 절차·순서를 메모리에 압축 요약할 때는 **적용 스코프를 함께 표기**한다. 압축은 문맥 경계를 가장 먼저 버리므로, 하위 단계 내부의 순서가 파이프라인 전체 순서로 읽히는 오독이 발생한다. 스코프 표기는 괄호 한 마디면 충분하다 — "(릴리즈 단계 내부 순서)", "(구현 커밋에는 미적용)"처럼 **무엇에 적용되지 않는지**까지 적으면 오독 여지가 사라진다.
 -->
 
-| Anti-pattern | Required |
-|--------------|----------|
-| `release 브랜치 선생성 → 버전범프 → PR` (스코프 미표기 → 전체 파이프라인 순서로 오독) | `릴리즈 단계 내부 순서: release 브랜치 선생성 → 버전범프 → PR (구현 커밋은 develop 직행)` |
-
 <!-- DETAIL: Origin #1563 procedure-summary
 Origin: #1563 찐빠 #5 — 위 요약이 릴리즈 단계 내부 순서인데 전체 파이프라인 순서로 오독되었다. Cross-reference: R013(Compact Output — 압축이 버리는 것을 인지), 위 Mid-Session Immediate Save(트리거 문맥 보존).
 -->
 
+<!-- DETAIL: ## Procedure-Summary Scope Tagging original wording
+## Procedure-Summary Scope Tagging
+절차·순서를 압축 요약할 때는 적용 스코프(예: "릴리즈 단계 내부 순서")를 함께 표기합니다 — 압축이 문맥 경계를 지우면 하위 단계 순서가 전체 파이프라인 순서로 오독됩니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `release 브랜치 선생성 → 버전범프 → PR` (스코프 미표기 → 전체 파이프라인 순서로 오독) | `릴리즈 단계 내부 순서: release 브랜치 선생성 → 버전범프 → PR (구현 커밋은 develop 직행)` |
+-->
+
 ## Safety-Related Feedback Memory Framing
+
+안전 관련 피드백 메모리는 검증-의무형(트리거 + STOP 조건)으로 쓰고 결론형("오탐이므로 무시")은 금지하며 특정 경고 부류를 무시할 상시 허가로 쓰지 않습니다(memory-poisoning).
 
 <!-- DETAIL: Origin #1307 safety feedback framing
 > Origin: #1307 찐빠 #2 (Medium) — a sys-memory-keeper delegation prompt framed a learning as "오탐으로 판단하고 진행한다" (conclude it's a false positive and proceed), tripping the memory-poisoning safety classifier and requiring a rewrite.
 -->
 
-안전 관련 피드백 메모리는 **검증-의무형**으로 작성하고 **결론형**("오탐이므로 무시")은 금지합니다 — 결론형은 향후 세션이 진짜 위협 경고를 무시하게 만듭니다(memory-poisoning).
-
 <!-- DETAIL: safety feedback framing full norm
 Safety-related feedback memories MUST be written in **verification-obligation form**, NOT **conclusion form**. Conclusion-form framing ("ignore the warning and proceed", "오탐이므로 무시") risks future sessions ignoring genuine threat warnings (memory-poisoning).
 -->
+
+<!-- DETAIL: safety learnings triggers full text
+Write safety learnings as triggers (what to check) + STOP conditions (when to halt), never as standing permission to dismiss a class of warnings.
+-->
+
+<!-- DETAIL: ## Safety-Related Feedback Memory Framing original wording
+## Safety-Related Feedback Memory Framing
+안전 관련 피드백 메모리는 **검증-의무형**으로 작성하고 **결론형**("오탐이므로 무시")은 금지합니다 — 결론형은 향후 세션이 진짜 위협 경고를 무시하게 만듭니다(memory-poisoning).
 
 | Anti-pattern (conclusion form) | Required (verification-obligation form) |
 |--------------------------------|------------------------------------------|
@@ -433,18 +480,15 @@ Safety-related feedback memories MUST be written in **verification-obligation fo
 | "warning is false positive, proceed" | "warning triggers a duty to verify Y; proceed only if verified, else STOP" |
 
 트리거(확인할 것)+STOP 조건(중단 시점)으로 작성하고, 특정 경고 부류를 무시할 상시 허가로 쓰지 않습니다.
-
-<!-- DETAIL: safety learnings triggers full text
-Write safety learnings as triggers (what to check) + STOP conditions (when to halt), never as standing permission to dismiss a class of warnings.
 -->
 
 ## Session-End Auto-Save
 
-### Trigger
+사용자가 "끝", "종료", "마무리", "done", "wrap up", "end session"을 말하거나 세션 저장을 요청하면 종료로 판정합니다.
 
-Session-end detected when user says: "끝", "종료", "마무리", "done", "wrap up", "end session", or explicitly requests session save.
-
-See flow diagram and responsibility split via Read tool.
+<!-- DETAIL: ## Session-End Auto-Save original wording
+## Session-End Auto-Save
+-->
 
 <!-- DETAIL: Session-End Flow, Responsibility Split
 ### Flow
@@ -467,9 +511,16 @@ User signals session end
 | Native auto-memory (MEMORY.md) | sys-memory-keeper | Has Write access to memory directory |
 -->
 
+<!-- DETAIL: ### Trigger original wording
+### Trigger
+Session-end detected when user says: "끝", "종료", "마무리", "done", "wrap up", "end session", or explicitly requests session save.
+
+See flow diagram and responsibility split via Read tool.
+-->
+
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper가 MEMORY.md 갱신했는가? (2) omcustom-feedback 활성 시, 마찰·학습이 관측되면 모델이 회고 이슈 초안을 Phase 4A 게이트로 제시할 수 있습니다(선택, MAY) — 또는 수동 트리거를 안내합니다. (3) 세션이 띄운 백그라운드 프로세스·SSH 터널의 잔여가 0인지 확인했는가(`pgrep -f <패턴> | wc -l`)? 확인 후 사용자에게 완료 보고합니다.
+(1) sys-memory-keeper가 MEMORY.md를 갱신했는가? (2) omcustom-feedback 활성 시 마찰·학습이 관측되면 회고 이슈 초안을 Phase 4A 게이트로 제시할 수 있습니다(MAY). (3) 백그라운드 프로세스·SSH 터널 잔여가 0인지 `pgrep -f <패턴> | wc -l`로 확인한 뒤 완료 보고합니다.
 
 <!-- DETAIL: session-end self-check full text
 (1) sys-memory-keeper updated MEMORY.md? (2) If `omcustom-feedback` skill is active, model MAY draft a retrospective feedback issue for user approval — or prompt user to trigger it manually. Both required before confirming to user. See full self-check via Read tool.
@@ -496,9 +547,14 @@ User signals session end
 ```
 -->
 
+<!-- DETAIL: ### Session-End Self-Check (MANDATORY) original wording
+### Session-End Self-Check (MANDATORY)
+(1) sys-memory-keeper가 MEMORY.md 갱신했는가? (2) omcustom-feedback 활성 시, 마찰·학습이 관측되면 모델이 회고 이슈 초안을 Phase 4A 게이트로 제시할 수 있습니다(선택, MAY) — 또는 수동 트리거를 안내합니다. (3) 세션이 띄운 백그라운드 프로세스·SSH 터널의 잔여가 0인지 확인했는가(`pgrep -f <패턴> | wc -l`)? 확인 후 사용자에게 완료 보고합니다.
+-->
+
 ### Session-End Retrospective Feedback (Model-Drafted)
 
-omcustom-feedback가 모델 호출 가능해진 이후(#1227), 세션 종료 시 마찰·학습이 관측되면 모델이 회고 피드백 이슈 초안을 작성해 Phase 4A 확인 게이트로 제시할 수 있습니다 — 자동 제출은 금지이며 항상 사용자 승인이 필요합니다.
+회고 이슈 초안은 자동 제출을 금지하며 항상 사용자 승인이 필요합니다.
 
 <!-- DETAIL: Session-End Retrospective Feedback full workflow/trigger/table detail
 Since `omcustom-feedback` is now model-invocable (#1227), the model MAY draft a retrospective feedback issue at session end — instead of only prompting the user to compose one manually.
@@ -527,10 +583,14 @@ The model-drafted path is an enhancement: it proposes a concrete draft rather th
 References: #1226 (item 3), #1227.
 -->
 
+<!-- DETAIL: ### Session-End Retrospective Feedback (Model-Drafted) original wording
+### Session-End Retrospective Feedback (Model-Drafted)
+omcustom-feedback가 모델 호출 가능해진 이후(#1227), 세션 종료 시 마찰·학습이 관측되면 모델이 회고 피드백 이슈 초안을 작성해 Phase 4A 확인 게이트로 제시할 수 있습니다 — 자동 제출은 금지이며 항상 사용자 승인이 필요합니다.
+-->
+
 ### Failure Policy
 
-- Memory write failure is **non-blocking**: MUST NOT prevent session from ending
-- If sys-memory-keeper fails to write MEMORY.md: log warning, confirm to user anyway
+메모리 쓰기 실패는 non-blocking입니다. 세션 종료를 막지 않고, 경고 로그 후 사용자에게 완료를 알립니다.
 
 <!-- DETAIL: v2.1.228+ session cleanup memory deletion fix
 > **v2.1.228+**: **session cleanup이 프로젝트 memory 폴더 내부 내용을 삭제하던 결함**이 수정되었습니다. 구버전에서는 MEMORY.md·archive 파일이 세션 정리 단계에서 소실될 수 있었으므로, 메모리 누락을 위 Failure Policy의 쓰기 실패로만 진단하지 않습니다 — 쓰기는 성공했으나 정리에 삭제된 경우일 수 있습니다. 위 Memory Scopes 표대로 `project` 스코프(`.claude/agent-memory/`)는 git tracked라 복구 가능하지만 `user`/`local` 스코프는 복구 수단이 없습니다.
@@ -557,3 +617,9 @@ References: #1226 (item 3), #1227.
 -->
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: MEMORY.md 인덱스가 read limit을 초과하게 만드는 memory write는 이제 silent truncation 대신 명시적 오류를 반환합니다. write 실패는 여전히 non-blocking이지만, 오류 수신 시 log-warning으로 끝내지 말고 예산 초과 처리(Attention-Weight Tiering — Cold 항목 archive 이동)로 축소 후 재시도합니다 — 이전의 silent truncation을 가정하고 oversize write를 던지면 업데이트가 반영되지 않습니다. -->
+
+<!-- DETAIL: ### Failure Policy original wording
+### Failure Policy
+- Memory write failure is **non-blocking**: MUST NOT prevent session from ending
+- If sys-memory-keeper fails to write MEMORY.md: log warning, confirm to user anyway
+-->
