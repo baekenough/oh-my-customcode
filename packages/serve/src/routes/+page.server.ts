@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getAnalytics, type AnalyticsData } from '$lib/server/analytics';
+import { getAnalytics, type AnalyticsData } from '#lib/server/analytics.js';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
 

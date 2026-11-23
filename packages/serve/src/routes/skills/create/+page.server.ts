@@ -2,10 +2,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, access } from 'fs/promises';
 import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
-import { getProjectRoot, getSkills } from '$lib/server/data';
-import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '$lib/server/skill-generator';
-import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
+import { getProjectRoot, getSkills } from '#lib/server/data.js';
+import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '#lib/server/skill-generator.js';
+import { parseFrontmatter } from '#lib/server/frontmatter.js';
+import { isClaudeAvailable, generateSkillWithClaude } from '#lib/server/claude-cli.js';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();

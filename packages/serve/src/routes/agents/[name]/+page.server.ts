@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { getAgent } from '$lib/server/data';
-import { renderMarkdown } from '$lib/server/markdown';
+import { getAgent } from '#lib/server/data.js';
+import { renderMarkdown } from '#lib/server/markdown.js';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, parent }) => {

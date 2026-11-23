@@ -1,6 +1,6 @@
 import type { LayoutServerLoad } from './$types';
-import { getProjectRoot } from '$lib/server/data';
-import { findProjectsForServe } from '$lib/server/projects';
+import { getProjectRoot } from '#lib/server/data.js';
+import { findProjectsForServe } from '#lib/server/projects.js';
 
 export const load: LayoutServerLoad = async ({ url }) => {
 	const projects = await findProjectsForServe();

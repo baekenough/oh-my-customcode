@@ -2,9 +2,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, access } from 'fs/promises';
 import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
-import { getProjectRoot, getGuides } from '$lib/server/data';
-import { parseGuideNaturalLanguage, sanitizeGuideName } from '$lib/server/guide-generator';
-import { isClaudeAvailable, generateGuideWithClaude } from '$lib/server/claude-cli';
+import { getProjectRoot, getGuides } from '#lib/server/data.js';
+import { parseGuideNaturalLanguage, sanitizeGuideName } from '#lib/server/guide-generator.js';
+import { isClaudeAvailable, generateGuideWithClaude } from '#lib/server/claude-cli.js';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();
