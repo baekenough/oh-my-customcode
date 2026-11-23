@@ -5,10 +5,6 @@ model: claude-sonnet-5-5
 domain: universal
 memory: local
 effort: medium
-skills:
-  - npm-audit
-  - npm-publish
-  - npm-version
 tools:
   - Read
   - Write

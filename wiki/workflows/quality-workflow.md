@@ -1,7 +1,7 @@
 ---
 title: Quality Workflow
 type: workflow
-updated: 2026-11-14
+updated: 2026-11-23
 sources:
   - .claude/rules/MUST-sync-verification.md
   - .claude/rules/MUST-completion-verification.md
@@ -71,6 +71,8 @@ find .claude/skills -name "SKILL.md" | wc -l
 # Guide count
 find guides -mindepth 1 -maxdepth 1 -type d | wc -l
 ```
+
+For Count Sync the authoritative skill count is `ls -1d .claude/skills/*/ | wc -l`. `claude plugin validate` is a frontmatter-parse gate judged by its exit code (`.success` with `--json`); its `provides`/`contents` fields are not a skill count ([[r017]], #1988).
 
 ## Level 2: Completion Verification (R020)
 

@@ -1,0 +1,9 @@
+{
+  "conversation_id": "00000000-0000-0000-0000-000000000000",
+  "status": "SUCCESS",
+  "response": "{\"findings\":[],\"overall\":\"BUILD\",\"rationale\":\"only .response carries JSON here\"}",
+  "duration_seconds": 1,
+  "num_turns": 1,
+  "json_schema": {},
+  "usage": { "input_tokens": 0, "output_tokens": 0 }
+}

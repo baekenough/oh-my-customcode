@@ -1,6 +1,6 @@
 ---
 name: agora
-description: Use for decisions needing adversarial multi-round scrutiny from independent model vendors. Anonymized A/B/C rounds, rotating judge, consensus report.
+description: Use for decisions needing adversarial multi-round scrutiny from independent model vendors. Anonymized A/B/C rounds, rotating judge (with AGORA_AGY_ENABLE=1), consensus report.
 scope: core
 version: 1.0.0
 user-invocable: true
@@ -11,7 +11,7 @@ argument-hint: "<topic> [--attach <path>] [--max-rounds <N>] [--auto]"
 
 ## 개요
 
-`agora`는 하나의 설계·결정 주제를 3개 독립 벤더 CLI에게 익명 A/B/C 라벨로 검토시키고, 라운드마다 모델이 바뀌는 심판이 판정하는 다중턴 합의 스킬입니다. 라벨-벤더 매핑은 `SEALED/`에 격리되어 심판의 입력 경로에 오르지 않으며, 벤더 공개는 최종 보고서 생성 단계에서만 이루어집니다.
+`agora`는 (`AGORA_AGY_ENABLE=1`일 때) 하나의 설계·결정 주제를 3개 독립 벤더 CLI에게 익명 A/B/C 라벨로 검토시키고, 라운드마다 모델이 바뀌는 심판이 판정하는 다중턴 합의 스킬입니다. 라벨-벤더 매핑은 `SEALED/`에 격리되어 심판의 입력 경로에 오르지 않으며, 벤더 공개는 최종 보고서 생성 단계에서만 이루어집니다.
 
 **이 설계는 결정적 익명성을 주장하지 않습니다.** 목표는 "벤더 식별 불가"가 아니라 **"벤더 식별이 심판의 기본 관찰 경로에 놓이지 않음"** 수준입니다. 라벨 뒤에 벤더가 계속 숨겨진다고 가정하지 마십시오 — 남는 누출 경로는 [신뢰 경계](#신뢰-경계)에 열거되어 있습니다.
 
@@ -21,11 +21,13 @@ argument-hint: "<topic> [--attach <path>] [--max-rounds <N>] [--auto]"
 
 | 축 | 겹침 |
 |----|------|
-| 모델 ID | 없음 — 리뷰어는 `claude-opus-4-8`(`claude` CLI) / `omx` 기본 모델(`omx` CLI) / `gemini-3.1-pro-high`(`agy` CLI), 심판 슬롯은 1: `claude-opus-5-5`(`claude` CLI) / 2: `claude-opus-4-6-thinking`(`agy` CLI) / 3: `gpt-oss-120b-medium`(`agy` CLI) |
+| 모델 ID | 없음 — 리뷰어는 `claude-opus-4-8`(`claude` CLI) / `omx` 기본 모델(`omx` CLI) / `gemini-4-neon-high`(`agy` CLI), 심판 슬롯은 1: `claude-opus-5-5`(`claude` CLI) / 2: `claude-sonnet-5-5-high`(`agy` CLI) / 3: `gpt-oss-120b-medium`(`agy` CLI) |
 | CLI 바이너리 | **있음** — `claude` 바이너리는 `claude` 리뷰어와 심판 슬롯 1이, `agy` 바이너리는 `agy` 리뷰어와 심판 슬롯 2·3이 공유합니다 |
-| 모델 계열 | **있음** — 심판 3슬롯 중 2슬롯(`claude-opus-5-5`, `claude-opus-4-6-thinking`)이 `claude` 리뷰어의 모델(`claude-opus-4-8`)과 같은 Claude 계열입니다. 이 2슬롯은 CLI로는 각각 `claude`와 `agy`이므로 CLI 축과 계열 축은 서로 다른 모양으로 겹칩니다 |
+| 모델 계열 | **있음** — 심판 3슬롯 중 2슬롯(`claude-opus-5-5`, `claude-sonnet-5-5-high`)이 `claude` 리뷰어의 모델(`claude-opus-4-8`)과 같은 Claude 계열입니다. 이 2슬롯은 CLI로는 각각 `claude`와 `agy`이므로 CLI 축과 계열 축은 서로 다른 모양으로 겹칩니다 |
 
 따라서 "리뷰-판정 간 교차 오염이 없다"고 말할 수 있는 범위는 **모델 ID 단위까지**입니다. 같은 계열 모델이 공유하는 사전 학습 편향은 이 분리로 제거되지 않습니다.
+
+위 표의 `agy` 리뷰어와 심판 슬롯 2·3은 **기본으로 꺼져 있고** 환경변수 `AGORA_AGY_ENABLE=1`을 설정했을 때만 실행됩니다. 꺼진 기본 상태에서는 심판으로 시도되는 슬롯이 매 라운드 슬롯 1(`claude-opus-5-5`) 하나이므로 "라운드마다 모델이 바뀌는 심판"은 성립하지 않습니다. 이유와 한계는 [agy는 기본으로 꺼져 있습니다](#agy는-기본으로-꺼져-있습니다)를 참조하십시오.
 
 ## 라운드 파이프라인
 
@@ -94,7 +96,8 @@ bash agora.sh --report --session-dir <dir>
 | `AGORA_OUTPUT_ROOT` | `.claude/outputs/sessions` | 아티팩트 루트 |
 | `AGORA_TIMEOUT_SECS` | `300` | 리뷰어/심판 CLI 타임아웃 |
 | `AGORA_CLAUDE_BIN` | `claude` (PATH 탐색) | 리뷰어·심판의 Claude CLI 경로 오버라이드 |
-| `AGORA_AGY_BIN` | `agy` (PATH 탐색) | 리뷰어·심판의 agy CLI 경로 오버라이드 |
+| `AGORA_AGY_BIN` | `agy` (PATH 탐색) | 리뷰어·심판의 agy CLI 경로 오버라이드. `/`가 들어간 상대경로는 실행에 실패했고 리뷰어에서는 결측(리뷰 측정: `AGORA_AGY_BIN=relbin/agy` → `env: relbin/agy: No such file or directory` 2회, `agy exited 127 on attempt 1`·`… 2`, agy 호출 0회), 심판에서는 슬롯 실패(`run_judge` 코드 경로)로 처리됩니다 — 절대경로나 PATH 탐색 이름을 쓰십시오 |
+| `AGORA_AGY_ENABLE` | 없음 (agy 꺼짐) | 값이 정확히 `1`일 때만 agy 리뷰어와 agy 심판 슬롯을 시작합니다. [agy는 기본으로 꺼져 있습니다](#agy는-기본으로-꺼져-있습니다)를 참조하십시오 |
 | `AGORA_OMX_BIN` | **`/opt/homebrew/bin/omx` (절대 경로)** | 리뷰어 omx CLI 경로 오버라이드. 다른 셋과 달리 PATH를 탐색하지 않으므로, omx가 이 경로에 없는 머신에서는 반드시 설정해야 합니다 |
 | `AGORA_FORCE_TIMEOUT_FALLBACK` | `0` | **테스트 전용** — `gtimeout` 존재 여부와 무관하게 wait 기반 타임아웃 폴백 경로를 강제합니다. 운영 실행에서는 설정하지 마십시오 |
 | `AGORA_VERDICT_SCHEMA` | 스크립트 옆의 `verdict-schema.json` | **테스트 전용** — `judge.sh`가 검증에 쓰는 스키마 경로 대체. 존재하지 않는 경로를 가리켜 exit 68 경로를 재현하는 용도 |
@@ -103,19 +106,57 @@ bash agora.sh --report --session-dir <dir>
 
 ## 권한 우회 플래그 (실행 전 반드시 확인)
 
-**이 스킬은 리뷰어 벤더 CLI 중 둘을 권한 프롬프트를 건너뛰는 플래그와 함께 실행합니다.** 운영자 승인을 요구하지 않고 자동으로 붙으므로, 스킬을 돌리기 전에 이 사실을 알고 있어야 합니다.
+**이 스킬은 리뷰어 벤더 CLI 중 `claude` 하나를 `--enable-auto-mode` 플래그와 함께 실행합니다.** 운영자 승인을 요구하지 않고 자동으로 붙으므로, 스킬을 돌리기 전에 이 사실을 알고 있어야 합니다. `agy`에는 권한 우회 플래그를 붙이지 않으며, `agy`는 기본으로 꺼져 있습니다(아래 [agy는 기본으로 꺼져 있습니다](#agy는-기본으로-꺼져-있습니다)).
 
 | 호출 | CLI | 붙는 플래그 |
 |------|-----|-------------|
-| 리뷰어 | `claude` | `--enable-auto-mode` |
+| 리뷰어 | `claude` | `--enable-auto-mode` (후속 이슈 #1994) |
 | 리뷰어 | `omx` | 없음 |
-| 리뷰어 | `agy` | `--dangerously-skip-permissions` |
+| 리뷰어 | `agy` | **없음** — 빈 임시 cwd에서 실행되며 기본으로 꺼져 있습니다 |
 | 심판 슬롯 1 | `claude` | **없음** |
-| 심판 슬롯 2·3 | `agy` | **없음** |
+| 심판 슬롯 2·3 | `agy` | **없음** — 빈 임시 cwd에서 실행되며 기본으로 꺼져 있습니다 |
 
-**리뷰어에 붙는 이유**: 이 두 이름은 사용자 셸의 **별칭(alias)**이며 별칭 정의에 해당 플래그가 이미 들어 있습니다. 별칭은 비대화형 `bash script.sh` 실행에서 확장되지 않으므로, 스크립트가 명시적으로 붙이지 않으면 CLI가 대화형 실행과 다르게 동작합니다 — `claude`는 auto mode 없이 돌고, `agy`는 권한 프롬프트에서 멈춰 라운드 타임아웃(→ 결측)에 걸립니다. `omx`는 별칭이 아닌 실제 바이너리라 추가 플래그가 없습니다.
+**`claude` 리뷰어에 플래그가 붙는 이유**: `claude`는 사용자 셸의 **별칭(alias)**이며 별칭 정의에 `--enable-auto-mode`가 이미 들어 있습니다. 별칭은 비대화형 `bash script.sh` 실행에서 확장되지 않으므로, 스크립트가 명시적으로 붙이지 않으면 `claude`는 auto mode 없이 돕니다. `omx`는 별칭이 아닌 실제 바이너리라 추가 플래그가 없습니다. `agy`도 사용자 셸의 별칭이고 별칭 정의에 권한 우회 플래그가 들어 있는 점은 같지만, 스크립트는 그 플래그를 일부러 붙이지 않습니다(#1985).
 
-**심판에는 붙지 않습니다 — 비대칭은 실재합니다.** `judge.sh`는 같은 두 CLI를 호출하면서 두 플래그를 모두 생략하며, 심판 CLI에 넘어가는 인자는 `-p --model` (그리고 `agy`의 경우 `--output-format json --json-schema`)와 프롬프트 문자열뿐입니다. 스크립트 주석은 리뷰어 쪽 플래그의 근거만 적고 심판 쪽 생략의 근거는 적지 않으므로, **여기서는 관측된 사실만 기술합니다**: 심판은 리뷰어보다 낮은 도구 권한으로 실행되며, 심판이 권한 프롬프트를 띄우는 환경에서는 그 슬롯이 타임아웃되어 로테이션이 다음 슬롯으로 전진합니다(3슬롯 모두 그러면 exit `4`). 이 비대칭은 심판이 익명 번들 외의 자료에 손대지 못하게 하는 방향과는 정합하지만, 코드가 그 의도를 명시하지는 않았습니다.
+**심판에는 붙지 않습니다 — `claude` 리뷰어와 `claude` 심판 사이의 비대칭은 실재합니다.** `judge.sh`는 `claude` 슬롯을 `-p --model <모델> <프롬프트>`로, `agy` 슬롯을 `--model <모델> --output-format json --json-schema <스키마 사본> -p <프롬프트>`로 호출하며 어느 쪽에도 권한 우회 플래그를 붙이지 않습니다. `judge.sh` 주석은 생략의 근거를 적고 있습니다: 심판의 유일한 정당한 입력은 익명 번들이며, 우회 플래그는 심판 CLI가 권한 프롬프트 없이 파일시스템에 손대게 하는데 그것이 이 스킬의 봉인이 막으려는 일이기 때문입니다(봉인 매핑 디렉토리에 라벨-벤더 기록이 있습니다). `agy`에는 이 근거가 성립하지 않습니다(`claude` 심판의 실제 읽기 범위는 측정하지 않았습니다 — [한계 2](#신뢰-경계)). `agy`는 플래그 없이도 헤드리스 기본 모드에서 파일 쓰기·읽기·셸 실행이 가능하므로, `agy` 슬롯을 켜면 이 경계가 지켜지지 않습니다. 심판이 권한 프롬프트를 띄우는 환경에서는 그 슬롯이 타임아웃되어 로테이션이 다음 슬롯으로 전진하며, 시도한 슬롯이 모두 실패하면 exit `4`입니다. 이때 플래그를 추가하지 말고 CLI 자체의 권한 상태를 확인하십시오.
+
+### agy는 기본으로 꺼져 있습니다
+
+`agy` 리뷰어와 `agy` 심판 슬롯(2·3)은 환경변수 `AGORA_AGY_ENABLE`의 값이 **정확히 `1`**일 때만 시작됩니다. `true`, `0`, 빈 값, 앞에 공백이 붙은 ` 1`, `yes`는 꺼짐입니다. 이 변수는 `AGORA_` 접두사이므로 [벤더 호출 환경 정화](#벤더-호출-환경-정화)가 자식 CLI에서 제거합니다.
+
+**꺼져 있는 이유**: agy 1.5.15 프로브(권한 우회 플래그·`--mode`·`--sandbox` 없음, 새 빈 cwd, `OLDPWD`·`PWD`와 이름이 `CLAUDE`로 시작하는 변수를 뺀 env)에서 `gemini-4-neon-high`와 `claude-sonnet-5-5-high` 모두 cwd 밖 절대경로에 파일을 썼고, cwd 밖 파일의 내용을 응답에 읽어 왔으며, 셸 명령을 실행했습니다. 승인 프롬프트는 없었습니다. 모델·능력마다 1회씩인 비결정적 표본입니다. agy 변경 기록은 헤드리스 `-p`의 기본 모드를 Auto Agent Mode로 적고 있습니다(변경 기록 인용이며 이 저장소에서 재측정하지 않았습니다). 따라서 `agy`를 켜는 것은 세션 트리가 있는 파일시스템에 대해 외부 모델에게 이 능력을 주는 것이고, 빈 임시 cwd와 환경변수 정리는 위치 단서를 줄일 뿐 **샌드박스가 아닙니다**.
+
+꺼져 있으면 리뷰어 단계는 라운드마다 1줄을, 심판 단계는 건너뛴 슬롯마다 1줄을 stderr에 남깁니다(`N`은 라운드 번호).
+
+```
+[agora] agy reviewer disabled by default (opt in with AGORA_AGY_ENABLE=1); counted as missing for round N
+[agora] judge agy:<model> skipped for round N: agy disabled by default (opt in with AGORA_AGY_ENABLE=1)
+```
+
+켜져 있으면 라운드마다 리뷰어 단계와 심판 단계가 각각 다음 경고를 stderr에 남깁니다.
+
+```
+[agora] WARNING: agy reviewer enabled (AGORA_AGY_ENABLE=1) for round N: agy can write, read and run shell commands outside its empty per-attempt cwd; the empty cwd and env strip are not a sandbox
+[agora] WARNING: agy judge slots enabled (AGORA_AGY_ENABLE=1) for round N: agy can write, read and run shell commands outside its empty per-attempt cwd; the empty cwd and env strip are not a sandbox
+```
+
+**켠 경우의 호출 형태**:
+
+- 신원: 리뷰어 `agy:gemini-4-neon-high`, 심판 슬롯 2 `agy:claude-sonnet-5-5-high`, 슬롯 3 `agy:gpt-oss-120b-medium`입니다. 심판 슬롯 모델은 리뷰어 모델과 겹치지 않습니다(REQ-3).
+- 인자: `--model <모델> --output-format json --json-schema <시도별 스키마 사본> -p <프롬프트>`입니다. 권한 우회 플래그와 `--mode`는 없습니다.
+- 시도마다 새 빈 임시 디렉토리에서 실행하며(서브셸 안 `cd`), 자식 env에서 `OLDPWD`와 이름이 `CLAUDE`로 시작하는 변수를 제거하고 `PWD`를 그 임시 디렉토리로 설정합니다. 임시 디렉토리와 스키마 사본은 시도가 끝날 때 지웁니다.
+- 응답: `--output-format json`이 만드는 봉투가 단일 JSON object이고 `.status`가 `"SUCCESS"`이며 `.structured_output`이 object일 때만 그 `.structured_output`을 수용합니다. `.response`는 파싱하지 않으며, 이 조건을 어기면 리뷰어는 해당 시도가 실패하고 심판은 슬롯이 실패합니다. `SEALED/raw/round-N/agy.json`에는 해제된 object만 남고 봉투 필드(`conversation_id`, `usage` 등)는 남지 않습니다.
+
+**꺼져 있을 때의 한계**:
+
+- 리뷰어: `agy`는 시작하지 않고 재시도 없이 결측으로 셉니다. 따라서 `claude`와 `omx` 중 하나만 결측이어도 결측이 2가 되어 `2 or more reviewers missing`과 함께 exit `3`으로 라운드가 중단됩니다. 둘 다 응답해도 하나가 스키마를 위반하면 `anonymize.sh`의 유효 응답 2개 하한(`valid reviewer response(s); 2 or more are required`)에 걸려 같은 exit `3`입니다.
+- 심판: 로테이션의 `agy` 슬롯 2개를 건너뛰므로 매 라운드 슬롯 1(`claude-opus-5-5`)만 시도하고, 그 슬롯이 실패하면 exit `4`입니다. 라운드마다 바뀌는 심판(REQ-3 로테이션)은 켜져 있을 때만 성립합니다.
+
+**켠 경우의 한계**(모두 후속 이슈 #1994로 연기했습니다):
+
+- 빈 cwd, `OLDPWD`·`PWD`·`CLAUDE*` 제거, 스키마 사본은 경계가 아닙니다. 리뷰어 프롬프트에는 첨부 본문이 인라인되고 첨부 경로 헤더(`--- <경로> ---`)가 함께 들어가며(`agora.sh`의 `build_reviewer_prompt`), 스크립트 자신의 명령줄에는 위 [라운드 파이프라인](#라운드-파이프라인) 표대로 세션 경로가 인자로 들어 있습니다. `agy`가 이 명령줄을 읽을 수 있는지(`ps` 등)는 측정하지 않았습니다 [가설].
+- TERM·INT·HUP·KILL 신호로 중단되면 `agora-agy.*`, `agora-schema.*`, `agora-agyout.*` 임시 경로가 남을 수 있고, `gtimeout` 분기에서는 `agy` 프로세스도 남을 수 있습니다 [가설: `gtimeout` 분기는 측정하지 않았습니다].
+- `AGORA_AGY_BIN`에 `/`가 들어간 상대경로를 주면 실행에 실패하고 리뷰어에서는 결측(리뷰 측정), 심판에서는 슬롯 실패(`run_judge` 코드 경로)로 처리됩니다. 환경변수 표를 참조하십시오.
 
 ## 종료 코드
 
@@ -126,18 +167,18 @@ bash agora.sh --report --session-dir <dir>
 | `0` | 전부 | 성공 | — |
 | `1` | `anonymize.sh` | **지문 검출** — 검사 대상 텍스트에서 금칙 패턴이 걸림. 익명성 파기를 막기 위한 하드 스톱 | 아니오 |
 | `3` | `reviewers.sh` · `anonymize.sh` | **유효 리뷰어 2인 미만**으로 라운드 중단. 두 스크립트가 같은 코드를 쓰는 것은 의도적이며, 어느 단계에서 걸렸는지는 stderr로 구분합니다(아래 [결측 판정](#결측-판정은-2단계입니다)) | 아니오 |
-| `4` | `judge.sh` | 심판 로테이션 3슬롯이 **전부** 실패 — CLI 실패·타임아웃·JSON 파싱 실패·스키마 위반을 모두 포함 | 아니오 (로테이션 대체까지가 이미 시도의 전부) |
+| `4` | `judge.sh` | 심판 로테이션에서 시도한 슬롯이 **전부** 실패 — 켠 경우에는 3슬롯 전부, `agy`가 꺼진 기본 상태에서는 슬롯 1 하나가 대상이며, CLI 실패·타임아웃·JSON 파싱 실패·스키마 위반을 모두 포함 | 아니오 (로테이션 대체까지가 이미 시도의 전부) |
 | `64` | 전부 | 사용법 오류 — 미지의 옵션, 필수 플래그 누락, `--extra-agenda`가 JSON 배열이 아님, `--set-stop`의 코드 누락·미지 코드·`CONTINUE` | 아니오 |
 | `65` | `anonymize.sh` | 직전 라운드의 sealed 데이터가 **존재하는데 파싱 불가**(무결성 문제) 또는 미지의 벤더 식별자. `1`(지문)과 일부러 구분합니다 — "번들이 벤더를 누출할 뻔했다"와 "직전 라운드 데이터가 손상됐다"는 운영자 대응이 다릅니다 | 아니오 |
 | `66` | `agora.sh` · `judge.sh` | 입력 부재 — 세션 디렉토리를 찾을 수 없음(`agora.sh`) / `--anon-file`이 없음(`judge.sh`) | 아니오 |
 | `68` | `judge.sh` | **설정 오류** — `verdict-schema.json`을 읽거나 파싱할 수 없음. 심판의 실패가 아니라 배포 설정의 결함이므로 재시도해도 같은 원인으로 즉시 재실패합니다 | 아니오 |
 | `73` | `agora.sh` | **기록 실패** — `state.json` 또는 `report.md`를 쓸 수 없음. 아래 별항 참조 | 아니오 |
 
-내부 전용 코드: `124`(타임아웃)는 `run_with_timeout`이 GNU `timeout` 관례에 맞춰 정규화한 값이며 **호출자에게 그대로 노출되지 않습니다** — 리뷰어에서는 결측으로(→ `3`), 심판에서는 로테이션 전진으로(→ `4`) 흡수됩니다. `reviewers.sh`/`judge.sh`의 `65`(미지 CLI 슬러그)도 로스터가 하드코딩이라 실제로는 도달하지 않습니다.
+내부 전용 코드: `124`(타임아웃)는 `run_with_timeout`이 GNU `timeout` 관례에 맞춰 정규화한 값이며 **호출자에게 그대로 노출되지 않습니다** — 리뷰어에서는 결측으로(→ `3`), 심판에서는 로테이션 전진으로(→ `4`) 흡수됩니다. `reviewers.sh`/`judge.sh`의 `65`(미지 CLI 슬러그)도 로스터가 하드코딩이라 실제로는 도달하지 않습니다. `_invoke_agy`의 `65`(봉투 검증 실패)와 `70`(임시 경로 준비·정리 실패)은 리뷰어에서는 시도 실패로, 심판에서는 슬롯 실패로 흡수되며 호출자에게 그대로 노출되지 않습니다.
 
 ### exit 73 — 라운드는 돌았는데 기록되지 않음
 
-`73`(EX_CANTCREAT)은 다른 코드와 성격이 완전히 다릅니다. 여기까지 왔다는 것은 **리뷰어 3벤더와 심판이 이미 호출되어 과금까지 끝났다**는 뜻이고, 실패한 것은 그 결과를 `state.json`(또는 `report.md`)에 남기는 마지막 단계뿐입니다.
+`73`(EX_CANTCREAT)은 다른 코드와 성격이 완전히 다릅니다. 여기까지 왔다는 것은 **리뷰어 3벤더(`AGORA_AGY_ENABLE=1`일 때)와 심판이 이미 호출되어 과금까지 끝났다**는 뜻이고, 실패한 것은 그 결과를 `state.json`(또는 `report.md`)에 남기는 마지막 단계뿐입니다.
 
 오케스트레이터의 대응:
 
@@ -153,7 +194,7 @@ bash agora.sh --report --session-dir <dir>
 
 | 단계 | 스크립트 | 무엇을 결측으로 세는가 |
 |------|----------|----------------------|
-| 1 | `reviewers.sh` | CLI가 응답하지 못한 벤더 — 타임아웃(124), 비영 종료, **구문상 JSON이 아닌 출력**. 각 벤더는 2회 시도(최초 + 재시도 1회) 후 결측 처리되며, 결측 벤더는 파일을 아예 남기지 않습니다. 2개 이상 결측이면 exit 3 |
+| 1 | `reviewers.sh` | CLI가 응답하지 못한 벤더 — 타임아웃(124), 비영 종료, **구문상 JSON이 아닌 출력**. 각 벤더는 2회 시도(최초 + 재시도 1회) 후 결측 처리되며, 결측 벤더는 파일을 아예 남기지 않습니다. 2개 이상 결측이면 exit 3. `agy`가 꺼진 기본 상태에서는 `agy`가 시작 없이 결측으로 세어지므로 나머지 둘 중 하나만 결측이어도 해당합니다 |
 | 2 | `anonymize.sh` | 파일이 없거나, 있어도 **응답 스키마 계약을 위반**한 벤더(`overall` enum, `findings[]`의 `severity`/`verdict` enum, 빈 문자열 금지 필드 등). 이 검사는 `reviewers.sh`가 통과시킨 뒤에 걸리므로 별도 하한이 필요합니다 — 유효 응답이 2 미만이면 exit 3 |
 
 2단계 하한이 없으면 "1개 유효 + 2개 스키마 위반"이 리뷰어 1인짜리 번들을 만들고, 심판이 단일 의견을 놓고 합의를 판정하게 됩니다. 두 단계의 코드가 같으므로 운영자에게 보이는 의미("리뷰어 부족으로 라운드 중단")는 어느 쪽이 걸렸든 동일하며, 구분이 필요하면 stderr 메시지를 보십시오 — 1단계는 `2 or more reviewers missing`, 2단계는 `valid reviewer response(s); 2 or more are required`입니다.
@@ -168,7 +209,7 @@ bash agora.sh --report --session-dir <dir>
 | **선언 타입 일치** | 스키마가 배열로 선언한 `agenda`에 `"1. 단일 의제"` 문자열이 옴 |
 | enum 값(`consensus`·`verdict`) | `verdict: "MERGE"` |
 
-셋 중 하나라도 걸리면 그 슬롯은 실패로 처리되어 **로테이션이 다음 슬롯으로 전진**하고, 3슬롯이 모두 소진되면 exit `4`입니다. 타입 검사가 특히 중요한 이유는, 타입이 틀린 `agenda`가 검증을 통과해 저장되면 다음 라운드의 `jq '. + $extra'` 병합이 죽고 → 의제가 빈 값으로 붕괴하고 → 리뷰어 프롬프트에 의제 섹션이 **비어 있는 채로** 3벤더가 전부 호출·과금된 뒤에야 문제가 드러나기 때문입니다.
+셋 중 하나라도 걸리면 그 슬롯은 실패로 처리되어 **로테이션이 다음 슬롯으로 전진**하고, 시도한 슬롯이 모두 소진되면 exit `4`입니다. 타입 검사가 특히 중요한 이유는, 타입이 틀린 `agenda`가 검증을 통과해 저장되면 다음 라운드의 `jq '. + $extra'` 병합이 죽고 → 의제가 빈 값으로 붕괴하고 → 리뷰어 프롬프트에 의제 섹션이 **비어 있는 채로** 3벤더(`AGORA_AGY_ENABLE=1`일 때)가 전부 호출·과금된 뒤에야 문제가 드러나기 때문입니다.
 
 ## 사용자 게이트
 
@@ -242,8 +283,8 @@ Consensus: MAJORITY          Verdict: BUILD_WITH_CHANGES
 
 | 단계 | 실행 형태 | 최악 벽시계 (`AGORA_TIMEOUT_SECS`=300 기준) |
 |------|-----------|-------------------------------------------|
-| 리뷰어 | 3벤더 **병렬 팬아웃**(`&` + `wait`), 벤더당 최초 1회 + 재시도 1회 | 300초 × 2시도 = **600초**. 벤더 수는 벽시계에 곱해지지 않습니다 |
-| 심판 | 로테이션 3슬롯 **순차** 시도 | 300초 × 3슬롯 = **900초** |
+| 리뷰어 | 3벤더(`AGORA_AGY_ENABLE=1`일 때) **병렬 팬아웃**(`&` + `wait`), 벤더당 최초 1회 + 재시도 1회 | 300초 × 2시도 = **600초**. 벤더 수는 벽시계에 곱해지지 않습니다 |
+| 심판 | 로테이션 3슬롯(`AGORA_AGY_ENABLE=1`일 때) **순차** 시도 | 300초 × 3슬롯 = **900초** |
 | 라운드 합계 | 두 단계는 순차 | **약 1500초 ≈ 25분** |
 
 기본 상한 5라운드를 `--auto`로 끝까지 돌면 최악 약 2시간이며, 게이트가 없으므로 이 지연이 중단 없이 누적됩니다. (게이트가 표시하는 `참고: 심판 로테이션 3슬롯 순차 재시도 시 최악 약 15분`은 **심판 단계만**의 값이며 라운드 전체가 아닙니다.)
@@ -273,7 +314,9 @@ Consensus: MAJORITY          Verdict: BUILD_WITH_CHANGES
 
 **한계 2 — 격리 자체가 강제되지 않음**: 이 격리는 **관례이지 하드 블록이 아닙니다**. 오케스트레이터도 심판 CLI도 `SEALED/`를 읽는 파일 읽기 능력 자체는 갖고 있습니다 — 읽지 못하는 것이 아니라 읽지 않도록 설계된 것입니다. PreToolUse 훅으로 `SEALED/` 경로 Read를 하드 블록하는 방안은 검토했으나, 훅은 프로젝트 전역에 영향을 주므로 초기 도입에서는 제외했습니다(위반율 관측 시 R021 Hard Enforcement Candidates 승격 검토 대상). 실질 방어선은 아래 지문 검사이며, 이는 "누출이 발생했는가"를 사후 탐지할 뿐 "누출을 시도할 수 없게" 만들지는 않습니다.
 
-**한계 3 — 자식 CLI가 cwd를 상속함**: 벤더·심판 CLI는 `AGORA_*` 환경변수를 제거한 채 실행되지만(아래 [벤더 호출 환경 정화](#벤더-호출-환경-정화)), **작업 디렉토리는 상속합니다**. 기본 출력 루트 `AGORA_OUTPUT_ROOT`가 상대경로(`.claude/outputs/sessions`)이므로, 상속받은 cwd에서 `.claude/outputs/sessions/**`를 훑으면 세션 트리 — `SEALED/` 포함 — 에 도달할 수 있습니다. 환경 정화는 "세션 좌표를 **건네주지** 않는다"를 보장할 뿐 "찾을 수 **없게** 한다"를 보장하지 않습니다. 절대경로 `AGORA_OUTPUT_ROOT`를 세션 트리 밖으로 지정하면 이 경로는 좁아지지만, cwd 상속 자체는 남습니다.
+**한계 3 — `claude`·`omx` 자식은 cwd를 상속하고, `agy`의 빈 cwd는 경계가 아님**: 벤더·심판 CLI는 `AGORA_*` 환경변수를 제거한 채 실행되지만(아래 [벤더 호출 환경 정화](#벤더-호출-환경-정화)), `claude` 리뷰어·`claude` 심판·`omx`는 **작업 디렉토리를 상속합니다**. 기본 출력 루트 `AGORA_OUTPUT_ROOT`가 상대경로(`.claude/outputs/sessions`)이므로, 상속받은 cwd에서 `.claude/outputs/sessions/**`를 훑으면 세션 트리 — `SEALED/` 포함 — 에 도달할 수 있습니다. 환경 정화는 세션 좌표를 **건네주지** 않는 것까지만 보장하고, 찾을 수 **없게** 하는 것은 보장하지 않습니다. 절대경로 `AGORA_OUTPUT_ROOT`를 세션 트리 밖으로 지정하면 이 경로는 좁아지지만, cwd 상속 자체는 남습니다.
+
+`agy`(켠 경우)는 시도마다 새 빈 임시 디렉토리에서 시작하므로 상속받은 cwd를 통해 세션 트리에 닿는 경로는 줄어듭니다. 그러나 이것은 경계가 아닙니다. 빈 cwd와 `OLDPWD`·`PWD`·`CLAUDE*` 정리는 수동적인 위치 단서를 줄일 뿐이고, 켠 `agy`는 cwd 밖 절대경로에 쓰고 읽고 셸 명령을 실행할 수 있습니다. 리뷰어 프롬프트에는 첨부 경로가, 스크립트 명령줄에는 세션 경로가 남습니다. 이 때문에 `agy`는 기본으로 꺼져 있으며, 상세와 후속 이슈 #1994는 [agy는 기본으로 꺼져 있습니다](#agy는-기본으로-꺼져-있습니다)에 있습니다.
 
 ### 지문 검사
 
@@ -300,7 +343,7 @@ Consensus: MAJORITY          Verdict: BUILD_WITH_CHANGES
 | 2. 영어 일반 단어와 겹치는 모델 계열명 | `opus` `sonnet` `haiku` `flash` | **두 형태에서만** — (a) 버전 인접(`Opus 4.8`, `sonnet-5`, `flash 2.0`) (b) 비ASCII 문자 인접(`Sonnet 관점에서`). 맨 단어를 막으면 정상 리뷰 산문("magnum opus", "flash memory")에서 중단됩니다 |
 | 3. 봉인 경로 형태 | `SEALED/` `/mapping/` `raw/round-` | 부분 문자열 |
 
-실제로 이 세션에서 쓰이는 모델 ID는 전부 계층 1에 걸립니다 — `claude-opus-4-8`/`claude-opus-5-5`/`claude-opus-4-6-thinking`은 `claude`로, `gemini-3.1-pro-high`는 `gemini`로, `gpt-oss-120b-medium`은 `gpt`로, `omx:default`는 `omx`로 걸립니다.
+실제로 이 세션에서 쓰이는 모델 ID는 전부 계층 1에 걸립니다 — `claude-opus-4-8`/`claude-opus-5-5`/`claude-sonnet-5-5-high`는 `claude`로, `gemini-4-neon-high`는 `gemini`로, `gpt-oss-120b-medium`은 `gpt`로, `omx:default`는 `omx`로 걸립니다.
 
 **감수한 미탐(false negative)**: 버전도 한글 인접도 없이 영어 산문 안에 놓인 맨 모델 계열명 — 예: `Sonnet would argue` — 은 `sonnet-length prose` 와 정규식으로 구별할 수 없어 **통과합니다**. **감수한 오탐(false positive)**: `flash 메모리` 같은 한영 혼용 기술 용어는 계층 2-(b)에 걸려 라운드를 중단시킵니다. 오탐은 시끄럽고 복구 가능하지만 미탐은 조용히 익명성을 깨므로, 과차단 쪽을 택한 결과입니다.
 
@@ -310,9 +353,9 @@ Consensus: MAJORITY          Verdict: BUILD_WITH_CHANGES
 
 `reviewers.sh`와 `judge.sh`는 자식 CLI를 실행할 때 **접두사 `AGORA_`로 시작하는 모든 환경변수를 제거**합니다(`env -u`, 실제 export된 이름을 `compgen -e`로 수집하므로 이름 목록 하드코딩이 아님). 스크립트가 그 값을 넘기지 않는다는 것만으로는 부족했기 때문입니다 — 운영자 셸에 `AGORA_OUTPUT_ROOT`가 export되어 있으면 그 값이 `agora.sh`를 거쳐 모든 벤더 CLI에 그대로 상속되고, 세션 트리(봉인 기록 포함)는 그 아래 한 단계입니다.
 
-`AGORA_` 밖의 변수는 건드리지 않습니다 — `PATH`·`HOME`과 벤더 자신의 인증 토큰·프록시 설정은 그대로 살아 있어야 CLI가 인증할 수 있습니다. 읽는 시점과 넘기는 시점은 분리되어 있어, 스크립트 자신은 계속 `AGORA_TIMEOUT_SECS` 등을 평범한 셸 변수로 사용합니다(테스트 주입 설정이 여전히 동작하는 이유).
+`AGORA_` 밖의 변수는 건드리지 않습니다 — `PATH`·`HOME`과 벤더 자신의 인증 토큰·프록시 설정은 그대로 살아 있어야 CLI가 인증할 수 있습니다. 예외는 `agy` 자식(켠 경우)입니다: `OLDPWD`와 이름이 `CLAUDE`로 시작하는 변수를 추가로 제거하고 `PWD`를 빈 임시 cwd로 설정합니다(`cd`만으로는 호출자의 디렉토리가 `OLDPWD`·`PWD` 중 하나로 넘어가기 때문입니다). 읽는 시점과 넘기는 시점은 분리되어 있어, 스크립트 자신은 계속 `AGORA_TIMEOUT_SECS` 등을 평범한 셸 변수로 사용합니다(테스트 주입 설정이 여전히 동작하는 이유).
 
-**이 정화가 덮지 못하는 것은 cwd입니다 — 위 [한계 3](#신뢰-경계)을 참조하십시오.**
+**이 정화가 덮지 못하는 것은 `claude`·`omx`의 cwd 상속과 `agy`의 절대경로 접근입니다 — 위 [한계 3](#신뢰-경계)을 참조하십시오.**
 
 ## R010 위임 구조
 

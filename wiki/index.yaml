@@ -203,7 +203,7 @@ pages:
       summary: "Quantitative trajectory-based agent evaluation using 4-metric framework (correctness/step_ratio/tool_call_ratio/latency_ratio) with ideal trajectory annotation and phased gate workflow."
     - file: skills/agora.md
       title: "Agora"
-      summary: "Multi-round anonymized adversarial consensus review across three independent model vendors, judged by a rotating model"
+      summary: "Multi-round anonymized adversarial consensus review across three independent model vendors, judged by a rotating model (when AGORA_AGY_ENABLE=1; agy is off by default)"
     - file: skills/airflow-best-practices.md
       title: "Airflow Best Practices"
       summary: "Apache Airflow best practices for DAG authoring, testing, and production deployment"

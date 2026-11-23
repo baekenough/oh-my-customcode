@@ -8,7 +8,6 @@ effort: medium
 skills:
   - impeccable-design
   - web-design-guidelines
-  - diagram-design
 tools: [Read, Write, Edit, Grep, Glob]
 disallowedTools: [Bash]
 limitations:

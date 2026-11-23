@@ -57,10 +57,10 @@ done < <(compgen -e 2>/dev/null | grep '^AGORA_' || true)
 unset _agora_env_name
 
 # spec REQ-3 rotation roster: three slots, disjoint from the reviewer
-# roster by model (reviewers.sh uses claude-opus-4-8 and gemini-3.1-pro-high).
+# roster by model (reviewers.sh uses claude-opus-4-8 and gemini-4-neon-high).
 JUDGE_ROTATION=(
   'claude:claude-opus-5-5'
-  'agy:claude-opus-4-6-thinking'
+  'agy:claude-sonnet-5-5-high'
   'agy:gpt-oss-120b-medium'
 )
 
@@ -184,18 +184,18 @@ run_sanitized() {
 # (itself built from nothing but the anonymous bundle) — no session path, no
 # material beyond the bundle itself.
 #
-# Deliberate asymmetry with reviewers.sh: neither branch below passes the
-# permission-bypass flag reviewers.sh's invoke_vendor() adds for the SAME
-# CLI (claude's --enable-auto-mode, agy's --dangerously-skip-permissions —
-# Ruling 12, reviewers.sh:164-183). This is not a missed flag; it is the
-# boundary. The judge's only legitimate input is the anonymous bundle
-# (--anon-file, read by run_judge and turned into argv above) — a
-# permission-bypass flag would let the judge CLI touch the filesystem
-# without prompting, and that access is exactly what this skill's sealing
-# exists to deny: the sealed mapping directory holds the label-to-vendor
-# record the judge must never read. reviewers.sh's reviewers legitimately
-# need filesystem access for their own work (reading the code under
-# review); the judge only judges the anonymous bundle, so it needs none.
+# No branch passes a permission-bypass flag, and this is not a
+# missed flag: the judge's only legitimate input is the anonymous bundle
+# (--anon-file, turned into argv above), and a bypass flag would let the
+# judge CLI touch the filesystem without prompting — what this skill's
+# sealing exists to deny (the sealed mapping directory holds the
+# label-to-vendor record the judge must never read). Not measured for claude;
+# false for agy: agy in its headless default mode reads, writes and runs shell
+# commands with no flag at all (#1985), so agy slots run only when opted in
+# (AGORA_AGY_ENABLE=1, see _agy_enabled). reviewers.sh now passes agy no
+# bypass flag either; its claude --enable-auto-mode stays (follow-up #1994).
+# Reviewers need no filesystem access: attachments are inlined into their
+# prompt (agora.sh build_reviewer_prompt).
 #
 # Named in prose, never as a path literal, and not by accident: a source
 # guard in tests/unit/skills/agora-scripts.test.ts asserts this file
@@ -224,13 +224,183 @@ invoke_judge() {
         -p --model "$model" "$prompt"
       ;;
     agy)
-      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
-        -p --model "$model" --output-format json \
-        --json-schema "$VERDICT_SCHEMA" "$prompt"
+      # #1985: the prompt is the value of -p (it used to trail a bare -p and
+      # agy rejected the argv). Reached only when opted in (run_judge skips
+      # agy slots unless _agy_enabled).
+      _invoke_agy "$model" "$VERDICT_SCHEMA" "$prompt"
       ;;
     *) return 65 ;;
   esac
 }
+
+# ---------------------------------------------------------------------------
+# agy is OFF by default (#1985). AGORA_AGY_ENABLE=1 (that exact value) opts
+# in; any other value or no value leaves it off, and run_judge then skips
+# both agy rotation slots, so every round tries the claude slot alone.
+#
+# Why off: with agy 1.5.15 in its headless default mode, no bypass flag and
+# no --mode, the model was observed writing files outside its cwd, reading
+# files outside its cwd and running shell commands. Turning agy on hands an
+# external model those abilities over material that contains session paths.
+# The empty cwd, the OLDPWD/PWD/CLAUDE* env strip and the schema copy below
+# only remove passive location hints; none of them is a sandbox.
+#
+# The switch is read here as an ordinary shell variable. It is AGORA_-
+# prefixed, so _child_env_strip removes it from the judge child as well.
+# The helpers below are kept self-contained (same code as reviewers.sh),
+# matching this directory's convention of scripts that do not import one
+# another.
+# ---------------------------------------------------------------------------
+_agy_enabled() {
+  [ "${AGORA_AGY_ENABLE:-}" = "1" ]
+}
+
+# ---------------------------------------------------------------------------
+# _agy_remove <cwd|schema|out> <path> — delete one per-attempt path, only if
+# it still matches the mktemp template it was made from (cwd: agora-agy.*,
+# schema: agora-schema.*, out: agora-agyout.*). A mismatch deletes nothing
+# and returns 70. `rm -rf -- "$path"` (no trailing slash, no glob) removes a
+# symlink in the last path element itself, never what it points at. An empty path is a no-op.
+# ---------------------------------------------------------------------------
+_agy_remove() {
+  local kind="$1" path="$2"
+  [ -n "$path" ] || return 0
+  case "$kind:$path" in
+    cwd:*/agora-agy.*)       rm -rf -- "$path" ;;
+    schema:*/agora-schema.*) rm -f -- "$path" ;;
+    out:*/agora-agyout.*)    rm -f -- "$path" ;;
+    *)
+      printf '[agora] agy: per-attempt %s path failed its containment check; not deleting it\n' "$kind" >&2
+      return 70
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# _agy_mkfile <prefix> — mktemp "${TMPDIR:-/tmp}/<prefix>.XXXXXX" and print
+# its absolute (pwd -P) path. rc 70 and no output when the file cannot be
+# made, is not a regular file, or the result does not match <prefix>.*.
+# ---------------------------------------------------------------------------
+_agy_mkfile() {
+  local prefix="$1" path='' dir=''
+  path=$(mktemp "${TMPDIR:-/tmp}/$prefix.XXXXXX") || return 70
+  [ -n "$path" ] && [ -f "$path" ] || return 70
+  dir=$(CDPATH= cd -- "$(dirname -- "$path")" && pwd -P) || return 70
+  path="$dir/$(basename -- "$path")"
+  case "$path" in
+    */"$prefix".*) ;;
+    *) return 70 ;;
+  esac
+  printf '%s\n' "$path"
+}
+
+# ---------------------------------------------------------------------------
+# _invoke_agy <model> <schema> <prompt> — one agy judge attempt. The body is
+# a subshell, so the `cd` and every variable stay inside the attempt: run_judge
+# calls invoke_judge in the foreground, and a persistent `cd` would break a
+# relative --out-file.
+#
+# Per attempt, all from mktemp under ${TMPDIR:-/tmp}: a fresh empty cwd
+# (agora-agy.*), a copy of <schema> (agora-schema.*) used ONLY as the
+# --json-schema value (validate_verdict and judge_prompt keep reading the
+# original VERDICT_SCHEMA), and a capture file for agy's stdout
+# (agora-agyout.*, kept out of the cwd so the cwd is empty when agy starts).
+# Failing to make any of them is rc 70 with agy not started; the original
+# schema path is never passed instead. The cwd is checked non-empty and a
+# directory before any `cd`, absolutized with `pwd -P` (a relative TMPDIR
+# would otherwise resolve against the new cwd) and must match */agora-agy.*
+# before use.
+#
+# Child env (agy only): OLDPWD and every name starting with CLAUDE removed,
+# PWD set to the temp cwd. A `cd` alone hands the child the caller's
+# directory through one of OLDPWD and PWD (measured, bash 3.2.57).
+#
+# Cleanup runs after every return of run_sanitized (success, failure,
+# timeout). agy's rc is saved first and returned unchanged (124 included);
+# a cwd or schema-copy cleanup failure (rm error) returns 70, also over 124. Not covered: a
+# TERM/INT/HUP/KILL delivered to this script leaves the paths behind
+# (deferred, #1994).
+#
+# On rc 0 the captured stdout must be exactly one top-level JSON object with
+# .status == "SUCCESS" and an object .structured_output; that object is
+# printed. Anything else is rc 65. `.response` is never parsed.
+# ---------------------------------------------------------------------------
+_invoke_agy() (
+  local model="$1" schema="$2" prompt="$3"
+  local cwd='' schema_copy='' out='' name='' body='' rc=0 clean=0
+  local child_env=()
+
+  cwd=$(mktemp -d "${TMPDIR:-/tmp}/agora-agy.XXXXXX") || {
+    printf '[agora] agy: cannot create the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  [ -n "$cwd" ] && [ -d "$cwd" ] || {
+    printf '[agora] agy: cannot create the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  cwd=$(CDPATH= cd -- "${cwd:?}" && pwd -P) || {
+    printf '[agora] agy: cannot resolve the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  case "$cwd" in
+    */agora-agy.*) ;;
+    *)
+      printf '[agora] agy: per-attempt working directory failed its containment check; not starting agy\n' >&2
+      return 70
+      ;;
+  esac
+
+  schema_copy=$(_agy_mkfile agora-schema) && cp -- "$schema" "$schema_copy" || {
+    printf '[agora] agy: cannot create the per-attempt --json-schema copy; not starting agy (the original schema path is never passed instead)\n' >&2
+    _agy_remove schema "$schema_copy" || true
+    _agy_remove cwd "$cwd" || true
+    return 70
+  }
+  out=$(_agy_mkfile agora-agyout) || {
+    printf '[agora] agy: cannot create the per-attempt output capture file; not starting agy\n' >&2
+    _agy_remove schema "$schema_copy" || true
+    _agy_remove cwd "$cwd" || true
+    return 70
+  }
+
+  child_env=(-u OLDPWD)
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    child_env+=(-u "$name")
+  done < <(compgen -e 2>/dev/null | grep '^CLAUDE' || true)
+  child_env+=("PWD=$cwd")
+
+  if cd -- "$cwd"; then
+    run_sanitized "$AGORA_TIMEOUT_SECS" "${child_env[@]}" "$AGORA_AGY_BIN" \
+      --model "$model" --output-format json --json-schema "$schema_copy" \
+      -p "$prompt" > "$out" || rc=$?
+    cd / || true
+  else
+    rc=70
+  fi
+
+  _agy_remove cwd "$cwd" || clean=70
+  _agy_remove schema "$schema_copy" || clean=70
+  if [ "$clean" -ne 0 ] || [ "$rc" -ne 0 ]; then
+    _agy_remove out "$out" || true
+    [ "$clean" -ne 0 ] && return "$clean"
+    return "$rc"
+  fi
+
+  body=$(jq -c -s '
+    if length == 1
+       and (.[0] | type) == "object"
+       and .[0].status == "SUCCESS"
+       and (.[0].structured_output | type) == "object"
+    then .[0].structured_output
+    else empty end' "$out" 2>/dev/null) || body=''
+  _agy_remove out "$out" || return 70
+  [ -n "$body" ] || {
+    printf '[agora] agy: output is not exactly one JSON object with status "SUCCESS" and an object structured_output\n' >&2
+    return 65
+  }
+  printf '%s\n' "$body"
+)
 
 # ---------------------------------------------------------------------------
 # _emit_judge_stderr_tail <model_id> <err_file> — mirrors reviewers.sh's
@@ -367,8 +537,17 @@ run_judge() {
 
   local tmp; tmp=$(mktemp)
   local offset model_id prompt rc err_file
+  if _agy_enabled; then
+    printf '[agora] WARNING: agy judge slots enabled (AGORA_AGY_ENABLE=1) for round %s: agy can write, read and run shell commands outside its empty per-attempt cwd; the empty cwd and env strip are not a sandbox\n' "$round" >&2
+  fi
   for offset in 0 1 2; do
     model_id=$(judge_model_for_round "$round" "$offset")
+    # Off by default (_agy_enabled): an agy slot is skipped without being
+    # started, so the claude slot is the only one tried.
+    if [ "${model_id%%:*}" = agy ] && ! _agy_enabled; then
+      printf '[agora] judge %s skipped for round %s: agy disabled by default (opt in with AGORA_AGY_ENABLE=1)\n' "$model_id" "$round" >&2
+      continue
+    fi
     prompt=$(judge_prompt "$anon_file" "$model_id")
     # F2 (review round): the round is part of the filename so a later round
     # retried in the same out_dir never overwrites an earlier round's audit

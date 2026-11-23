@@ -175,7 +175,7 @@ All commands are invoked inside the Claude Code conversation.
 | `/pipeline resume` | Resume a halted pipeline from last failure point |
 | `/omcustom:fsd` | Full Self Driving — autonomous release loop: repeats `/pipeline auto-dev` (issue → implement → verify → release) then `/homework` (retrospective audit) until no eligible issues remain |
 | `/homework` | Retrospective audit of the current session, surfacing process gaps as feedback/issues |
-| `/agora` | Anonymized multi-round, multi-vendor consensus review (independent CLI reviewers + rotating judge) for decisions that need adversarial scrutiny |
+| `/agora` | Anonymized multi-round, multi-vendor consensus review (independent CLI reviewers + a judge that rotates per round only when agy is enabled with `AGORA_AGY_ENABLE=1`) for decisions that need adversarial scrutiny |
 
 ### Agent Management
 

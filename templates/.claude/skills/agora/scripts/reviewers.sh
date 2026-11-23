@@ -6,12 +6,12 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCHEMA_PATH="$SCRIPT_DIR/response-schema.json"
 
-# Ruling 12 (controller): keep the bare binary names as defaults — `claude`
-# and `agy` are the user's shell ALIASES, not distinct binaries, and the
-# alias-appended flags below are added explicitly in invoke_vendor() because
-# aliases do not expand under non-interactive `bash script.sh` execution.
-# omx has no alias (spec §2 measured: /opt/homebrew/bin/omx), so its default
-# stays the absolute path.
+# Ruling 12 (controller): keep the bare binary names as defaults. `claude` is
+# the user's shell ALIAS; its appended --enable-auto-mode is passed explicitly
+# in invoke_vendor() because aliases do not expand under non-interactive
+# `bash script.sh`. The `agy` alias's permission-bypass flag is deliberately
+# NOT passed (#1985), and agy only runs when opted in (_agy_enabled below).
+# omx has no alias (spec §2: /opt/homebrew/bin/omx), so its default is absolute.
 AGORA_CLAUDE_BIN="${AGORA_CLAUDE_BIN:-claude}"
 AGORA_OMX_BIN="${AGORA_OMX_BIN:-/opt/homebrew/bin/omx}"
 AGORA_AGY_BIN="${AGORA_AGY_BIN:-agy}"
@@ -174,17 +174,177 @@ invoke_vendor() {
       run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_OMX_BIN" exec "$prompt"
       ;;
     agy)
-      # --dangerously-skip-permissions: the user's shell `agy` alias appends
-      # this flag (Ruling 12 measured); aliases do not expand under
-      # non-interactive `bash script.sh` execution, so it must be passed
-      # explicitly here or the CLI may block on a permission prompt.
-      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
-        -p --model gemini-3.1-pro-high --output-format json \
-        --json-schema "$SCHEMA_PATH" --dangerously-skip-permissions "$prompt"
+      # #1985: no permission-bypass flag and no --mode; the prompt is the
+      # value of -p. Reached only when opted in (run_reviewers checks
+      # _agy_enabled); _invoke_agy runs the CLI in an empty per-attempt cwd
+      # and unwraps its JSON envelope.
+      _invoke_agy gemini-4-neon-high "$SCHEMA_PATH" "$prompt"
       ;;
     *) return 65 ;;
   esac
 }
+
+# ---------------------------------------------------------------------------
+# agy is OFF by default (#1985). AGORA_AGY_ENABLE=1 (that exact value) opts
+# in; any other value or no value leaves it off.
+#
+# Why off: with agy 1.5.15 in its headless default mode, no bypass flag and
+# no --mode, the model was observed writing files outside its cwd, reading
+# files outside its cwd and running shell commands. Turning agy on hands an
+# external model those abilities over material that contains session paths.
+# The empty cwd, the OLDPWD/PWD/CLAUDE* env strip and the schema copy below
+# only remove passive location hints; none of them is a sandbox.
+#
+# The switch is read here as an ordinary shell variable. It is AGORA_-
+# prefixed, so _child_env_strip removes it from every vendor child as well.
+# ---------------------------------------------------------------------------
+_agy_enabled() {
+  [ "${AGORA_AGY_ENABLE:-}" = "1" ]
+}
+
+# ---------------------------------------------------------------------------
+# _agy_remove <cwd|schema|out> <path> — delete one per-attempt path, only if
+# it still matches the mktemp template it was made from (cwd: agora-agy.*,
+# schema: agora-schema.*, out: agora-agyout.*). A mismatch deletes nothing
+# and returns 70. `rm -rf -- "$path"` (no trailing slash, no glob) removes a
+# symlink in the last path element itself, never what it points at. An empty path is a no-op.
+# ---------------------------------------------------------------------------
+_agy_remove() {
+  local kind="$1" path="$2"
+  [ -n "$path" ] || return 0
+  case "$kind:$path" in
+    cwd:*/agora-agy.*)       rm -rf -- "$path" ;;
+    schema:*/agora-schema.*) rm -f -- "$path" ;;
+    out:*/agora-agyout.*)    rm -f -- "$path" ;;
+    *)
+      printf '[agora] agy: per-attempt %s path failed its containment check; not deleting it\n' "$kind" >&2
+      return 70
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# _agy_mkfile <prefix> — mktemp "${TMPDIR:-/tmp}/<prefix>.XXXXXX" and print
+# its absolute (pwd -P) path. rc 70 and no output when the file cannot be
+# made, is not a regular file, or the result does not match <prefix>.*.
+# ---------------------------------------------------------------------------
+_agy_mkfile() {
+  local prefix="$1" path='' dir=''
+  path=$(mktemp "${TMPDIR:-/tmp}/$prefix.XXXXXX") || return 70
+  [ -n "$path" ] && [ -f "$path" ] || return 70
+  dir=$(CDPATH= cd -- "$(dirname -- "$path")" && pwd -P) || return 70
+  path="$dir/$(basename -- "$path")"
+  case "$path" in
+    */"$prefix".*) ;;
+    *) return 70 ;;
+  esac
+  printf '%s\n' "$path"
+}
+
+# ---------------------------------------------------------------------------
+# _invoke_agy <model> <schema> <prompt> — one agy attempt. The body is a
+# subshell, so the `cd` and every variable stay inside the attempt; the
+# caller's cwd and any relative path it holds are untouched.
+#
+# Per attempt, all from mktemp under ${TMPDIR:-/tmp}: a fresh empty cwd
+# (agora-agy.*), a copy of <schema> (agora-schema.*) used ONLY as the
+# --json-schema value, and a capture file for agy's stdout (agora-agyout.*,
+# kept out of the cwd so the cwd is empty when agy starts). Failing to make
+# any of them is rc 70 with agy not started; the original schema path is
+# never passed instead. The cwd is checked non-empty and a directory before
+# any `cd`, absolutized with `pwd -P` (a relative TMPDIR would otherwise
+# resolve against the new cwd) and must match */agora-agy.* before use.
+#
+# Child env (agy only): OLDPWD and every name starting with CLAUDE removed,
+# PWD set to the temp cwd. A `cd` alone hands the child the caller's
+# directory through one of OLDPWD and PWD (measured, bash 3.2.57).
+#
+# Cleanup runs after every return of run_sanitized (success, failure,
+# timeout). agy's rc is saved first and returned unchanged (124 included);
+# a cwd or schema-copy cleanup failure (rm error) returns 70, also over 124. Not covered: a
+# TERM/INT/HUP/KILL delivered to this script leaves the paths behind
+# (deferred, #1994).
+#
+# On rc 0 the captured stdout must be exactly one top-level JSON object with
+# .status == "SUCCESS" and an object .structured_output; that object is
+# printed. Anything else is rc 65. `.response` is never parsed.
+# ---------------------------------------------------------------------------
+_invoke_agy() (
+  local model="$1" schema="$2" prompt="$3"
+  local cwd='' schema_copy='' out='' name='' body='' rc=0 clean=0
+  local child_env=()
+
+  cwd=$(mktemp -d "${TMPDIR:-/tmp}/agora-agy.XXXXXX") || {
+    printf '[agora] agy: cannot create the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  [ -n "$cwd" ] && [ -d "$cwd" ] || {
+    printf '[agora] agy: cannot create the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  cwd=$(CDPATH= cd -- "${cwd:?}" && pwd -P) || {
+    printf '[agora] agy: cannot resolve the per-attempt working directory; not starting agy\n' >&2
+    return 70
+  }
+  case "$cwd" in
+    */agora-agy.*) ;;
+    *)
+      printf '[agora] agy: per-attempt working directory failed its containment check; not starting agy\n' >&2
+      return 70
+      ;;
+  esac
+
+  schema_copy=$(_agy_mkfile agora-schema) && cp -- "$schema" "$schema_copy" || {
+    printf '[agora] agy: cannot create the per-attempt --json-schema copy; not starting agy (the original schema path is never passed instead)\n' >&2
+    _agy_remove schema "$schema_copy" || true
+    _agy_remove cwd "$cwd" || true
+    return 70
+  }
+  out=$(_agy_mkfile agora-agyout) || {
+    printf '[agora] agy: cannot create the per-attempt output capture file; not starting agy\n' >&2
+    _agy_remove schema "$schema_copy" || true
+    _agy_remove cwd "$cwd" || true
+    return 70
+  }
+
+  child_env=(-u OLDPWD)
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    child_env+=(-u "$name")
+  done < <(compgen -e 2>/dev/null | grep '^CLAUDE' || true)
+  child_env+=("PWD=$cwd")
+
+  if cd -- "$cwd"; then
+    run_sanitized "$AGORA_TIMEOUT_SECS" "${child_env[@]}" "$AGORA_AGY_BIN" \
+      --model "$model" --output-format json --json-schema "$schema_copy" \
+      -p "$prompt" > "$out" || rc=$?
+    cd / || true
+  else
+    rc=70
+  fi
+
+  _agy_remove cwd "$cwd" || clean=70
+  _agy_remove schema "$schema_copy" || clean=70
+  if [ "$clean" -ne 0 ] || [ "$rc" -ne 0 ]; then
+    _agy_remove out "$out" || true
+    [ "$clean" -ne 0 ] && return "$clean"
+    return "$rc"
+  fi
+
+  body=$(jq -c -s '
+    if length == 1
+       and (.[0] | type) == "object"
+       and .[0].status == "SUCCESS"
+       and (.[0].structured_output | type) == "object"
+    then .[0].structured_output
+    else empty end' "$out" 2>/dev/null) || body=''
+  _agy_remove out "$out" || return 70
+  [ -n "$body" ] || {
+    printf '[agora] agy: output is not exactly one JSON object with status "SUCCESS" and an object structured_output\n' >&2
+    return 65
+  }
+  printf '%s\n' "$body"
+)
 
 # ---------------------------------------------------------------------------
 # _emit_vendor_stderr_tail <slug> <err_file> — F2 (review round 2): print the
@@ -277,13 +437,23 @@ run_reviewers() {
   local out_dir="$dir/SEALED/raw/round-$round"
   mkdir -p "$out_dir"
 
-  local pids=() slugs=(claude omx agy) slug
+  local pids=() slugs=(claude omx agy) slug missing=0
+  if _agy_enabled; then
+    printf '[agora] WARNING: agy reviewer enabled (AGORA_AGY_ENABLE=1) for round %s: agy can write, read and run shell commands outside its empty per-attempt cwd; the empty cwd and env strip are not a sandbox\n' "$round" >&2
+  fi
   for slug in "${slugs[@]}"; do
+    # Off by default (_agy_enabled): agy is never started, gets no retry and
+    # counts as missing, so the round needs both claude and omx.
+    if [ "$slug" = agy ] && ! _agy_enabled; then
+      printf '[agora] agy reviewer disabled by default (opt in with AGORA_AGY_ENABLE=1); counted as missing for round %s\n' "$round" >&2
+      missing=$(( missing + 1 ))
+      continue
+    fi
     call_vendor "$slug" "$prompt_file" "$out_dir/$slug.json" &
     pids+=("$!")
   done
 
-  local i missing=0
+  local i
   for i in "${!pids[@]}"; do
     wait "${pids[$i]}" || missing=$(( missing + 1 ))
   done

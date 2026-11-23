@@ -15,6 +15,7 @@ import { join, relative } from 'node:path';
 import { promisify } from 'node:util';
 import { fileExists, getPackageRoot, readJsonFile, writeJsonFile } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
+import { gitChildEnv } from './git-env.js';
 import { getComponentPath, type InstallComponent } from './layout.js';
 
 export const LOCKFILE_NAME = '.omcustom.lock.json';
@@ -208,44 +209,9 @@ export interface LockfileWriteOptions extends LockfileGenerationOptions {
 
 const execFileAsync = promisify(execFile);
 
-/** Environment variables that make git operate on a repository other than `targetDir`'s own. */
-const GIT_LOCATION_ENV_KEYS = [
-  'GIT_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_PREFIX',
-  'GIT_COMMON_DIR',
-] as const;
-
-/**
- * Environment variables carrying one-off `git -c` configuration from a parent git process (a
- * hook run under `git -c core.excludesFile=… commit`). Dropped so ignore rules do not depend
- * on how the build was launched. `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM`/`GIT_CONFIG_NOSYSTEM`
- * are the user's own environment and are kept.
- */
-const GIT_INJECTED_CONFIG_ENV_KEYS = ['GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'] as const;
-const GIT_INJECTED_CONFIG_ENV_PREFIXES = ['GIT_CONFIG_KEY_', 'GIT_CONFIG_VALUE_'] as const;
-
 /** Guidance appended to every git failure in `excludeGitIgnored` mode. */
 const GIT_REQUIRED_HINT =
   'build from a git checkout: excluding ignored local files from the lockfile requires git (#1819)';
-
-/**
- * Copy of `process.env` without the variables that relocate git or inject configuration, so
- * git resolves the repository and ignore rules from `targetDir` itself.
- */
-function gitChildEnv(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env };
-  for (const key of [...GIT_LOCATION_ENV_KEYS, ...GIT_INJECTED_CONFIG_ENV_KEYS]) {
-    delete env[key];
-  }
-  for (const key of Object.keys(env)) {
-    if (GIT_INJECTED_CONFIG_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) {
-      delete env[key];
-    }
-  }
-  return env;
-}
 
 async function runGit(targetDir: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
   try {

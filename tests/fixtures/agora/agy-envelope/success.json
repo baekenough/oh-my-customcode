@@ -1,0 +1,24 @@
+{
+  "conversation_id": "00000000-0000-0000-0000-000000000000",
+  "status": "SUCCESS",
+  "response": "{\"findings\":[],\"overall\":\"BUILD\",\"rationale\":\"response text, never parsed\"}",
+  "duration_seconds": 1,
+  "num_turns": 1,
+  "structured_output": {
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "LOW",
+        "claim": "봉투 픽스처 응답",
+        "evidence": "tests/fixtures/agora/agy-envelope/success.json",
+        "impact": "없음",
+        "counter": "픽스처 전용이므로 실제 영향이 없다",
+        "verdict": "KEEP"
+      }
+    ],
+    "overall": "BUILD_WITH_CHANGES",
+    "rationale": "structured_output 에서 꺼낸 응답이다. 계약을 만족한다."
+  },
+  "json_schema": {},
+  "usage": { "input_tokens": 0, "output_tokens": 0 }
+}

@@ -1,7 +1,7 @@
 ---
 title: fe-design-expert
 type: agent
-updated: 2026-11-14
+updated: 2026-11-23
 sources:
   - .claude/agents/fe-design-expert.md
 related:
@@ -11,7 +11,6 @@ related:
   - [[tool-optimizer]]
   - [[skills/impeccable-design|impeccable-design]]
   - [[web-design-guidelines]]
-  - [[diagram-design]]
   - [[claude-design]]
 ---
 
@@ -32,7 +31,7 @@ It also owns the **Claude Design handoff** workflow: when receiving artifacts fr
 - **Model**: claude-sonnet-5-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob (`disallowedTools: [Bash]`)
-- **Skills**: `impeccable-design`, `web-design-guidelines`, `diagram-design`
+- **Skills**: `impeccable-design`, `web-design-guidelines`
 - **Memory**: local
 - **Effort**: medium
 - **Limitations**: cannot modify backend code, cannot execute shell commands
@@ -40,7 +39,7 @@ It also owns the **Claude Design handoff** workflow: when receiving artifacts fr
 
 ## Relationships
 
-- **Depends on**: `impeccable-design` skill, `web-design-guidelines` skill, `diagram-design` skill, `guides/impeccable-design/`, `guides/claude-design/`
+- **Depends on**: `impeccable-design` skill, `web-design-guidelines` skill, `guides/impeccable-design/`, `guides/claude-design/`
 - **Used by**: `dev-lead-routing` skill (frontend design review tasks)
 - **See also**: [[fe-vercel-agent]] (technical compliance, accessibility), [[tool-optimizer]] (performance), [[fe-vuejs-agent]], [[fe-svelte-agent]], [[claude-design]] (handoff workflow guide)
 

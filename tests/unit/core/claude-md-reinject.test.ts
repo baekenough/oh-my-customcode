@@ -29,6 +29,21 @@ interface ScriptResult {
   exitCode: number;
 }
 
+/**
+ * Copy of process.env without any GIT_-prefixed variable (#1983). Hook scripts call git (for
+ * example `git rev-parse --show-toplevel`), so an inherited GIT_DIR or GIT_INDEX_FILE from a
+ * parent git context would redirect them to another repository. Local to this file on purpose.
+ */
+function inheritedEnvWithoutGit(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  return env;
+}
+
 /** Run the hook script with a given stdin payload, env, and working directory. */
 function runHookScript(
   scriptPath: string,
@@ -40,7 +55,7 @@ function runHookScript(
     // #1770: the script anchors to ${CLAUDE_PROJECT_DIR:-<git toplevel || pwd>}. Scrub the
     // inherited value (set when `bun test` runs inside a Claude Code session or CI) so the
     // fixture cwd is used; a test that wants it passes it explicitly via `env`.
-    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = process.env;
+    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = inheritedEnvWithoutGit();
     const childEnv: NodeJS.ProcessEnv = { ...inheritedEnv, ...env };
     const child = spawn('bash', [scriptPath], {
       env: childEnv,

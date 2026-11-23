@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.27",
-  "generatedAt": "2026-11-23T05:25:22.215Z",
-  "templateVersion": "2.0.27",
+  "generatorVersion": "2.0.28",
+  "generatedAt": "2026-11-23T12:07:34.326Z",
+  "templateVersion": "2.0.28",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "61b0e8efc09329701cfdf51bcf4641adc8cd32782b8e96f72ec58a6a1b796364",
@@ -100,8 +100,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-design-expert.md": {
-      "templateHash": "d858fdd7e178ed44883975da3f2d3fdab71499da03e2a669e2b23b3f8df665e0",
-      "size": 5232,
+      "templateHash": "cbdb4b0a198665049b9028e67ab9c0f1f715079edab342473fc401b8c24a6d99",
+      "size": 5213,
       "component": "agents"
     },
     ".claude/agents/fe-flutter-agent.md": {
@@ -240,8 +240,8 @@
       "component": "agents"
     },
     ".claude/agents/tool-npm-expert.md": {
-      "templateHash": "13073eca11ff2dc5a159e4f1da3c7495380664a0c977cf8b2e46909df91a0cdd",
-      "size": 881,
+      "templateHash": "960b9f754e5f62c1e868cdab52667715a1c21448f7b8badf9863e2fcb40a5d4d",
+      "size": 827,
       "component": "agents"
     },
     ".claude/agents/tool-optimizer.md": {
@@ -555,8 +555,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "aa956f223c3c3db5c9804aab318eac9d3f57fcc8b51050ea524c10cb25856f41",
-      "size": 43566,
+      "templateHash": "366d5d2fcecf12c2e7b82dd3e1cc408f7e5084f52f5d0b8fd7112f1ed016d736",
+      "size": 45511,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -630,8 +630,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {
-      "templateHash": "4e4b3ce270fe01e5908ff95081df318ffcd0d46401a8c921bbb96b61e0ced352",
-      "size": 35747,
+      "templateHash": "a33922a64821f7ca384c46fd047edae708bf1b210ea1c24b48f3a8cafd85b4e8",
+      "size": 44745,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/agora.sh": {
@@ -640,13 +640,13 @@
       "component": "skills"
     },
     ".claude/skills/agora/scripts/anonymize.sh": {
-      "templateHash": "73f96977770009b260f6fd81ab050e1a9073218e8dcfb610ea5d0be9bf95b554",
-      "size": 29151,
+      "templateHash": "7a49dc783a44068ae623f7116aebd3d2655e3664e96d394ea50b7951b41288b2",
+      "size": 29150,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/judge.sh": {
-      "templateHash": "8e84a07bd7ff2cc6320f589b034d64a134615486d57022f3d679aafc526599e4",
-      "size": 20469,
+      "templateHash": "18b08ecc8aa6be06eac0de655ea9c10072d5ee93163aaf4d9bd51cb19ed42170",
+      "size": 28424,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/response-schema.json": {
@@ -655,8 +655,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/scripts/reviewers.sh": {
-      "templateHash": "9e3e152a6733916c719e6720ce40cdca3539c017975b1f2c26ae71310842d4db",
-      "size": 14251,
+      "templateHash": "8ee5dde68655efe1ffa00d0760b2864de46c1617134116799d62eee4dc72cca7",
+      "size": 21684,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/verdict-schema.json": {
@@ -1500,8 +1500,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "c5d98cbb22ee48b6e797079eca2d06511c0fc72fd8da672b6514a1a2d3898655",
-      "size": 1011633,
+      "templateHash": "5a399abe3055084f6540d008609cfa29705074bb79e5c262d6bcc0b3f5e1e787",
+      "size": 1013146,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

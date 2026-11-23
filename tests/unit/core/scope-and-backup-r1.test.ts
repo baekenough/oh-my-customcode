@@ -22,6 +22,23 @@ async function writeTree(root: string, files: Record<string, string>): Promise<v
   }
 }
 
+/**
+ * Copy of process.env with every GIT_-prefixed variable removed (#1983). A parent git context
+ * (hook, worktree, CI) can export GIT_DIR, GIT_INDEX_FILE, GIT_CONFIG_PARAMETERS and similar; if a
+ * fixture git child inherits them, `git init`/`git config` act on that other repository instead of
+ * the temp dir. Dropping the whole prefix also covers names not listed here. Local to this file on
+ * purpose: tests do not share helpers with src/core/git-env.ts.
+ */
+function gitFixtureEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  return env;
+}
+
 describe('nested instruction file rename never overwrites', () => {
   let dir: string;
 
@@ -83,7 +100,7 @@ describe('ensureBackupGitignore asks git per prefix', () => {
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'omcustom-r1-gi-'));
-    execFileSync('git', ['init', '-q'], { cwd: dir });
+    execFileSync('git', ['init', '-q'], { cwd: dir, env: gitFixtureEnv() });
   });
 
   afterEach(async () => {
@@ -153,7 +170,7 @@ describe('ensureBackupGitignore asks git per prefix', () => {
   describe('when git cannot answer', () => {
     beforeEach(() => {
       // A directory as the global exclude file makes check-ignore fail (exit 128), rev-parse not
-      execFileSync('git', ['config', 'core.excludesFile', dir], { cwd: dir });
+      execFileSync('git', ['config', 'core.excludesFile', dir], { cwd: dir, env: gitFixtureEnv() });
     });
 
     it('falls back to scanning .gitignore for a negation of the prefix', async () => {
