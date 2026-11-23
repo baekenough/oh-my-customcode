@@ -83,6 +83,21 @@ function preToolUseContext(result: ScriptResult): string {
   return parsed.hookSpecificOutput.additionalContext;
 }
 
+/**
+ * Copy of process.env without any GIT_-prefixed variable (#1983). Hook scripts call git (for
+ * example `git rev-parse --show-toplevel`), so an inherited GIT_DIR or GIT_INDEX_FILE from a
+ * parent git context would redirect them to another repository. Local to this file on purpose.
+ */
+function inheritedEnvWithoutGit(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  return env;
+}
+
 /** Run a hook script by spawning bash, piping `stdinInput`, and collecting its streams. */
 function runHookScript(
   scriptPath: string,
@@ -90,7 +105,7 @@ function runHookScript(
   env?: Record<string, string>
 ): Promise<ScriptResult> {
   return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+    const childEnv: NodeJS.ProcessEnv = { ...inheritedEnvWithoutGit(), ...env };
     const child = spawn('bash', [scriptPath], { env: childEnv, cwd: tmpdir() });
 
     let stdout = '';

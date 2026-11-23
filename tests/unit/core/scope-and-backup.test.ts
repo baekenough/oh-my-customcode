@@ -29,8 +29,25 @@ async function writeTree(root: string, files: Record<string, string>): Promise<v
   }
 }
 
+/**
+ * Copy of process.env with every GIT_-prefixed variable removed (#1983). A parent git context
+ * (hook, worktree, CI) can export GIT_DIR, GIT_INDEX_FILE, GIT_CONFIG_PARAMETERS and similar; if a
+ * fixture git child inherits them, `git init`/`git config` act on that other repository instead of
+ * the temp dir. Dropping the whole prefix also covers names not listed here. Local to this file on
+ * purpose: tests do not share helpers with src/core/git-env.ts.
+ */
+function gitFixtureEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  return env;
+}
+
 function gitInit(dir: string): void {
-  execFileSync('git', ['init', '-q'], { cwd: dir });
+  execFileSync('git', ['init', '-q'], { cwd: dir, env: gitFixtureEnv() });
 }
 
 describe('backup layout (#1943)', () => {

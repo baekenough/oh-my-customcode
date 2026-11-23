@@ -22,6 +22,7 @@ import { join, relative } from 'node:path';
 import { promisify } from 'node:util';
 import { fileExists } from '../utils/fs.js';
 import { debug, info, warn } from '../utils/logger.js';
+import { gitChildEnvLocationOnly } from './git-env.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -222,9 +223,15 @@ export function logBackupRestoreHint(
   info('backup.restore_hint', { path: backupDir, renames: renames.join('\n  ') });
 }
 
+/**
+ * Run git in `cwd` and report whether it exited 0. Strip set: location only
+ * (`gitChildEnvLocationOnly`, #1983), so a parent git process (a hook) cannot make a directory
+ * outside any repository look like a work tree, while an env-supplied `safe.directory` still
+ * applies.
+ */
 async function git(cwd: string, args: string[]): Promise<boolean> {
   try {
-    await execFileAsync('git', args, { cwd });
+    await execFileAsync('git', args, { cwd, env: gitChildEnvLocationOnly() });
     return true;
   } catch {
     return false;
@@ -237,7 +244,12 @@ type IgnoreStatus = 'ignored' | 'negated' | 'none' | 'unknown';
 /**
  * Ask git, from every ignore source (.gitignore, .git/info/exclude, global excludes).
  * `check-ignore -v --no-index` prints `<source>:<line>:<pattern>\t<path>`; a pattern starting with
- * `!` is a negation. Exit 1 means no pattern matches; any other failure is 'unknown'.
+ * `!` is a negation. Exit 1 means no pattern matches; any other failure is 'unknown'. Strip set:
+ * location only (`gitChildEnvLocationOnly`, #1983), so inherited `GIT_DIR`/`GIT_COMMON_DIR`
+ * (another repository's info/exclude) are dropped. Env-injected configuration is kept, as at
+ * a5018576: dropping it also drops an env-supplied `safe.directory`, and on a foreign-owned repo
+ * (`GIT_TEST_ASSUME_DIFFERENT_OWNER=1`, git 2.52.0) this command then exits 128, so a negation
+ * in .git/info/exclude is missed and the pattern is appended over it.
  */
 async function ignoreStatus(
   cwd: string,
@@ -249,6 +261,7 @@ async function ignoreStatus(
       ['check-ignore', '-v', '--no-index', '--', name],
       {
         cwd,
+        env: gitChildEnvLocationOnly(),
       }
     );
     const negation = /^([^\t]*?):\d+:!/.exec(stdout);

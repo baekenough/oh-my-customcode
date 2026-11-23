@@ -10,7 +10,7 @@ vendor_id() {
   case "$1" in
     claude) printf 'claude:claude-opus-4-8' ;;
     omx)    printf 'omx:default' ;;
-    agy)    printf 'agy:gemini-3.1-pro-high' ;;
+    agy)    printf 'agy:gemini-4-neon-high' ;;
     *)      printf 'anonymize.sh: unknown vendor slug %s\n' "$1" >&2; return 65 ;;
   esac
 }
@@ -19,7 +19,7 @@ vendor_slug() {
   case "$1" in
     claude:claude-opus-4-8)     printf 'claude' ;;
     omx:default)                printf 'omx' ;;
-    agy:gemini-3.1-pro-high)    printf 'agy' ;;
+    agy:gemini-4-neon-high)     printf 'agy' ;;
     *)                          printf 'anonymize.sh: unknown vendor id %s\n' "$1" >&2; return 65 ;;
   esac
 }

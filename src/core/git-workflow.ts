@@ -6,6 +6,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { gitChildEnvLocationOnly } from './git-env.js';
 
 /**
  * Detected git workflow type
@@ -29,8 +30,12 @@ export interface GitWorkflowResult {
 /**
  * Execute a git command in the given directory.
  *
- * Clears GIT_DIR/GIT_WORK_TREE env vars to ensure git inspects the
- * target directory's own repo, not a parent repo (e.g., during pre-commit hooks).
+ * Strip set: location only (`gitChildEnvLocationOnly`). Drops the inherited GIT_DIR,
+ * GIT_WORK_TREE, GIT_INDEX_FILE, GIT_PREFIX and GIT_COMMON_DIR, so git inspects the target
+ * directory's own repo rather than the one a parent git process (e.g. a pre-commit hook) points
+ * at (#1983). Injected configuration is kept, so an env-supplied `safe.directory` still applies;
+ * the branch listings pass `--no-column` against `column.ui=always` (measured from the global
+ * config and from env-injected config, git 2.52.0).
  *
  * @param args - Git command arguments
  * @param cwd - Working directory
@@ -42,7 +47,7 @@ function execGit(args: string[], cwd: string): string {
       cwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+      env: gitChildEnvLocationOnly(),
     }).trim();
   } catch {
     return '';
@@ -93,7 +98,7 @@ function detectDefaultBranch(cwd: string): string {
  * Get all local branch names
  */
 function getLocalBranches(cwd: string): string[] {
-  const output = execGit(['branch', '--format=%(refname:short)'], cwd);
+  const output = execGit(['branch', '--no-column', '--format=%(refname:short)'], cwd);
   if (!output) return [];
   return output.split('\n').filter(Boolean);
 }
@@ -102,7 +107,7 @@ function getLocalBranches(cwd: string): string[] {
  * Get all remote branch names (without remote prefix)
  */
 function getRemoteBranches(cwd: string): string[] {
-  const output = execGit(['branch', '-r', '--format=%(refname:short)'], cwd);
+  const output = execGit(['branch', '-r', '--no-column', '--format=%(refname:short)'], cwd);
   if (!output) return [];
   return output
     .split('\n')

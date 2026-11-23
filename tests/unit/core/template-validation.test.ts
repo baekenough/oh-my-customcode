@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, describe, expect, it } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { access, readdir, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { parse } from 'yaml';
+import { getSkillScope, shouldInstallSkill } from '../../../src/core/scope-filter.js';
 
 const TEMPLATES_DIR = resolve(import.meta.dir, '../../../templates');
 
@@ -89,6 +93,131 @@ function parseFrontmatter(content: string): FrontmatterResult {
   }
 
   return { isValid: true, fields, arrayFields, hasFrontmatter: true, hasClosingMarker: true };
+}
+
+/** Result of parsing a frontmatter block with a real YAML parser (#1988). */
+type YamlFrontmatterResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; reason: string };
+
+/**
+ * Parses the leading `---` frontmatter block with the `yaml` package.
+ * Unlike {@link parseFrontmatter} (line-based, accepts malformed YAML such as an
+ * unclosed quote or `name: [a`), this fails on anything a real YAML parser rejects,
+ * and on blocks that do not parse to a mapping. The block regex mirrors
+ * `getSkillScope` in src/core/scope-filter.ts.
+ */
+function parseYamlFrontmatter(content: string): YamlFrontmatterResult {
+  const match = content.replace(/^﻿/, '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return { ok: false, reason: 'no frontmatter block' };
+
+  let parsed: unknown;
+  try {
+    parsed = parse(match[1]);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, reason: `YAML parse error: ${message.split('\n')[0]}` };
+  }
+
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { ok: false, reason: 'frontmatter is not a YAML mapping' };
+  }
+  return { ok: true, data: parsed as Record<string, unknown> };
+}
+
+type SkillRefsResult = { ok: true; refs: string[] } | { ok: false; reason: string };
+
+/**
+ * Reads the `skills:` frontmatter key via the YAML parser, so block lists
+ * (`skills:\n  - a`) and inline arrays (`skills: [a, b]`) are both read.
+ * An absent or empty `skills:` yields no references.
+ */
+function extractAgentSkillRefs(content: string): SkillRefsResult {
+  const parsed = parseYamlFrontmatter(content);
+  if (!parsed.ok) return parsed;
+
+  const skills = parsed.data.skills;
+  if (skills === undefined || skills === null) return { ok: true, refs: [] };
+  if (!Array.isArray(skills) || !skills.every((s): s is string => typeof s === 'string')) {
+    return { ok: false, reason: "'skills' is not a list of strings" };
+  }
+  return { ok: true, refs: skills.map((s) => s.trim()) };
+}
+
+type SkillRefStatus = 'ok' | 'missing' | 'package';
+
+interface AgentSkillRef {
+  file: string;
+  skill: string;
+  status: SkillRefStatus;
+}
+
+interface AgentSkillScan {
+  /** Agent files whose frontmatter could not be parsed or whose `skills:` is malformed. */
+  parseErrors: string[];
+  refs: AgentSkillRef[];
+  /** Number of agents declaring at least one skill reference. */
+  nonEmptySets: number;
+}
+
+/**
+ * Scans every `*.md` agent in `agentsDir` and classifies each `skills:` reference
+ * against `skillsDir`: 'missing' (no `<skill>/SKILL.md`), 'package' (exists but
+ * `shouldInstallSkill(getSkillScope(...))` is false, so `init` does not deploy it),
+ * or 'ok'.
+ */
+async function scanAgentSkillRefs(agentsDir: string, skillsDir: string): Promise<AgentSkillScan> {
+  const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => e.name)
+    .sort();
+
+  const scan: AgentSkillScan = { parseErrors: [], refs: [], nonEmptySets: 0 };
+
+  for (const file of agentFiles) {
+    const extracted = extractAgentSkillRefs(await readFile(join(agentsDir, file), 'utf-8'));
+    if (!extracted.ok) {
+      scan.parseErrors.push(`${file}: ${extracted.reason}`);
+      continue;
+    }
+    if (extracted.refs.length > 0) scan.nonEmptySets++;
+
+    for (const skill of extracted.refs) {
+      let status: SkillRefStatus;
+      try {
+        const skillContent = await readFile(join(skillsDir, skill, 'SKILL.md'), 'utf-8');
+        status = shouldInstallSkill(getSkillScope(skillContent)) ? 'ok' : 'package';
+      } catch {
+        status = 'missing';
+      }
+      scan.refs.push({ file, skill, status });
+    }
+  }
+
+  return scan;
+}
+
+/** Errors for a scan; `requireDeployed` additionally rejects package-scope references. */
+function skillRefErrors(scan: AgentSkillScan, requireDeployed: boolean): string[] {
+  const errors = [...scan.parseErrors];
+  for (const ref of scan.refs) {
+    if (ref.status === 'missing') {
+      errors.push(`${ref.file}: skill reference '${ref.skill}' not found`);
+    } else if (ref.status === 'package' && requireDeployed) {
+      errors.push(
+        `${ref.file}: skill reference '${ref.skill}' is package-scope and is not deployed by init`
+      );
+    }
+  }
+  return errors;
+}
+
+/** ∃ guard: errors when the scan saw no references, so a ∀ check cannot pass vacuously. */
+function vacuityErrors(scan: AgentSkillScan): string[] {
+  const errors: string[] = [];
+  if (scan.nonEmptySets < 1) errors.push('no agent declares a non-empty skills: list');
+  if (scan.refs.length < 1) errors.push('no skill references were scanned');
+  return errors;
 }
 
 /**
@@ -204,6 +333,23 @@ async function validateSkillFrontmatter(
 
   if (!result.fields.description) {
     errors.push(`${skillDir}/SKILL.md: missing required field 'description'`);
+  }
+
+  // #1988: the line-based parser above accepts malformed YAML (unclosed quote,
+  // `name: [a`), so the block must also parse with a real YAML parser.
+  const yamlResult = parseYamlFrontmatter(content);
+  if (!yamlResult.ok) {
+    errors.push(`${skillDir}/SKILL.md: invalid YAML frontmatter (${yamlResult.reason})`);
+    return;
+  }
+
+  // Fields the line parser saw as present must be non-empty strings (the
+  // missing-field messages above already cover absent fields).
+  for (const field of ['name', 'description'] as const) {
+    const value = yamlResult.data[field];
+    if (result.fields[field] && !(typeof value === 'string' && value.trim() !== '')) {
+      errors.push(`${skillDir}/SKILL.md: field '${field}' must be a non-empty string`);
+    }
   }
 }
 
@@ -778,59 +924,228 @@ describe('Template Validation', () => {
   });
 
   describe('agent frontmatter skills validation', () => {
-    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
-
-    async function fileExists(filePath: string): Promise<boolean> {
-      try {
-        await access(filePath);
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    async function extractSkillsFromAgent(content: string): Promise<string[]> {
-      const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-      if (!frontmatterMatch) return [];
-
-      const skillsMatch = frontmatterMatch[1].match(/^skills:\s*\n((?:[ \t]+-[ \t]+.+\n?)*)/m);
-      if (!skillsMatch) return [];
-
-      const skillLines = skillsMatch[1].match(/- (.+)/g) ?? [];
-      return skillLines.map((s: string) => s.replace(/^-\s+/, '').trim());
-    }
-
-    async function checkAgentSkillRefs(
-      file: string,
-      agentsDir: string,
-      skillsBaseDir: string,
-      errors: string[]
-    ): Promise<void> {
-      const content = await readFile(join(agentsDir, file), 'utf-8');
-      const skills = await extractSkillsFromAgent(content);
-
-      for (const skill of skills) {
-        const skillPath = join(skillsBaseDir, skill, 'SKILL.md');
-        if (!(await fileExists(skillPath))) {
-          errors.push(`${file}: skill reference '${skill}' not found`);
-        }
-      }
-    }
-
     it('all skill references in agent frontmatter exist', async () => {
-      const agentsDir = join(PROJECT_ROOT, '.claude', 'agents');
-      const skillsBaseDir = join(PROJECT_ROOT, '.claude', 'skills');
-      const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))
-        .filter((e) => e.isFile() && e.name.endsWith('.md'))
-        .map((e) => e.name);
+      const scan = await scanAgentSkillRefs(
+        join(PROJECT_ROOT, '.claude', 'agents'),
+        join(PROJECT_ROOT, '.claude', 'skills')
+      );
 
-      const errors: string[] = [];
+      // ∃: the ∀ existence check below must have scanned at least one reference.
+      expect(vacuityErrors(scan)).toEqual([]);
+      // Existence only; package scope is judged against the deployed template set below.
+      expect(skillRefErrors(scan, false)).toEqual([]);
+    });
 
-      for (const file of agentFiles) {
-        await checkAgentSkillRefs(file, agentsDir, skillsBaseDir, errors);
+    it('every skill referenced by a template agent is deployed by init (exists and is not package-scope)', async () => {
+      const scan = await scanAgentSkillRefs(
+        join(TEMPLATES_DIR, '.claude/agents'),
+        join(TEMPLATES_DIR, '.claude/skills')
+      );
+
+      // ∃: at least one non-empty reference set and at least one reference scanned.
+      expect(vacuityErrors(scan)).toEqual([]);
+      // ∀: each reference exists under templates/.claude/skills and getSkillScope/shouldInstallSkill
+      // says init deploys it.
+      expect(skillRefErrors(scan, true)).toEqual([]);
+    });
+  });
+
+  describe('frontmatter and skill-reference checks (synthetic fixtures)', () => {
+    const fixtureRoots: string[] = [];
+
+    afterAll(() => {
+      for (const root of fixtureRoots) {
+        rmSync(root, { recursive: true, force: true });
       }
+    });
 
-      expect(errors).toEqual([]);
+    function makeFixture(files: Record<string, string>): string {
+      const root = mkdtempSync(join(tmpdir(), 'template-validation-'));
+      fixtureRoots.push(root);
+      for (const [relativePath, content] of Object.entries(files)) {
+        const filePath = join(root, relativePath);
+        mkdirSync(dirname(filePath), { recursive: true });
+        writeFileSync(filePath, content);
+      }
+      return root;
+    }
+
+    function skillMd(name: string, scope?: string): string {
+      const scopeLine = scope ? `scope: ${scope}\n` : '';
+      return `---\nname: ${name}\ndescription: demo skill\n${scopeLine}---\n\nbody\n`;
+    }
+
+    function agentMd(skillsYaml: string): string {
+      return `---\nname: demo\ndescription: demo agent\nmodel: sonnet\ntools:\n  - Read\n${skillsYaml}---\n\nbody\n`;
+    }
+
+    /** One fixture: a core, a harness and a package skill, plus one agent with the given `skills:` YAML. */
+    async function scanWithSkillsYaml(skillsYaml: string): Promise<AgentSkillScan> {
+      const root = makeFixture({
+        'skills/core-skill/SKILL.md': skillMd('core-skill'),
+        'skills/harness-skill/SKILL.md': skillMd('harness-skill', 'harness'),
+        'skills/pkg-skill/SKILL.md': skillMd('pkg-skill', 'package'),
+        'agents/demo.md': agentMd(skillsYaml),
+      });
+      return scanAgentSkillRefs(join(root, 'agents'), join(root, 'skills'));
+    }
+
+    async function skillFrontmatterErrors(skillContent: string): Promise<string[]> {
+      const root = makeFixture({ 'skills/demo/SKILL.md': skillContent });
+      const errors: string[] = [];
+      await validateSkillFrontmatter('demo', join(root, 'skills'), errors);
+      return errors;
+    }
+
+    describe('parseYamlFrontmatter', () => {
+      it('accepts a valid mapping', () => {
+        const result = parseYamlFrontmatter('---\nname: a\ndescription: b\n---\nbody\n');
+        expect(result).toEqual({ ok: true, data: { name: 'a', description: 'b' } });
+      });
+
+      it('rejects an unclosed quote that the line-based parser accepts', () => {
+        const content = '---\nname: a\ndescription: "unclosed\n---\nbody\n';
+        expect(parseFrontmatter(content).isValid).toBe(true);
+        const result = parseYamlFrontmatter(content);
+        expect(result.ok).toBe(false);
+        expect(result.ok ? '' : result.reason).toContain('YAML parse error');
+      });
+
+      it('rejects an unterminated flow sequence that the line-based parser accepts', () => {
+        const content = '---\nname: [a\ndescription: b\n---\nbody\n';
+        expect(parseFrontmatter(content).isValid).toBe(true);
+        expect(parseYamlFrontmatter(content).ok).toBe(false);
+      });
+
+      it('rejects missing frontmatter and non-mapping frontmatter', () => {
+        expect(parseYamlFrontmatter('no frontmatter here\n').ok).toBe(false);
+        expect(parseYamlFrontmatter('---\n- a\n- b\n---\nbody\n').ok).toBe(false);
+        expect(parseYamlFrontmatter('---\n---\nbody\n').ok).toBe(false);
+      });
+    });
+
+    describe('SKILL.md frontmatter validation', () => {
+      it('passes a valid SKILL.md (∃: file is read, so no error is not a missing-file pass)', async () => {
+        expect(await skillFrontmatterErrors(skillMd('demo'))).toEqual([]);
+        const missingRoot = makeFixture({});
+        const missing: string[] = [];
+        await validateSkillFrontmatter('demo', join(missingRoot, 'skills'), missing);
+        expect(missing).toEqual(['demo/SKILL.md: file not found']);
+      });
+
+      it('rejects a description with an unclosed quote', async () => {
+        const errors = await skillFrontmatterErrors(
+          '---\nname: demo\ndescription: "unclosed\n---\nbody\n'
+        );
+        expect(errors).toHaveLength(1);
+        expect(errors[0]).toContain('invalid YAML frontmatter');
+      });
+
+      it('rejects an unterminated flow sequence in name', async () => {
+        const errors = await skillFrontmatterErrors(
+          '---\nname: [a\ndescription: demo skill\n---\nbody\n'
+        );
+        expect(errors).toHaveLength(1);
+        expect(errors[0]).toContain('invalid YAML frontmatter');
+      });
+
+      it('rejects name/description that parse but are not non-empty strings', async () => {
+        const listName = await skillFrontmatterErrors(
+          '---\nname: [a]\ndescription: demo skill\n---\nbody\n'
+        );
+        expect(listName).toEqual(["demo/SKILL.md: field 'name' must be a non-empty string"]);
+
+        const numberDescription = await skillFrontmatterErrors(
+          '---\nname: demo\ndescription: 123\n---\nbody\n'
+        );
+        expect(numberDescription).toEqual([
+          "demo/SKILL.md: field 'description' must be a non-empty string",
+        ]);
+
+        const emptyName = await skillFrontmatterErrors(
+          "---\nname: ''\ndescription: demo skill\n---\nbody\n"
+        );
+        expect(emptyName).toEqual(["demo/SKILL.md: field 'name' must be a non-empty string"]);
+      });
+    });
+
+    describe('agent skills: reference scan', () => {
+      it('reads block-list references (∃ refs; core and harness are deployed)', async () => {
+        const scan = await scanWithSkillsYaml('skills:\n  - core-skill\n  - harness-skill\n');
+        expect(scan.refs.map((r) => r.skill)).toEqual(['core-skill', 'harness-skill']);
+        expect(scan.nonEmptySets).toBe(1);
+        expect(skillRefErrors(scan, true)).toEqual([]);
+        expect(vacuityErrors(scan)).toEqual([]);
+      });
+
+      it('reads inline-array references (∃ refs; core and harness are deployed)', async () => {
+        const scan = await scanWithSkillsYaml('skills: [core-skill, harness-skill]\n');
+        expect(scan.refs.map((r) => r.skill)).toEqual(['core-skill', 'harness-skill']);
+        expect(scan.nonEmptySets).toBe(1);
+        expect(skillRefErrors(scan, true)).toEqual([]);
+        expect(vacuityErrors(scan)).toEqual([]);
+      });
+
+      it('rejects a package-scope reference in block form', async () => {
+        const scan = await scanWithSkillsYaml('skills:\n  - core-skill\n  - pkg-skill\n');
+        expect(scan.refs).toHaveLength(2);
+        expect(skillRefErrors(scan, true)).toEqual([
+          "demo.md: skill reference 'pkg-skill' is package-scope and is not deployed by init",
+        ]);
+        // Existence-only mode (used for the executed .claude/ tree) does not flag package scope.
+        expect(skillRefErrors(scan, false)).toEqual([]);
+      });
+
+      it('rejects a package-scope reference in inline form', async () => {
+        const scan = await scanWithSkillsYaml('skills: [pkg-skill, core-skill]\n');
+        expect(scan.refs).toHaveLength(2);
+        expect(skillRefErrors(scan, true)).toEqual([
+          "demo.md: skill reference 'pkg-skill' is package-scope and is not deployed by init",
+        ]);
+      });
+
+      it('rejects a reference to a skill that does not exist (block and inline)', async () => {
+        const block = await scanWithSkillsYaml('skills:\n  - core-skill\n  - ghost-skill\n');
+        expect(skillRefErrors(block, true)).toEqual([
+          "demo.md: skill reference 'ghost-skill' not found",
+        ]);
+        const inline = await scanWithSkillsYaml('skills: [ghost-skill]\n');
+        expect(skillRefErrors(inline, true)).toEqual([
+          "demo.md: skill reference 'ghost-skill' not found",
+        ]);
+        // Existence is also enforced in existence-only mode.
+        expect(skillRefErrors(inline, false)).toHaveLength(1);
+      });
+
+      it('reports a malformed skills: value instead of ignoring it', async () => {
+        const scan = await scanWithSkillsYaml('skills: core-skill\n');
+        expect(scan.parseErrors).toEqual(["demo.md: 'skills' is not a list of strings"]);
+        expect(skillRefErrors(scan, true)).toHaveLength(1);
+      });
+
+      it('treats an absent or empty skills: key as no references, and the ∃ guard flags it', async () => {
+        const absent = await scanWithSkillsYaml('');
+        const empty = await scanWithSkillsYaml('skills:\n');
+        for (const scan of [absent, empty]) {
+          expect(scan.refs).toEqual([]);
+          expect(skillRefErrors(scan, true)).toEqual([]);
+          expect(vacuityErrors(scan)).toHaveLength(2);
+        }
+      });
+
+      it('∃ guard fails on an empty agents directory (no vacuous pass)', async () => {
+        const root = makeFixture({
+          'skills/core-skill/SKILL.md': skillMd('core-skill'),
+          'agents/README.txt': 'not an agent',
+        });
+        const scan = await scanAgentSkillRefs(join(root, 'agents'), join(root, 'skills'));
+        expect(scan.refs).toEqual([]);
+        expect(skillRefErrors(scan, true)).toEqual([]);
+        expect(vacuityErrors(scan)).toEqual([
+          'no agent declares a non-empty skills: list',
+          'no skill references were scanned',
+        ]);
+      });
     });
   });
 });

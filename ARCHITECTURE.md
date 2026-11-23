@@ -128,7 +128,7 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 | Skill | Description |
 |-------|-------------|
-| agora | Anonymous multi-round consensus review — reviews design/decision topics across 3 independent vendor CLIs under sealed A/B/C labels, judged each round by a rotating-model judge. Anonymity is not guaranteed deterministic; the limitation is documented in the skill body. `agora-runner` (Agora, 3.2) executes a single round on delegation and returns only the verdict summary. |
+| agora | Anonymous multi-round consensus review — reviews design/decision topics across 3 independent vendor CLIs under sealed A/B/C labels, judged each round by a judge that rotates per round only when agy is enabled with `AGORA_AGY_ENABLE=1`. Anonymity is not guaranteed deterministic; the limitation is documented in the skill body. `agora-runner` (Agora, 3.2) executes a single round on delegation and returns only the verdict summary. |
 
 ### 3.4 Guide Library (56 topics)
 

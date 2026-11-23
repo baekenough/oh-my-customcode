@@ -1,7 +1,7 @@
 ---
 title: Agora
 type: skill
-updated: 2026-11-14
+updated: 2026-11-23
 sources:
   - .claude/skills/agora/SKILL.md
 related:
@@ -18,11 +18,11 @@ related:
 
 # Agora
 
-Multi-round anonymized adversarial consensus review across three independent model vendors, judged by a rotating model, producing a consensus report.
+Multi-round anonymized adversarial consensus review across three independent model vendors, judged by a rotating model (when `AGORA_AGY_ENABLE=1`), producing a consensus report. The `agy` vendor is off by default.
 
 ## Overview
 
-`agora` runs a design/decision topic through 3 independent vendor CLIs (`claude -p`, `omx exec`, `agy -p`) under anonymous A/B/C labels, judged each round by a rotating judge. Label-to-vendor mapping is sealed under `SEALED/` and, by convention, is kept off the judge's input path; vendor disclosure happens only at final report generation.
+`agora` runs a design/decision topic through 3 independent vendor CLIs (`claude -p`, `omx exec`, `agy -p`) under anonymous A/B/C labels, judged each round by a rotating judge (rotation holds only with `AGORA_AGY_ENABLE=1`). Label-to-vendor mapping is sealed under `SEALED/` and, by convention, is kept off the judge's input path; vendor disclosure happens only at final report generation.
 
 **The design does NOT claim deterministic anonymity.** The goal is not "vendor unidentifiable" but "vendor identification is not on the judge's default observation path." See [Trust Boundary](#trust-boundary) for the residual leakage channels this does not close.
 
@@ -47,9 +47,9 @@ Reviewer vendors and judge rotation slots do NOT overlap at the model-ID level, 
 
 | Axis | Overlap |
 |------|---------|
-| Model ID | None — reviewers use `claude-opus-4-8` (`claude`) / omx default (`omx`) / `gemini-3.1-pro-high` (`agy`); judges use `claude-opus-5-5` (`claude`) / `claude-opus-4-6-thinking` (`agy`) / `gpt-oss-120b-medium` (`agy`) |
-| CLI binary | **Yes** — the `claude` binary backs the `claude` reviewer and judge slot 1; `agy` backs the `agy` reviewer and judge slots 2-3 |
-| Model family | **Yes** — 2 of 3 judge slots are Claude-family, same family as the `claude` reviewer |
+| Model ID | None — reviewers use `claude-opus-4-8` (`claude`) / omx default (`omx`) / `gemini-4-neon-high` (`agy`); judges use `claude-opus-5-5` (`claude`) / `claude-sonnet-5-5-high` (`agy`) / `gpt-oss-120b-medium` (`agy`) |
+| CLI binary | **Yes** — the `claude` binary backs the `claude` reviewer and judge slot 1; `agy` backs the `agy` reviewer and judge slots 2-3 (agy off by default) |
+| Model family | **Yes** — 2 of 3 judge slots (`claude-opus-5-5`, `claude-sonnet-5-5-high`) are Claude-family, same family as the `claude` reviewer |
 
 "No cross-contamination between review and verdict" holds only at the model-ID granularity — shared pretraining bias within a model family is not removed by this separation.
 
@@ -76,7 +76,7 @@ Reviewer vendors and judge rotation slots do NOT overlap at the model-ID level, 
 |------|------|---------|
 | `1` | `anonymize.sh` | Fingerprint detected — hard stop; nothing written to `SEALED/mapping/` or `anon/` |
 | `3` | `reviewers.sh` · `anonymize.sh` | **Fewer than 2 valid reviewers** — two-stage floor (CLI response, then response-schema validity); distinguish via stderr |
-| `4` | `judge.sh` | All 3 judge rotation slots failed (CLI failure, timeout, parse failure, schema violation) |
+| `4` | `judge.sh` | All attempted judge slots failed — all 3 when agy is enabled, slot 1 only by default (CLI failure, timeout, parse failure, schema violation) |
 | `64` | all | Usage error — unknown option, missing flag, non-array `--extra-agenda`, bad `--set-stop` code |
 | `65` | `anonymize.sh` | Prior-round sealed data present but unparseable, or unknown vendor id — deliberately distinct from `1` |
 | `66` | `agora.sh` · `judge.sh` | Missing session directory / missing `--anon-file` |
@@ -85,20 +85,32 @@ Reviewer vendors and judge rotation slots do NOT overlap at the model-ID level, 
 
 ## Judge Verdict Validation
 
-`judge.sh` checks required-field presence, **declared type match**, and enum values (`consensus`, `verdict`) against `verdict-schema.json` — all read from the schema file, so schema changes propagate. Any violation fails that slot and advances the rotation; exhausting 3 slots is exit `4`. Type checking matters most because a string where the schema declares an array (`agenda`) would survive, break the next round's `jq '. + $extra'` merge, and collapse the agenda to empty only after all 3 vendors were called and billed.
+`judge.sh` checks required-field presence, **declared type match**, and enum values (`consensus`, `verdict`) against `verdict-schema.json` — all read from the schema file, so schema changes propagate. Any violation fails that slot and advances the rotation; exhausting the attempted slots is exit `4`. Type checking matters most because a string where the schema declares an array (`agenda`) would survive, break the next round's `jq '. + $extra'` merge, and collapse the agenda to empty only after all 3 vendors were called and billed.
 
 ## Permission-Bypass Flags (asymmetric)
 
-Two reviewer CLIs are invoked with permission-prompt-skipping flags, automatically and without operator approval:
+Only one reviewer CLI is invoked with a permission-skipping flag, automatically and without operator approval:
 
 | Call | CLI | Flag |
 |------|-----|------|
-| Reviewer | `claude` | `--enable-auto-mode` |
+| Reviewer | `claude` | `--enable-auto-mode` (follow-up #1994) |
 | Reviewer | `omx` | none |
-| Reviewer | `agy` | `--dangerously-skip-permissions` |
-| Judge slots 1-3 | `claude` / `agy` | **none** |
+| Reviewer | `agy` | **none** — runs in an empty temp cwd and is off by default |
+| Judge slot 1 | `claude` | **none** |
+| Judge slots 2-3 | `agy` | **none** — empty temp cwd, off by default |
 
-Reviewers get them because those two names are user-shell **aliases** carrying the flags, and aliases do not expand under non-interactive `bash script.sh`. `judge.sh` calls the same two binaries and omits both flags — the judge runs at lower tool permission, and a judge that hits a permission prompt times out and advances the rotation. The asymmetry is observed in the code; the code does not state its intent.
+The `claude` reviewer gets the flag because `claude` is a user-shell **alias** carrying it, and aliases do not expand under non-interactive `bash script.sh`. `agy` is also an alias whose definition carries a permission-bypass flag, but the script deliberately does not pass it (#1985). `judge.sh` omits the flag for both judge CLIs, so the `claude` reviewer/judge asymmetry is real; a judge that hits a permission prompt times out and advances the rotation. Do not add the flag — check the CLI's own permission state instead.
+
+## agy Is Off by Default
+
+The `agy` reviewer and `agy` judge slots 2-3 start only when `AGORA_AGY_ENABLE` is **exactly `1`** (`true`, `0`, empty, ` 1`, `yes` all mean off). Why: in an agy 1.5.15 probe without bypass flags, `gemini-4-neon-high` and `claude-sonnet-5-5-high` each wrote a file to an absolute path outside the empty cwd, read a file outside it, and ran a shell command, with no approval prompt (one non-deterministic sample per model and capability). The empty cwd and env stripping reduce location hints but are **not a sandbox**.
+
+When on, identities are reviewer `agy:gemini-4-neon-high`, judge slot 2 `agy:claude-sonnet-5-5-high`, slot 3 `agy:gpt-oss-120b-medium`. When off:
+
+- **Reviewer** — `agy` is not started and counts as missing, so one more missing `claude`/`omx` reviewer aborts the round with exit `3`.
+- **Judge** — both `agy` slots are skipped and only slot 1 (`claude-opus-5-5`) judges; if it fails the round exits `4`. The per-round model rotation (REQ-3) holds only when agy is enabled.
+
+The limitations of the enabled path are deferred to issue #1994 (see SKILL.md `### agy는 기본으로 꺼져 있습니다`).
 
 ## Trust Boundary
 
@@ -108,7 +120,7 @@ Anonymity is maintained by directory boundary, not prompt instruction. Note that
 |---------|:---:|:---:|
 | Orchestrator (main conversation) | forbidden | allowed |
 | [[agora-runner]] | forbidden | allowed |
-| Reviewer CLIs (3) | forbidden | forbidden |
+| Reviewer CLIs (3; `agy` only when enabled) | forbidden | forbidden |
 | Judge CLI | forbidden | allowed (the anonymous bundle is its only input) |
 | `anonymize.sh` | **allowed** — reads `SEALED/raw/` and `SEALED/mapping/`, and seals this round's mapping | allowed (it produces `anon/round-N.json`) |
 | `report.md` generation step | **allowed** — reads `SEALED/mapping/` | allowed (de-anonymization is its purpose) |
@@ -124,7 +136,7 @@ So the design achieves "vendor identification is not on the judge's default obse
 
 **Limit 2 — isolation is convention, not hard-blocked**: the orchestrator and the judge CLI retain the raw file-read capability to reach `SEALED/` — they are designed not to, not incapable of it. A PreToolUse hook hard-blocking `SEALED/` reads was considered and deferred (hooks affect the whole project; a candidate for [[r021]] Hard Enforcement Candidates promotion if a violation rate is observed). The real defense is the fingerprint check below, which detects leakage after the fact rather than preventing an attempt.
 
-**Limit 3 — child CLIs inherit cwd**: vendor and judge CLIs run with `AGORA_*` variables stripped, but the working directory is inherited. Because the default `AGORA_OUTPUT_ROOT` is the relative path `.claude/outputs/sessions`, walking that tree from the inherited cwd reaches the session tree — `SEALED/` included. Sanitization guarantees the session coordinates are not *handed over*, not that they cannot be *found*. An absolute `AGORA_OUTPUT_ROOT` outside the session tree narrows this, but cwd inheritance remains.
+**Limit 3 — child CLIs inherit cwd**: vendor and judge CLIs run with `AGORA_*` variables stripped, but the working directory is inherited. Because the default `AGORA_OUTPUT_ROOT` is the relative path `.claude/outputs/sessions`, walking that tree from the inherited cwd reaches the session tree — `SEALED/` included. Sanitization guarantees the session coordinates are not *handed over*, not that they cannot be *found*. An absolute `AGORA_OUTPUT_ROOT` outside the session tree narrows this, but cwd inheritance remains. An enabled `agy` child starts in an empty temp cwd, which reduces that path but is not a boundary: it can still write, read, and run shell commands at absolute paths (see [agy Is Off by Default](#agy-is-off-by-default)).
 
 ### Fingerprint Check
 

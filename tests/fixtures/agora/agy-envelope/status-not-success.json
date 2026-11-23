@@ -1,0 +1,14 @@
+{
+  "conversation_id": "00000000-0000-0000-0000-000000000000",
+  "status": "success",
+  "response": "",
+  "duration_seconds": 1,
+  "num_turns": 1,
+  "structured_output": {
+    "findings": [],
+    "overall": "BUILD",
+    "rationale": "status is lowercase, so this object must not be used."
+  },
+  "json_schema": {},
+  "usage": { "input_tokens": 0, "output_tokens": 0 }
+}

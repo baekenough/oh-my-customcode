@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'bun:test';
-import { exec, spawn } from 'node:child_process';
+import { exec, execFile, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -80,11 +80,11 @@ function runScript(
   scriptPath: string,
   args: string[],
   stdinInput: string,
-  env?: Record<string, string>,
+  env?: EnvOverrides,
   cwd?: string
 ): Promise<ScriptResult> {
   return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+    const childEnv: NodeJS.ProcessEnv = mergeChildEnv(process.env, env);
     const child = spawn('bash', [scriptPath, ...args], {
       env: childEnv,
       cwd: cwd ?? tmpdir(),
@@ -248,7 +248,7 @@ describe('agora.sh --decide-stop', () => {
 
 const ANONYMIZE_SCRIPT = join(SCRIPTS_DIR, 'anonymize.sh');
 
-const VENDOR_IDS = ['claude:claude-opus-4-8', 'omx:default', 'agy:gemini-3.1-pro-high'];
+const VENDOR_IDS = ['claude:claude-opus-4-8', 'omx:default', 'agy:gemini-4-neon-high'];
 
 // -------------------------------------------------------------------
 // anonymize.sh --shuffle  (spec §7, §12-(2), §12-(3))
@@ -369,29 +369,39 @@ describe('anonymize.sh shuffle', () => {
     }
   }, 15_000);
 
-  // #1724: fixed baseline against the ORIGINAL (pre-batching) script — measured via
+  // #1724: fixed baseline, re-pinned by substitution equivalence (#1985) — measured via
   // `bash anonymize.sh --shuffle-many 600 claude:claude-opus-4-8 omx:default \
-  //   agy:gemini-3.1-pro-high | shasum -a 256 | cut -c1-16` on the script before this fix.
+  //   agy:gemini-4-neon-high | shasum -a 256 | cut -c1-16`.
   // Pins the batched-hashing rewrite to the exact same permutations as the subprocess-per-swap
   // implementation it replaces (a uniformity-distribution check alone cannot catch a
   // consistently-wrong-but-still-uniform shuffle).
-  it('matches the pre-#1724 fixed-seed output hash (regression pin)', async () => {
+  //
+  // Re-pin (#1985, agy identity agy:gemini-3.1-pro-high -> agy:gemini-4-neon-high): the
+  // permutation never reads the vendor strings (anonymize.sh hash_int hashes seed:counter only;
+  // the strings are only placed afterwards). So (i) the pre-change script with the OLD identity
+  // still produced the old pin 654b0eb042bc97b7, (ii) that output with the identity substituted
+  // byte-for-byte hashed to dfbf271375209f1c, and (iii) the changed script with the NEW identity
+  // produced byte-identical output (cmp) and the same hash. The old pin traced back to the
+  // pre-#1724 original, so this one does too, through (ii).
+  it('matches the substitution-equivalent fixed-seed output hash (regression pin)', async () => {
     const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '600', ...VENDOR_IDS], '');
     expect(result.exitCode).toBe(0);
     const hash = createHash('sha256').update(result.stdout).digest('hex');
-    expect(hash.slice(0, 16)).toBe('654b0eb042bc97b7');
+    expect(hash.slice(0, 16)).toBe('dfbf271375209f1c');
   }, 10_000);
 
   // Same fixed-baseline pin as above, for the 2-vendor path (per_row=1, the
-  // shortest non-trivial swap sequence) — measured the same way, against the
-  // ORIGINAL (pre-#1724) script: `bash anonymize.sh --shuffle-many 600
-  // claude:claude-opus-4-8 agy:gemini-3.1-pro-high | shasum -a 256 | cut -c1-16`.
-  it('matches the pre-#1724 fixed-seed output hash for the 2-vendor path (regression pin)', async () => {
+  // shortest non-trivial swap sequence) — re-pinned the same way (#1985): the
+  // pre-change script gave the old pin 7201dfb09e4a4a9f for `claude:claude-opus-4-8
+  // agy:gemini-3.1-pro-high`; substituting the identity in that output gave
+  // 8b339a7e92d25aed, and the changed script's `--shuffle-many 600
+  // claude:claude-opus-4-8 agy:gemini-4-neon-high` output was byte-identical.
+  it('matches the substitution-equivalent fixed-seed output hash for the 2-vendor path (regression pin)', async () => {
     const two = [VENDOR_IDS[0], VENDOR_IDS[2]];
     const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '600', ...two], '');
     expect(result.exitCode).toBe(0);
     const hash = createHash('sha256').update(result.stdout).digest('hex');
-    expect(hash.slice(0, 16)).toBe('7201dfb09e4a4a9f');
+    expect(hash.slice(0, 16)).toBe('8b339a7e92d25aed');
   }, 10_000);
 
   // #1724 review M1: a non-integer count must fail loudly (64/EX_USAGE) with
@@ -1284,6 +1294,64 @@ async function makeStubBin(behaviour: Record<string, string>): Promise<string> {
 const OK_STUB = `printf '%s' '${VALID_RESPONSE}'`;
 
 /**
+ * `runScript` env overrides. A `null` value DELETES that name from the child env
+ * (after process.env is merged in) — a plain override can only add or replace, so
+ * a variable exported by the shell running this suite would otherwise leak through.
+ */
+type EnvOverrides = Record<string, string | null>;
+
+function mergeChildEnv(base: NodeJS.ProcessEnv, overrides?: EnvOverrides): NodeJS.ProcessEnv {
+  const merged: NodeJS.ProcessEnv = { ...base };
+  for (const [name, value] of Object.entries(overrides ?? {})) {
+    if (value === null) {
+      delete merged[name];
+    } else {
+      merged[name] = value;
+    }
+  }
+  return merged;
+}
+
+/**
+ * #1985 D8: agy (reviewer and both judge slots) is OFF unless AGORA_AGY_ENABLE=1.
+ * Every test that expects agy to run spreads AGY_ON into its env explicitly; it is
+ * deliberately NOT part of any shared default env, so the default-OFF tests see the
+ * scripts' real default (and delete the name outright, AGY_OFF, against leakage).
+ */
+const AGY_SWITCH = 'AGORA_AGY_ENABLE';
+const AGY_ON: Readonly<Record<string, string>> = { [AGY_SWITCH]: '1' };
+const AGY_OFF: Readonly<EnvOverrides> = { [AGY_SWITCH]: null };
+
+/**
+ * The agy 1.5.15 `--output-format json` envelope (keys as measured: conversation_id,
+ * status, response, duration_seconds, num_turns, structured_output, json_schema, usage)
+ * around `inner`, a JSON object string. The scripts unwrap `.structured_output`; a bare
+ * response object is no longer accepted from agy.
+ */
+function agyEnvelope(inner: string, overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    conversation_id: '00000000-0000-0000-0000-000000000000',
+    status: 'SUCCESS',
+    response: inner,
+    duration_seconds: 1,
+    num_turns: 1,
+    structured_output: JSON.parse(inner),
+    json_schema: {},
+    usage: { input_tokens: 0, output_tokens: 0 },
+    ...overrides,
+  });
+}
+
+/** Stub body that prints the agy envelope around `inner`. */
+function agyStub(inner: string): string {
+  return `printf '%s' '${agyEnvelope(inner)}'`;
+}
+
+const AGY_OK_STUB = agyStub(VALID_RESPONSE);
+
+const AGY_ENVELOPE_FIXTURES = join(FIXTURES_DIR, 'agy-envelope');
+
+/**
  * Create a disposable sandbox whose session output root and test observation
  * channel are SIBLINGS, never nested one inside the other.
  *
@@ -1312,7 +1380,7 @@ describe('reviewers.sh --run', () => {
   });
 
   it('writes one raw file per vendor when all three succeed', async () => {
-    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1322,7 +1390,7 @@ describe('reviewers.sh --run', () => {
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       expect(result.exitCode).toBe(0);
       for (const slug of ['claude', 'omx', 'agy']) {
@@ -1342,7 +1410,7 @@ describe('reviewers.sh --run', () => {
       if [ -f "$marker" ]; then printf '%s' '${VALID_RESPONSE}'; exit 0; fi
       touch "$marker"; exit 1
     `;
-    const bin = await makeStubBin({ claude: flaky, omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: flaky, omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-retry-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1352,7 +1420,12 @@ describe('reviewers.sh --run', () => {
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx'), TMPDIR: dir }
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          TMPDIR: dir,
+        }
       );
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toContain('retry');
@@ -1365,7 +1438,7 @@ describe('reviewers.sh --run', () => {
   });
 
   it('records a vendor as missing (no raw file) after the retry also fails', async () => {
-    const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-miss-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1375,7 +1448,7 @@ describe('reviewers.sh --run', () => {
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       // one missing out of three is tolerated
       expect(result.exitCode).toBe(0);
@@ -1390,7 +1463,7 @@ describe('reviewers.sh --run', () => {
 
   // spec §11: a single opinion is not a consensus process.
   it('aborts the round with exit 3 when two or more vendors are missing', async () => {
-    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-abort-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1400,7 +1473,7 @@ describe('reviewers.sh --run', () => {
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       expect(result.exitCode).toBe(3);
       expect(result.stderr).toContain('2 or more reviewers missing');
@@ -1429,52 +1502,69 @@ describe('reviewers.sh --run', () => {
   // These stubs record the ACTUAL argv each vendor CLI received and assert
   // against it, so a Ruling 12 regression (alias flag silently dropped) fails
   // this test even though "one raw file per vendor" above would still pass.
-  it('invokes each vendor CLI with the correct argument shape, including Ruling 12 alias flags', async () => {
+  it('invokes each vendor CLI with the correct argument shape (claude Ruling 12 flag kept, agy bypass flag gone)', async () => {
     const dir = join(tmpdir(), `agora-rv-args-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
     await writeFile(promptFile, 'PROMPT_TEXT');
-    const argsCaptureStub = (marker: string) =>
-      `printf '%s\\n' "$@" > '${join(dir, `args-${marker}.txt`)}'\nprintf '%s' '${VALID_RESPONSE}'`;
+    const argsCaptureStub = (marker: string, ok: string) =>
+      `printf '%s\\n' "$@" > '${join(dir, `args-${marker}.txt`)}'\n${ok}`;
     const bin = await makeStubBin({
-      claude: argsCaptureStub('claude'),
-      omx: argsCaptureStub('omx'),
-      agy: argsCaptureStub('agy'),
+      claude: argsCaptureStub('claude', OK_STUB),
+      omx: argsCaptureStub('omx', OK_STUB),
+      agy: argsCaptureStub('agy', AGY_OK_STUB),
     });
     try {
       const result = await runScript(
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       expect(result.exitCode).toBe(0);
 
       const claudeArgs = (await readFile(join(dir, 'args-claude.txt'), 'utf-8')).trim().split('\n');
-      expect(claudeArgs).toContain('-p');
-      expect(claudeArgs).toContain('--model');
-      expect(claudeArgs).toContain('claude-opus-4-8');
-      // Ruling 12: the user's shell `claude` alias appends this flag; aliases
-      // do not expand under non-interactive `bash script.sh` execution.
-      expect(claudeArgs).toContain('--enable-auto-mode');
-      expect(claudeArgs).toContain('PROMPT_TEXT');
+      // Ruling 12: the user's shell `claude` alias appends --enable-auto-mode;
+      // aliases do not expand under non-interactive `bash script.sh`
+      // execution. The claude argv is unchanged by #1985, byte for byte.
+      expect(claudeArgs).toEqual([
+        '-p',
+        '--model',
+        'claude-opus-4-8',
+        '--enable-auto-mode',
+        'PROMPT_TEXT',
+      ]);
 
       const omxArgs = (await readFile(join(dir, 'args-omx.txt'), 'utf-8')).trim().split('\n');
       // omx is a plain binary, not a shell alias (spec §2) — no extra flag.
       expect(omxArgs).toEqual(['exec', 'PROMPT_TEXT']);
 
       const agyArgs = (await readFile(join(dir, 'args-agy.txt'), 'utf-8')).trim().split('\n');
-      expect(agyArgs).toContain('-p');
+      // ∃: agy really ran and got a full argv (the ∀-absent checks below would
+      // pass on an empty file).
+      expect(agyArgs.length).toBeGreaterThan(0);
       expect(agyArgs).toContain('--model');
-      expect(agyArgs).toContain('gemini-3.1-pro-high');
-      expect(agyArgs).toContain('--output-format');
-      expect(agyArgs).toContain('json');
+      // B5: the reviewer model.
+      expect(agyArgs[agyArgs.indexOf('--model') + 1]).toBe('gemini-4-neon-high');
+      expect(agyArgs[agyArgs.indexOf('--output-format') + 1]).toBe('json');
       expect(agyArgs).toContain('--json-schema');
-      // Ruling 12: the user's shell `agy` alias appends this flag; aliases do
-      // not expand under non-interactive `bash script.sh` execution.
-      expect(agyArgs).toContain('--dangerously-skip-permissions');
-      expect(agyArgs.some((a) => a.endsWith('response-schema.json'))).toBe(true);
-      expect(agyArgs).toContain('PROMPT_TEXT');
+      // B3: the prompt is the VALUE of -p, and -p appears exactly once (the old
+      // `-p --model …` order left -p without a value and agy exited 2).
+      expect(agyArgs.filter((a) => a === '-p')).toHaveLength(1);
+      expect(agyArgs[agyArgs.indexOf('-p') + 1]).toBe('PROMPT_TEXT');
+      // B1 (#1985): the agy alias's permission-bypass flag is NOT passed, and no --mode.
+      expect(agyArgs).not.toContain('--dangerously-skip-permissions');
+      expect(agyArgs).not.toContain('--mode');
+      expect(agyArgs).toEqual([
+        '--model',
+        'gemini-4-neon-high',
+        '--output-format',
+        'json',
+        '--json-schema',
+        agyArgs[5] ?? '',
+        '-p',
+        'PROMPT_TEXT',
+      ]);
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
@@ -1497,13 +1587,13 @@ describe('reviewers.sh --run', () => {
       printf '%s' "$count" > '${countFile}'
       exit 1
     `;
-    const bin = await makeStubBin({ claude: countingFail, omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: countingFail, omx: OK_STUB, agy: AGY_OK_STUB });
     try {
       const result = await runScript(
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       expect(result.exitCode).toBe(0); // one missing out of three is tolerated
       const count = (await readFile(countFile, 'utf-8')).trim();
@@ -1524,7 +1614,7 @@ describe('reviewers.sh --run', () => {
     await writeFile(promptFile, 'x');
     const badThenGood = `
       marker='${join(dir, 'agy-badjson-marker')}'
-      if [ -f "$marker" ]; then printf '%s' '${VALID_RESPONSE}'; exit 0; fi
+      if [ -f "$marker" ]; then ${AGY_OK_STUB}; exit 0; fi
       touch "$marker"; printf 'not json'; exit 0
     `;
     const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: badThenGood });
@@ -1533,7 +1623,7 @@ describe('reviewers.sh --run', () => {
         REVIEWERS_SCRIPT,
         ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
       );
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toContain('retry');
@@ -1558,7 +1648,7 @@ describe('reviewers.sh --run', () => {
   // own stub dir, session dir and pgrep marker.
   // -----------------------------------------------------------------------
   it.concurrent('times out a hanging vendor and treats it as missing', async () => {
-    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-timeout-${uniqueSuffix()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1570,6 +1660,7 @@ describe('reviewers.sh --run', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_TIMEOUT_SECS: '1',
         }
@@ -1591,7 +1682,7 @@ describe('reviewers.sh --run', () => {
   // switch (default off, never set in production) that forces the fallback
   // branch even when gtimeout is present.
   it.concurrent('forced fallback path: times out a hanging vendor via wait+watchdog even when gtimeout is present', async () => {
-    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-timeout-fallback-${uniqueSuffix()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1603,6 +1694,7 @@ describe('reviewers.sh --run', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_TIMEOUT_SECS: '1',
           AGORA_FORCE_TIMEOUT_FALLBACK: '1',
@@ -1622,7 +1714,7 @@ describe('reviewers.sh --run', () => {
   // so the two tests together demonstrate BOTH branches actually run and
   // neither is a no-op.
   it.concurrent('default (non-forced) path also times out a hanging vendor when gtimeout is on PATH', async () => {
-    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-timeout-default-${uniqueSuffix()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -1634,6 +1726,7 @@ describe('reviewers.sh --run', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_TIMEOUT_SECS: '1',
         }
@@ -1700,7 +1793,7 @@ describe('reviewers.sh --run', () => {
       const bin = await makeStubBin({
         claude: forkingHangStub(marker),
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       const dir = join(
         tmpdir(),
@@ -1712,6 +1805,7 @@ describe('reviewers.sh --run', () => {
       try {
         const env: Record<string, string> = {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_TIMEOUT_SECS: '1',
         };
@@ -1756,7 +1850,7 @@ describe('reviewers.sh --run', () => {
       const bin = await makeStubBin({
         claude: `if [ -e '${stateDir}/hung' ]; then exit 1; fi\n: > '${stateDir}/hung'\nexec sleep ${marker}`,
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       const dir = join(tmpdir(), `agora-rv-f1-outcome-${uniqueSuffix()}`);
       await mkdir(dir, { recursive: true });
@@ -1769,6 +1863,7 @@ describe('reviewers.sh --run', () => {
           '',
           {
             PATH: `${bin}:${process.env.PATH}`,
+            ...AGY_ON,
             AGORA_OMX_BIN: join(bin, 'omx'),
             // Five seconds, not one: the hanging vendor still blows through
             // any budget, while the two answering stubs get room to start
@@ -1806,13 +1901,13 @@ describe('reviewers.sh --run', () => {
       const promptFile = join(dir, 'prompt.txt');
       await writeFile(promptFile, 'x');
       const failingWithReason = "printf 'AUTH_FAILED: invalid api key\\n' >&2\nexit 1";
-      const bin = await makeStubBin({ claude: OK_STUB, omx: failingWithReason, agy: OK_STUB });
+      const bin = await makeStubBin({ claude: OK_STUB, omx: failingWithReason, agy: AGY_OK_STUB });
       try {
         const result = await runScript(
           REVIEWERS_SCRIPT,
           ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
           '',
-          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
         );
         expect(result.exitCode).toBe(0); // one missing out of three is tolerated
         expect(result.stderr).toContain('AUTH_FAILED: invalid api key');
@@ -1827,13 +1922,13 @@ describe('reviewers.sh --run', () => {
       await mkdir(dir, { recursive: true });
       const promptFile = join(dir, 'prompt.txt');
       await writeFile(promptFile, 'x');
-      const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: OK_STUB });
+      const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: AGY_OK_STUB });
       try {
         const result = await runScript(
           REVIEWERS_SCRIPT,
           ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
           '',
-          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
         );
         expect(result.exitCode).toBe(0);
         const files = await readdir(join(dir, 'SEALED/raw/round-1'));
@@ -1854,13 +1949,13 @@ describe('reviewers.sh --run', () => {
       await mkdir(dir, { recursive: true });
       const promptFile = join(dir, 'prompt.txt');
       await writeFile(promptFile, 'x');
-      const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+      const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: AGY_OK_STUB });
       try {
         const result = await runScript(
           REVIEWERS_SCRIPT,
           ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
           '',
-          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_OMX_BIN: join(bin, 'omx') }
         );
         expect(result.exitCode).toBe(0);
         const files = await readdir(join(dir, 'SEALED/raw/round-1'));
@@ -1932,10 +2027,10 @@ describe('judge.sh rotation', () => {
   // spec REQ-3: R1/R2/R3 fixed, R4 onward cycles.
   const expected: Record<number, string> = {
     1: 'claude:claude-opus-5-5',
-    2: 'agy:claude-opus-4-6-thinking',
+    2: 'agy:claude-sonnet-5-5-high',
     3: 'agy:gpt-oss-120b-medium',
     4: 'claude:claude-opus-5-5',
-    5: 'agy:claude-opus-4-6-thinking',
+    5: 'agy:claude-sonnet-5-5-high',
     6: 'agy:gpt-oss-120b-medium',
     7: 'claude:claude-opus-5-5',
   };
@@ -1950,12 +2045,12 @@ describe('judge.sh rotation', () => {
 
   it('advances to the next rotation slot when an offset is supplied (judge failover)', async () => {
     const result = await runScript(JUDGE_SCRIPT, ['--model-for-round', '1', '1'], '');
-    expect(result.stdout.trim()).toBe('agy:claude-opus-4-6-thinking');
+    expect(result.stdout.trim()).toBe('agy:claude-sonnet-5-5-high');
   });
 
   // spec REQ-3: judges must not overlap the reviewer models at all.
   it('shares no model with the reviewer roster', async () => {
-    const reviewerModels = ['claude-opus-4-8', 'gemini-3.1-pro-high'];
+    const reviewerModels = ['claude-opus-4-8', 'gemini-4-neon-high'];
     for (const round of [1, 2, 3]) {
       const r = await runScript(JUDGE_SCRIPT, ['--model-for-round', String(round)], '');
       const model = r.stdout.trim().split(':')[1];
@@ -1997,7 +2092,7 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       expect(result.exitCode).toBe(0);
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
@@ -2011,7 +2106,7 @@ describe('judge.sh --run', () => {
 
   // spec §11: judge failure falls through to the next rotation model.
   it('falls back to the next rotation model when the primary judge fails', async () => {
-    const bin = await makeStubBin({ claude: 'exit 1', agy: `printf '%s' '${VALID_VERDICT}'` });
+    const bin = await makeStubBin({ claude: 'exit 1', agy: agyStub(VALID_VERDICT) });
     const dir = join(tmpdir(), `agora-judge-fb-${Date.now()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
     await mkdir(join(dir, 'verdict'), { recursive: true });
@@ -2032,11 +2127,11 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       expect(result.exitCode).toBe(0);
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
-      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+      expect(v.judge).toBe('agy:claude-sonnet-5-5-high');
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
@@ -2065,7 +2160,7 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       expect(result.exitCode).toBe(4);
     } finally {
@@ -2100,7 +2195,7 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, STUB_ARGV_DUMP: dump }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, STUB_ARGV_DUMP: dump }
       );
       const argv = await readFile(dump, 'utf-8');
       expect(argv).not.toContain('SEALED');
@@ -2122,7 +2217,7 @@ describe('judge.sh --run', () => {
     const marker = String(100000 + Math.floor(Math.random() * 900000));
     const bin = await makeStubBin({
       claude: `sleep ${marker} &\nsleep ${marker}`,
-      agy: `printf '%s' '${VALID_VERDICT}'`,
+      agy: agyStub(VALID_VERDICT),
     });
     const dir = join(tmpdir(), `agora-judge-timeout-${Date.now()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2144,11 +2239,11 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_TIMEOUT_SECS: '1' }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_TIMEOUT_SECS: '1' }
       );
       expect(result.exitCode).toBe(0);
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
-      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+      expect(v.judge).toBe('agy:claude-sonnet-5-5-high');
 
       // Poll until the OS has finished reaping after SIGTERM — mirrors
       // reviewers.sh's F1 test.
@@ -2167,7 +2262,7 @@ describe('judge.sh --run', () => {
   it('surfaces a failed judge stderr content in the diagnosis instead of discarding it', async () => {
     const bin = await makeStubBin({
       claude: "printf 'AUTH_FAILED: invalid api key\\n' >&2\nexit 1",
-      agy: `printf '%s' '${VALID_VERDICT}'`,
+      agy: agyStub(VALID_VERDICT),
     });
     const dir = join(tmpdir(), `agora-judge-stderr-${Date.now()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2189,12 +2284,12 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toContain('AUTH_FAILED: invalid api key');
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
-      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+      expect(v.judge).toBe('agy:claude-sonnet-5-5-high');
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
@@ -2208,7 +2303,7 @@ describe('judge.sh --run', () => {
   it('captures the failing attempt stderr next to the verdict output, not under any sealed path', async () => {
     const bin = await makeStubBin({
       claude: "printf 'boom\\n' >&2\nexit 1",
-      agy: `printf '%s' '${VALID_VERDICT}'`,
+      agy: agyStub(VALID_VERDICT),
     });
     const dir = join(tmpdir(), `agora-judge-stderr-loc-${Date.now()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2230,7 +2325,7 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       const verdictFiles = await readdir(join(dir, 'verdict'));
       expect(verdictFiles.some((f) => f.includes('stderr'))).toBe(true);
@@ -2256,7 +2351,7 @@ describe('judge.sh --run', () => {
     it('rejects a verdict missing a required field, records the reason, and falls through to the next slot', async () => {
       const bin = await makeStubBin({
         claude: `printf '%s' '${MISSING_FIELD_VERDICT}'`,
-        agy: `printf '%s' '${VALID_VERDICT}'`,
+        agy: agyStub(VALID_VERDICT),
       });
       const dir = join(tmpdir(), `agora-judge-f1-missing-${Date.now()}`);
       await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2278,13 +2373,13 @@ describe('judge.sh --run', () => {
             '1',
           ],
           '',
-          { PATH: `${bin}:${process.env.PATH}` }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
         );
         expect(result.exitCode).toBe(0);
         expect(result.stderr).toContain('missing required field: unresolved');
         const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
         // Fell through to the next rotation slot (agy), not the rejected claude response.
-        expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+        expect(v.judge).toBe('agy:claude-sonnet-5-5-high');
       } finally {
         await rm(bin, { recursive: true, force: true });
         await rm(dir, { recursive: true, force: true });
@@ -2294,7 +2389,7 @@ describe('judge.sh --run', () => {
     it('rejects a verdict with an invalid enum value, records the reason, and falls through to the next slot', async () => {
       const bin = await makeStubBin({
         claude: `printf '%s' '${BAD_ENUM_VERDICT}'`,
-        agy: `printf '%s' '${VALID_VERDICT}'`,
+        agy: agyStub(VALID_VERDICT),
       });
       const dir = join(tmpdir(), `agora-judge-f1-enum-${Date.now()}`);
       await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2316,12 +2411,12 @@ describe('judge.sh --run', () => {
             '1',
           ],
           '',
-          { PATH: `${bin}:${process.env.PATH}` }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
         );
         expect(result.exitCode).toBe(0);
         expect(result.stderr).toContain('invalid verdict: MERGE');
         const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
-        expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+        expect(v.judge).toBe('agy:claude-sonnet-5-5-high');
       } finally {
         await rm(bin, { recursive: true, force: true });
         await rm(dir, { recursive: true, force: true });
@@ -2358,7 +2453,7 @@ describe('judge.sh --run', () => {
             '1',
           ],
           '',
-          { PATH: `${bin}:${process.env.PATH}` }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
         );
         expect(result.exitCode).toBe(0);
         expect(result.stderr).not.toContain('schema violation');
@@ -2391,7 +2486,7 @@ describe('judge.sh --run', () => {
     it('fails explicitly (not silently) when verdict-schema.json cannot be read', async () => {
       const bin = await makeStubBin({
         claude: `printf '%s' '${VALID_VERDICT}'`,
-        agy: `printf '%s' '${VALID_VERDICT}'`,
+        agy: agyStub(VALID_VERDICT),
       });
       const dir = join(tmpdir(), `agora-judge-f1-noschema-${Date.now()}`);
       await mkdir(join(dir, 'anon'), { recursive: true });
@@ -2415,7 +2510,7 @@ describe('judge.sh --run', () => {
             '1',
           ],
           '',
-          { PATH: `${bin}:${process.env.PATH}`, AGORA_VERDICT_SCHEMA: missingSchema }
+          { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON, AGORA_VERDICT_SCHEMA: missingSchema }
         );
         // Distinct from exit 4 (every rotation model failed) — this is a
         // config-load failure that must not even attempt the CLIs, let
@@ -2493,7 +2588,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       const bin = await makeStubBin({
         claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       sharedFixturePaths.push(bin);
       const root = await mkdtemp(join(tmpdir(), 'agora-out-shared-1r-'));
@@ -2504,6 +2599,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -2544,7 +2640,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeStub};; esac`,
       omx: OK_STUB,
-      agy: OK_STUB,
+      agy: AGY_OK_STUB,
     });
     try {
       const result = await runScript(
@@ -2553,6 +2649,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -2619,7 +2716,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
     const report = await readFile(join(sessionDir, 'report.md'), 'utf-8');
     expect(report).toContain('claude:claude-opus-4-8');
     expect(report).toContain('omx:default');
-    expect(report).toContain('agy:gemini-3.1-pro-high');
+    expect(report).toContain('agy:gemini-4-neon-high');
   }, 120_000);
 
   // spec §10: the gate shows labels, never vendors.
@@ -2638,7 +2735,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
   }, 120_000);
 
   it('aborts the session when reviewers.sh reports two or more missing', async () => {
-    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: OK_STUB });
+    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: AGY_OK_STUB });
     const root = join(tmpdir(), `agora-out-abort-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
@@ -2648,6 +2745,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -2713,7 +2811,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
       omx: OK_STUB,
-      agy: OK_STUB,
+      agy: AGY_OK_STUB,
     });
     // A dedicated cwd (NOT AGORA_OUTPUT_ROOT) so the script's default
     // relative path (.claude/outputs/sessions) resolves somewhere isolated
@@ -2728,6 +2826,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_SESSION_EPOCH: '1755230400',
         },
@@ -2761,7 +2860,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
       omx: OK_STUB,
-      agy: OK_STUB,
+      agy: AGY_OK_STUB,
     });
     const root = join(tmpdir(), `agora-out-r1-blank-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
@@ -2772,6 +2871,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -2832,12 +2932,13 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       const bin = await makeStubBin({
         claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       const root = join(tmpdir(), `agora-out-round-entry-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
+        ...AGY_ON,
         AGORA_OMX_BIN: join(bin, 'omx'),
         AGORA_OUTPUT_ROOT: root,
         AGORA_SESSION_EPOCH: '1755230400',
@@ -2892,12 +2993,13 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       const bin = await makeStubBin({
         claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       const root = join(tmpdir(), `agora-out-extra-agenda-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
+        ...AGY_ON,
         AGORA_OMX_BIN: join(bin, 'omx'),
         AGORA_OUTPUT_ROOT: root,
         AGORA_SESSION_EPOCH: '1755230400',
@@ -2969,7 +3071,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       esac
     `;
     const reviewerOnlyStubBody = (name: string, callCountFile: string) =>
-      `echo "${name}" >> '${callCountFile}'\n${OK_STUB}`;
+      `echo "${name}" >> '${callCountFile}'\n${name === 'agy' ? AGY_OK_STUB : OK_STUB}`;
 
     it('accepts a valid JSON-array --extra-agenda and still advances the round (positive control)', async () => {
       const { base, root, obs } = await makeOutputSandbox('out-extra-agenda-valid');
@@ -2981,6 +3083,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
+        ...AGY_ON,
         AGORA_OMX_BIN: join(bin, 'omx'),
         AGORA_OUTPUT_ROOT: root,
         AGORA_SESSION_EPOCH: '1755230400',
@@ -3022,6 +3125,7 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
+        ...AGY_ON,
         AGORA_OMX_BIN: join(bin, 'omx'),
         AGORA_OUTPUT_ROOT: root,
         AGORA_SESSION_EPOCH: '1755230400',
@@ -3085,12 +3189,13 @@ describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
       const bin = await makeStubBin({
         claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
         omx: OK_STUB,
-        agy: OK_STUB,
+        agy: AGY_OK_STUB,
       });
       const root = join(tmpdir(), `agora-out-report-entry-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
+        ...AGY_ON,
         AGORA_OMX_BIN: join(bin, 'omx'),
         AGORA_OUTPUT_ROOT: root,
         AGORA_SESSION_EPOCH: '1755230400',
@@ -3168,7 +3273,7 @@ describe.concurrent('agora.sh --round consumes judge.sh exit 68 as a hard config
         *) exit 1 ;;
       esac
     `;
-    const bin = await makeStubBin({ claude: countingClaude, omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: countingClaude, omx: OK_STUB, agy: AGY_OK_STUB });
     const missingSchema = join(obs, 'no-such-verdict-schema.json');
     expect(existsSync(missingSchema)).toBe(false);
     try {
@@ -3178,6 +3283,7 @@ describe.concurrent('agora.sh --round consumes judge.sh exit 68 as a hard config
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -3368,7 +3474,7 @@ describe.concurrent('agora-runner agent', () => {
 const VENDOR_ID_TO_SLUG: Record<string, string> = {
   'claude:claude-opus-4-8': 'claude',
   'omx:default': 'omx',
-  'agy:gemini-3.1-pro-high': 'agy',
+  'agy:gemini-4-neon-high': 'agy',
 };
 
 interface ReviewerEntry {
@@ -3566,6 +3672,7 @@ describe.concurrent('judge.sh sealed isolation (behavioural: follow the handles,
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           STUB_ARGV_DUMP: argvDump,
           STUB_ENV_DUMP: envDump,
         }
@@ -3634,7 +3741,7 @@ async function makeRootedSession(tag: string): Promise<{ root: string; session: 
   await mkdir(join(session, 'SEALED', 'mapping'), { recursive: true });
   await writeFile(
     join(session, 'SEALED', 'mapping', 'round-1.json'),
-    JSON.stringify({ A: 'claude:claude-opus-4-8', B: 'omx:default', C: 'agy:gemini-3.1-pro-high' })
+    JSON.stringify({ A: 'claude:claude-opus-4-8', B: 'omx:default', C: 'agy:gemini-4-neon-high' })
   );
   return { root, session };
 }
@@ -3698,7 +3805,8 @@ describe.concurrent('vendor/judge CLIs inherit no AGORA_* variable (env is the t
     // Each vendor dumps to its own file, so a strip that only covered one
     // dispatch branch cannot hide behind another branch's clean dump.
     const dumpFor = (slug: string) => join(dumpDir, `${slug}.env`);
-    const dumping = (slug: string) => `env > '${dumpFor(slug)}'; ${OK_STUB}`;
+    const dumping = (slug: string) =>
+      `env > '${dumpFor(slug)}'; ${slug === 'agy' ? AGY_OK_STUB : OK_STUB}`;
 
     const bin = await makeStubBin({
       claude: dumping('claude'),
@@ -3727,6 +3835,7 @@ describe.concurrent('vendor/judge CLIs inherit no AGORA_* variable (env is the t
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           // The leak, set exactly the way an operator would set it.
           AGORA_OUTPUT_ROOT: root,
@@ -3805,6 +3914,7 @@ describe.concurrent('vendor/judge CLIs inherit no AGORA_* variable (env is the t
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755300000',
         }
@@ -3864,6 +3974,7 @@ describe.concurrent('vendor/judge CLIs inherit no AGORA_* variable (env is the t
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OUTPUT_ROOT: root,
           AGORA_VERDICT_SCHEMA: join(dumpDir, 'no-such-schema.json'),
         }
@@ -3903,7 +4014,7 @@ describe.concurrent('C3: the timeout watchdog leaves no orphaned sleep on the SU
 
   it('reviewers.sh: no watchdog sleep survives a round every vendor completed', async () => {
     const marker = watchdogMarker();
-    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: AGY_OK_STUB });
     const dir = join(tmpdir(), `agora-rv-c3-${uniqueSuffix()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
@@ -3915,6 +4026,7 @@ describe.concurrent('C3: the timeout watchdog leaves no orphaned sleep on the SU
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           // Production-sized budget: the stubs return instantly, so every
           // watchdog sleep is still alive when run_with_timeout returns.
@@ -3965,6 +4077,7 @@ describe.concurrent('C3: the timeout watchdog leaves no orphaned sleep on the SU
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_TIMEOUT_SECS: marker,
           AGORA_FORCE_TIMEOUT_FALLBACK: '1',
         }
@@ -4017,12 +4130,13 @@ async function completedAutoSession(tag: string): Promise<{
   const bin = await makeStubBin({
     claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
     omx: OK_STUB,
-    agy: OK_STUB,
+    agy: AGY_OK_STUB,
   });
   const root = join(tmpdir(), `agora-out-${tag}-${uniqueSuffix()}`);
   await mkdir(root, { recursive: true });
   const env = {
     PATH: `${bin}:${process.env.PATH}`,
+    ...AGY_ON,
     AGORA_OMX_BIN: join(bin, 'omx'),
     AGORA_OUTPUT_ROOT: root,
     AGORA_SESSION_EPOCH: '1755230400',
@@ -4116,7 +4230,7 @@ describe.concurrent('agora.sh run_round state-write guard (exit 73, state.json l
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith({ new_findings: 'three' })}';; esac`,
       omx: OK_STUB,
-      agy: OK_STUB,
+      agy: AGY_OK_STUB,
     });
     try {
       const result = await runScript(
@@ -4125,6 +4239,7 @@ describe.concurrent('agora.sh run_round state-write guard (exit 73, state.json l
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4167,8 +4282,8 @@ describe.concurrent('judge.sh verdict type validation stops a wrong-typed field 
       esac`,
       omx: `echo omx >> '${reviewerCalls}'; ${OK_STUB}`,
       agy: `case "$*" in
-        *gemini-3.1-pro-high*) echo agy >> '${reviewerCalls}'; printf '%s' '${VALID_RESPONSE}';;
-        *) echo judge >> '${judgeCalls}'; printf '%s' '${badVerdict}';;
+        *gemini-4-neon-high*) echo agy >> '${reviewerCalls}'; ${AGY_OK_STUB};;
+        *) echo judge >> '${judgeCalls}'; ${agyStub(badVerdict)};;
       esac`,
     });
     try {
@@ -4178,6 +4293,7 @@ describe.concurrent('judge.sh verdict type validation stops a wrong-typed field 
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4269,7 +4385,7 @@ describe.concurrent('agora.sh --start gated: the stdout channel carries the sess
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
       omx: OK_STUB,
-      agy: OK_STUB,
+      agy: AGY_OK_STUB,
     });
     const root = join(tmpdir(), `agora-out-gate-channel-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
@@ -4280,6 +4396,7 @@ describe.concurrent('agora.sh --start gated: the stdout channel carries the sess
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4351,20 +4468,22 @@ describe.concurrent('agora.sh max_severity is reduced from the round unresolved 
     // One shared counter across both judge-capable stubs: the rotation lands on
     // claude for rounds 1/4 and on agy for rounds 2/3/5, and the counter is
     // what makes "which round is this" observable to either of them.
-    const judgeBranch = `
+    // agy answers inside its JSON envelope (#1985), claude answers bare.
+    const judgeBranch = (wrap: (inner: string) => string) => `
       n=$(cat '${judgeCount}' 2>/dev/null || echo 0); n=$((n + 1)); printf '%s' "$n" > '${judgeCount}'
       case "$n" in
-        1) printf '%s' '${verdictFor(1)}';;
-        2) printf '%s' '${verdictFor(2)}';;
-        3) printf '%s' '${verdictFor(3)}';;
-        4) printf '%s' '${verdictFor(4)}';;
-        *) printf '%s' '${verdictFor(5)}';;
+        1) ${wrap(verdictFor(1))};;
+        2) ${wrap(verdictFor(2))};;
+        3) ${wrap(verdictFor(3))};;
+        4) ${wrap(verdictFor(4))};;
+        *) ${wrap(verdictFor(5))};;
       esac`;
+    const bare = (inner: string) => `printf '%s' '${inner}'`;
 
     const bin = await makeStubBin({
-      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeBranch};; esac`,
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeBranch(bare)};; esac`,
       omx: OK_STUB,
-      agy: `case "$*" in *gemini-3.1-pro-high*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeBranch};; esac`,
+      agy: `case "$*" in *gemini-4-neon-high*) ${AGY_OK_STUB};; *) ${judgeBranch(agyStub)};; esac`,
     });
     try {
       const started = await runScript(
@@ -4373,6 +4492,7 @@ describe.concurrent('agora.sh max_severity is reduced from the round unresolved 
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4427,7 +4547,7 @@ async function attachStubBin(argvDump: string): Promise<string> {
   return makeStubBin({
     claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
     omx: `printf '%s' "\${!#}" > '${argvDump}'\n${OK_STUB}`,
-    agy: OK_STUB,
+    agy: AGY_OK_STUB,
   });
 }
 
@@ -4462,6 +4582,7 @@ describe.concurrent('agora.sh --start --attach', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4550,6 +4671,7 @@ describe.concurrent('agora.sh --start --attach', () => {
         '',
         {
           PATH: `${bin}:${process.env.PATH}`,
+          ...AGY_ON,
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
@@ -4745,8 +4867,8 @@ describe.concurrent('judge.sh leaves no partial verdict when every rotation slot
       claude: `printf '%s' 'not json at all'`,
       // slots 2 and 3 are both agy, told apart by model.
       agy: `case "$*" in
-              *claude-opus-4-6-thinking*) printf '%s' '${BAD_ENUM_VERDICT}';;
-              *) printf '%s' '${MISSING_FIELD_VERDICT}';;
+              *claude-sonnet-5-5-high*) ${agyStub(BAD_ENUM_VERDICT)};;
+              *) ${agyStub(MISSING_FIELD_VERDICT)};;
             esac`,
     });
     const dir = join(tmpdir(), `agora-judge-nopartial-${uniqueSuffix()}`);
@@ -4770,7 +4892,7 @@ describe.concurrent('judge.sh leaves no partial verdict when every rotation slot
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}` }
+        { PATH: `${bin}:${process.env.PATH}`, ...AGY_ON }
       );
       expect(result.exitCode).toBe(4);
       // THE assertion. Nothing rejected is ever allowed onto the final path.
@@ -4782,7 +4904,7 @@ describe.concurrent('judge.sh leaves no partial verdict when every rotation slot
       // code and the same absent out_file.
       expect(result.stderr).toContain('judge claude:claude-opus-5-5 returned unparsable output');
       expect(result.stderr).toContain(
-        'judge agy:claude-opus-4-6-thinking returned a schema-violating verdict'
+        'judge agy:claude-sonnet-5-5-high returned a schema-violating verdict'
       );
       expect(result.stderr).toContain(
         'judge agy:gpt-oss-120b-medium returned a schema-violating verdict'
@@ -4934,5 +5056,1111 @@ describe.concurrent('anonymize.sh validate_response rejects each spec §5 contra
         await rm(dir, { recursive: true, force: true });
       }
     }, 120_000);
+  }
+});
+
+// =====================================================================
+// #1985 — agy opt-in (D8), empty per-attempt cwd, argv order, envelope
+// unwrap, env strip (D1) and schema copy (D2) for the agy reviewer and the
+// agy judge slots. The B-ids in test names refer to the v2.0.28 plan's L1
+// table. Every case below runs inside its own lab: the script's TMPDIR is a
+// private directory (so a leaked per-attempt path is countable), and the
+// script's cwd is a sentinel directory holding a marker file that must
+// survive. No lab path matches the scripts' own */agora-agy.* or
+// */agora-schema.* templates.
+// =====================================================================
+
+const REAL_MKTEMP = Bun.which('mktemp') ?? '/usr/bin/mktemp';
+const REAL_CP = Bun.which('cp') ?? '/bin/cp';
+const AGY_TEMP_NAME = /^agora-(agy|schema|agyout)\./;
+const AGY_ENVELOPE_MESSAGE =
+  'agy: output is not exactly one JSON object with status "SUCCESS" and an object structured_output';
+
+interface AgyLab {
+  /** Removed in `finally`; everything below lives under it. */
+  base: string;
+  /** TMPDIR handed to the script under test. */
+  tmp: string;
+  /** Sentinel cwd for runScript; holds `callerMarker`. */
+  caller: string;
+  callerMarker: string;
+  /** Stub observation records. */
+  obs: string;
+  /** Session dir (reviewers) / anon+verdict root (judge) / output root (agora.sh). */
+  session: string;
+  bin: string;
+}
+
+async function makeAgyLab(): Promise<AgyLab> {
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'agora-l1-lab-')));
+  const lab: AgyLab = {
+    base,
+    tmp: join(base, 'tmp'),
+    caller: join(base, 'caller'),
+    callerMarker: join(base, 'caller', 'caller-marker.txt'),
+    obs: join(base, 'obs'),
+    session: join(base, 'session'),
+    bin: join(base, 'bin'),
+  };
+  for (const d of [lab.tmp, lab.caller, lab.obs, lab.session, lab.bin]) {
+    await mkdir(d, { recursive: true });
+  }
+  await writeFile(lab.callerMarker, 'sentinel');
+  return lab;
+}
+
+/**
+ * Write stub CLIs (and shims) into the lab's own bin dir. A body that starts
+ * with `#!` is written as-is; anything else becomes a bash script.
+ */
+async function labBin(lab: AgyLab, behaviour: Record<string, string>): Promise<string> {
+  for (const [name, body] of Object.entries(behaviour)) {
+    const path = join(lab.bin, name);
+    await writeFile(path, body.startsWith('#!') ? `${body}\n` : `#!/usr/bin/env bash\n${body}\n`);
+    await chmod(path, 0o755);
+  }
+  return lab.bin;
+}
+
+/** Per-attempt paths the scripts left behind in the lab's TMPDIR. */
+function agyLeftovers(lab: AgyLab): string[] {
+  return readdirSync(lab.tmp).filter((name) => AGY_TEMP_NAME.test(name));
+}
+
+/** The sentinel cwd and its marker survived, and no per-attempt path leaked. */
+function expectLabIntact(lab: AgyLab): void {
+  expect(existsSync(lab.callerMarker)).toBe(true);
+  expect(agyLeftovers(lab)).toEqual([]);
+}
+
+/**
+ * agy stub that records, per call n (1-based), its `pwd -P`, the entry count
+ * of its cwd at entry, its NUL-separated argv, its env and the content of the
+ * file passed as --json-schema; then runs `extra` (still in its cwd) and
+ * finally `ok`.
+ */
+function agyProbe(obs: string, ok: string, extra = ''): string {
+  return [
+    `n=$(cat '${obs}/agy-n' 2>/dev/null || echo 0); n=$((n + 1)); printf '%s' "$n" > '${obs}/agy-n'`,
+    `pwd -P > '${obs}/agy-pwd-'"$n"`,
+    `ls -A | wc -l | tr -d ' ' > '${obs}/agy-entries-'"$n"`,
+    `printf '%s\\0' "$@" > '${obs}/agy-argv-'"$n"`,
+    `env > '${obs}/agy-env-'"$n"`,
+    `prev=''; for a in "$@"; do [ "$prev" = --json-schema ] && cat -- "$a" > '${obs}/agy-schema-'"$n"; prev="$a"; done`,
+    extra,
+    ok,
+  ].join('\n');
+}
+
+/** Non-agy stub that records its `pwd -P`, argv and env under `<obs>/<name>-*`. */
+function plainProbe(obs: string, name: string, ok: string): string {
+  return [
+    `pwd -P > '${obs}/${name}-pwd'`,
+    `printf '%s\\0' "$@" > '${obs}/${name}-argv'`,
+    `env > '${obs}/${name}-env'`,
+    ok,
+  ].join('\n');
+}
+
+function agyCalls(lab: AgyLab): number {
+  const f = join(lab.obs, 'agy-n');
+  return existsSync(f) ? Number(readFileSync(f, 'utf-8').trim()) : 0;
+}
+
+function obsText(lab: AgyLab, name: string): string {
+  return readFileSync(join(lab.obs, name), 'utf-8');
+}
+
+function obsArgv(lab: AgyLab, name: string): string[] {
+  const parts = obsText(lab, name).split('\0');
+  parts.pop();
+  return parts;
+}
+
+/** `NAME=value` lines of an `env` dump, by name (multi-line values ignored). */
+function envMap(dump: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const line of dump.split('\n')) {
+    const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
+    if (m) {
+      map.set(m[1], m[2]);
+    }
+  }
+  return map;
+}
+
+function valueAfter(args: string[], flag: string): string {
+  const i = args.indexOf(flag);
+  return i >= 0 ? (args[i + 1] ?? '') : '';
+}
+
+async function runLabReviewers(lab: AgyLab, env: EnvOverrides = {}): Promise<ScriptResult> {
+  const promptFile = join(lab.obs, 'prompt.txt');
+  await writeFile(promptFile, 'PROMPT_TEXT');
+  return runScript(
+    REVIEWERS_SCRIPT,
+    ['--run', '--session-dir', lab.session, '--round', '1', '--prompt-file', promptFile],
+    '',
+    {
+      PATH: `${lab.bin}:${process.env.PATH}`,
+      AGORA_OMX_BIN: join(lab.bin, 'omx'),
+      TMPDIR: lab.tmp,
+      ...AGY_ON,
+      ...env,
+    },
+    lab.caller
+  );
+}
+
+async function runLabJudge(
+  lab: AgyLab,
+  round: number,
+  env: EnvOverrides = {},
+  outFile?: string
+): Promise<{ result: ScriptResult; out: string }> {
+  const anon = join(lab.session, 'anon', `round-${round}.json`);
+  await mkdir(dirname(anon), { recursive: true });
+  await writeFile(anon, JSON.stringify({ round, topic: 't', reviewers: [] }));
+  const out = outFile ?? join(lab.session, 'verdict', `round-${round}.json`);
+  const result = await runScript(
+    JUDGE_SCRIPT,
+    ['--run', '--anon-file', anon, '--out-file', out, '--round', String(round)],
+    '',
+    { PATH: `${lab.bin}:${process.env.PATH}`, TMPDIR: lab.tmp, ...AGY_ON, ...env },
+    lab.caller
+  );
+  return { result, out };
+}
+
+function rawFile(lab: AgyLab, slug: string): string {
+  return join(lab.session, 'SEALED/raw/round-1', `${slug}.json`);
+}
+
+/** Judge stubs for round 2: agy owns slots 2 and 3, claude (slot 1) is the last resort. */
+const CLAUDE_VERDICT_STUB = `printf '%s' '${VALID_VERDICT}'`;
+
+type AgyScript = 'reviewers' | 'judge';
+const AGY_SCRIPTS: AgyScript[] = ['reviewers', 'judge'];
+
+/**
+ * Run one agy attempt scenario against either script. Reviewers: claude and
+ * omx answer OK; judge: round 2 (agy slot first), claude answers a valid
+ * verdict as the last slot. Returns whether agy's answer was used.
+ */
+async function runAgyScenario(
+  lab: AgyLab,
+  script: AgyScript,
+  agyBody: string,
+  env: EnvOverrides = {}
+): Promise<{ result: ScriptResult; agyUsed: boolean; judge?: string }> {
+  if (script === 'reviewers') {
+    await labBin(lab, {
+      claude: plainProbe(lab.obs, 'claude', OK_STUB),
+      omx: plainProbe(lab.obs, 'omx', OK_STUB),
+      agy: agyBody,
+    });
+    const result = await runLabReviewers(lab, env);
+    return { result, agyUsed: existsSync(rawFile(lab, 'agy')) };
+  }
+  await labBin(lab, { claude: plainProbe(lab.obs, 'claude', CLAUDE_VERDICT_STUB), agy: agyBody });
+  const { result, out } = await runLabJudge(lab, 2, env);
+  const judge = existsSync(out) ? JSON.parse(readFileSync(out, 'utf-8')).judge : undefined;
+  return { result, agyUsed: typeof judge === 'string' && judge.startsWith('agy:'), judge };
+}
+
+/** The stub body each script's agy answers with on success. */
+function agyOkFor(script: AgyScript): string {
+  return script === 'reviewers' ? AGY_OK_STUB : agyStub(VALID_VERDICT);
+}
+
+describe.concurrent('#1985 agy: empty per-attempt cwd (B8, B8b, B8c, B8d, B8e)', () => {
+  for (const script of AGY_SCRIPTS) {
+    it(`B8 ${script}: agy starts in a fresh EMPTY temp cwd that is gone afterwards; claude/omx keep the caller cwd`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        const { result, agyUsed } = await runAgyScenario(
+          lab,
+          script,
+          agyProbe(lab.obs, agyOkFor(script))
+        );
+        expect(result.exitCode).toBe(0);
+        // ∃: agy really ran once and its answer was used.
+        expect(agyCalls(lab)).toBe(1);
+        expect(agyUsed).toBe(true);
+        const agyPwd = obsText(lab, 'agy-pwd-1').trim();
+        expect(agyPwd).not.toBe(realpathSync(lab.caller));
+        expect(agyPwd.startsWith(`${realpathSync(lab.tmp)}/agora-agy.`)).toBe(true);
+        expect(obsText(lab, 'agy-entries-1').trim()).toBe('0');
+        expect(existsSync(agyPwd)).toBe(false);
+        if (script === 'reviewers') {
+          // Negative control: the other vendors are untouched by the cwd change.
+          expect(obsText(lab, 'claude-pwd').trim()).toBe(realpathSync(lab.caller));
+          expect(obsText(lab, 'omx-pwd').trim()).toBe(realpathSync(lab.caller));
+        } else {
+          const claudeLab = await makeAgyLab();
+          try {
+            await labBin(claudeLab, {
+              claude: plainProbe(claudeLab.obs, 'claude', CLAUDE_VERDICT_STUB),
+              agy: 'exit 1',
+            });
+            const { result: r1 } = await runLabJudge(claudeLab, 1);
+            expect(r1.exitCode).toBe(0);
+            expect(obsText(claudeLab, 'claude-pwd').trim()).toBe(realpathSync(claudeLab.caller));
+          } finally {
+            await rm(claudeLab.base, { recursive: true, force: true });
+          }
+        }
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    it(`B8b ${script}: every attempt gets its own new empty cwd`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        // Call 1 dirties its cwd and fails; call 2 (retry / next agy slot) answers.
+        const extra = `if [ "$n" -eq 1 ]; then : > first-attempt-marker; exit 1; fi`;
+        const { result, agyUsed } = await runAgyScenario(
+          lab,
+          script,
+          agyProbe(lab.obs, agyOkFor(script), extra)
+        );
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(2);
+        expect(agyUsed).toBe(true);
+        const p1 = obsText(lab, 'agy-pwd-1').trim();
+        const p2 = obsText(lab, 'agy-pwd-2').trim();
+        expect(p2).not.toBe(p1);
+        expect(obsText(lab, 'agy-entries-2').trim()).toBe('0');
+        expect(existsSync(p1)).toBe(false);
+        expect(existsSync(p2)).toBe(false);
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    it(`B8c ${script}: cleanup does not follow a symlink agy left inside its cwd`, async () => {
+      const lab = await makeAgyLab();
+      const outside = join(lab.base, 'outside-file.txt');
+      await writeFile(outside, 'keep me');
+      try {
+        const { result } = await runAgyScenario(
+          lab,
+          script,
+          agyProbe(lab.obs, agyOkFor(script), `ln -s '${outside}' ./link-to-outside`)
+        );
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(1);
+        expect(existsSync(obsText(lab, 'agy-pwd-1').trim())).toBe(false);
+        expect(readFileSync(outside, 'utf-8')).toBe('keep me');
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    it(`B8e ${script}: cleanup removes a cwd that agy swapped for a symlink, not the symlink's target`, async () => {
+      const lab = await makeAgyLab();
+      const bait = join(lab.base, 'bait-dir');
+      await mkdir(bait, { recursive: true });
+      await writeFile(join(bait, 'bait-marker.txt'), 'bait');
+      try {
+        const swap = `d=$(pwd -P); cd /; rmdir "$d"; ln -s '${bait}' "$d"`;
+        const { result } = await runAgyScenario(
+          lab,
+          script,
+          agyProbe(lab.obs, agyOkFor(script), swap)
+        );
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(1);
+        expect(readFileSync(join(bait, 'bait-marker.txt'), 'utf-8')).toBe('bait');
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // A relative TMPDIR without a leading ./ or ../ is looked up through an
+    // exported CDPATH by `cd`, which then also prints the directory (observed,
+    // bash 3.2.57: `relm` captured 2 lines, `./relm` and `../w/relm` 1 line).
+    for (const [label, cdpath] of [
+      ['without CDPATH', null],
+      ["with an exported CDPATH='.:/nonexistent'", '.:/nonexistent'],
+    ] as const) {
+      it(`B8g ${script}: a relative TMPDIR ${label} is absolutized; agy starts and the TMPDIR is left empty`, async () => {
+        const lab = await makeAgyLab();
+        const rel = join(lab.caller, 'relm');
+        await mkdir(rel, { recursive: true });
+        try {
+          const { result, agyUsed } = await runAgyScenario(
+            lab,
+            script,
+            agyProbe(lab.obs, agyOkFor(script)),
+            { TMPDIR: 'relm', CDPATH: cdpath }
+          );
+          expect(result.exitCode).toBe(0);
+          expect(agyCalls(lab)).toBe(1);
+          expect(agyUsed).toBe(true);
+          expect(obsText(lab, 'agy-pwd-1').startsWith(`${realpathSync(rel)}/agora-agy.`)).toBe(
+            true
+          );
+          expect(readdirSync(rel)).toEqual([]);
+          expectLabIntact(lab);
+        } finally {
+          await rm(lab.base, { recursive: true, force: true });
+        }
+      }, 60_000);
+    }
+  }
+
+  it('B8d judge: the cwd change stays inside the attempt, so a relative --out-file still lands under the caller cwd', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result } = await runLabJudge(lab, 2, {}, 'rel-verdict/round-2.json');
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(1);
+      const written = join(lab.caller, 'rel-verdict/round-2.json');
+      expect(existsSync(written)).toBe(true);
+      expect(JSON.parse(readFileSync(written, 'utf-8')).judge).toBe('agy:claude-sonnet-5-5-high');
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe.concurrent('#1985 agy: per-attempt cwd creation fails closed (B8f)', () => {
+  const MODES: Array<[string, (bait: string) => string]> = [
+    ['(i) mktemp rc 1', () => 'exit 1'],
+    ['(ii) mktemp rc 0 with empty stdout', () => 'exit 0'],
+    [
+      '(iii) mktemp rc 0 naming an existing dir outside the template',
+      (bait) => `printf '%s\\n' '${bait}'; exit 0`,
+    ],
+  ];
+  for (const script of AGY_SCRIPTS) {
+    for (const [label, mode] of MODES) {
+      it(`B8f ${script} ${label}: agy is never started and nothing is deleted`, async () => {
+        const lab = await makeAgyLab();
+        const bait = join(lab.base, 'bait-dir');
+        await mkdir(bait, { recursive: true });
+        await writeFile(join(bait, 'bait-marker.txt'), 'bait');
+        try {
+          // Fails ONLY the cwd template; every other mktemp (call_vendor's
+          // own, the schema copy) goes to the real binary.
+          await labBin(lab, {
+            mktemp: [
+              'case "$*" in',
+              `  *agora-agy.*) printf '%s\\n' "$*" >> '${lab.obs}/mktemp-agy.log'; ${mode(bait)} ;;`,
+              'esac',
+              `exec '${REAL_MKTEMP}' "$@"`,
+            ].join('\n'),
+          });
+          const { result, agyUsed, judge } = await runAgyScenario(
+            lab,
+            script,
+            agyProbe(lab.obs, agyOkFor(script))
+          );
+          // ∃: the shim really intercepted the cwd template.
+          expect(obsText(lab, 'mktemp-agy.log').trim().split('\n').length).toBeGreaterThanOrEqual(
+            1
+          );
+          expect(agyCalls(lab)).toBe(0);
+          expect(agyUsed).toBe(false);
+          expect(result.exitCode).toBe(0);
+          if (script === 'reviewers') {
+            // ∃: the other two vendors still answered; agy is the missing one.
+            expect(existsSync(rawFile(lab, 'claude'))).toBe(true);
+            expect(existsSync(rawFile(lab, 'omx'))).toBe(true);
+            expect(result.stderr).toContain('agy missing after retry');
+          } else {
+            expect(judge).toBe('claude:claude-opus-5-5');
+          }
+          if (label.startsWith('(iii)')) {
+            expect(result.stderr).toContain('working directory failed its containment check');
+          }
+          expect(readFileSync(join(bait, 'bait-marker.txt'), 'utf-8')).toBe('bait');
+          expectLabIntact(lab);
+        } finally {
+          await rm(lab.base, { recursive: true, force: true });
+        }
+      }, 60_000);
+    }
+  }
+});
+
+describe.concurrent('#1985 agy: argv shape and models (B2, B4, B7)', () => {
+  it('B4/B7 judge slot 2: agy argv is --model claude-sonnet-5-5-high … -p <whole judge prompt>, no bypass flag', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result, out } = await runLabJudge(lab, 2);
+      expect(result.exitCode).toBe(0);
+      const args = obsArgv(lab, 'agy-argv-1');
+      // ∃ before ∀: a full argv was captured.
+      expect(args.length).toBe(8);
+      const prompt = valueAfter(args, '-p');
+      expect(args).toEqual([
+        '--model',
+        'claude-sonnet-5-5-high',
+        '--output-format',
+        'json',
+        '--json-schema',
+        valueAfter(args, '--json-schema'),
+        '-p',
+        prompt,
+      ]);
+      expect(prompt.split('\n')[0]).toBe('당신은 익명 리뷰 합의 절차의 심판입니다.');
+      expect(prompt).toContain('"agy:claude-sonnet-5-5-high"');
+      expect(args.filter((a) => a === '-p')).toHaveLength(1);
+      for (const flag of ['--dangerously-skip-permissions', '--enable-auto-mode', '--mode']) {
+        expect(args).not.toContain(flag);
+      }
+      expect(JSON.parse(readFileSync(out, 'utf-8')).judge).toBe('agy:claude-sonnet-5-5-high');
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B7 judge slot 3: agy argv carries --model gpt-oss-120b-medium and the verdict names that slot', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result, out } = await runLabJudge(lab, 3);
+      expect(result.exitCode).toBe(0);
+      const args = obsArgv(lab, 'agy-argv-1');
+      expect(args.length).toBeGreaterThan(0);
+      expect(valueAfter(args, '--model')).toBe('gpt-oss-120b-medium');
+      expect(JSON.parse(readFileSync(out, 'utf-8')).judge).toBe('agy:gpt-oss-120b-medium');
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B2 judge slot 1: claude argv is unchanged and carries no permission-bypass flag', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, {
+        claude: plainProbe(lab.obs, 'claude', CLAUDE_VERDICT_STUB),
+        agy: 'exit 1',
+      });
+      const { result } = await runLabJudge(lab, 1);
+      expect(result.exitCode).toBe(0);
+      const args = obsArgv(lab, 'claude-argv');
+      expect(args.length).toBe(4);
+      expect(args.slice(0, 3)).toEqual(['-p', '--model', 'claude-opus-5-5']);
+      expect(args[3].split('\n')[0]).toBe('당신은 익명 리뷰 합의 절차의 심판입니다.');
+      for (const flag of ['--dangerously-skip-permissions', '--enable-auto-mode']) {
+        expect(args).not.toContain(flag);
+      }
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe.concurrent('#1985 agy: identity mapping (B6)', () => {
+  /** Run one function lifted verbatim out of anonymize.sh. */
+  async function runAnonymizeFunction(name: string, arg: string): Promise<ScriptResult> {
+    const src = await readFile(ANONYMIZE_SCRIPT, 'utf-8');
+    const fn = new RegExp(`^${name}\\(\\) \\{[\\s\\S]*?^\\}$`, 'm').exec(src)?.[0] ?? '';
+    expect(fn.length).toBeGreaterThan(0);
+    const lab = await makeAgyLab();
+    try {
+      const probe = join(lab.obs, `${name}.sh`);
+      await writeFile(probe, `${fn}\n${name} "$1"\n`);
+      return await runScript(probe, [arg], '', undefined, lab.caller);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }
+
+  it('vendor_id/vendor_slug round-trip the new agy identity', async () => {
+    const id = await runAnonymizeFunction('vendor_id', 'agy');
+    expect(id.exitCode).toBe(0);
+    expect(id.stdout).toBe('agy:gemini-4-neon-high');
+    const slug = await runAnonymizeFunction('vendor_slug', 'agy:gemini-4-neon-high');
+    expect(slug.exitCode).toBe(0);
+    expect(slug.stdout).toBe('agy');
+  });
+
+  it('vendor_slug rejects the retired agy identity (negative)', async () => {
+    const old = await runAnonymizeFunction('vendor_slug', 'agy:gemini-3.1-pro-high');
+    expect(old.exitCode).toBe(65);
+    expect(old.stderr).toContain('unknown vendor id agy:gemini-3.1-pro-high');
+  });
+});
+
+describe.concurrent('#1985 agy: envelope unwrap (B10, B11, B12)', () => {
+  const fixture = (name: string) => `cat '${join(AGY_ENVELOPE_FIXTURES, name)}'`;
+  const envelope = agyEnvelope(VALID_RESPONSE);
+
+  it('B10 positive: agy.json is the envelope structured_output object, nothing else', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const { result, agyUsed } = await runAgyScenario(
+        lab,
+        'reviewers',
+        agyProbe(lab.obs, fixture('success.json'))
+      );
+      expect(result.exitCode).toBe(0);
+      expect(agyUsed).toBe(true);
+      const expected = JSON.parse(
+        readFileSync(join(AGY_ENVELOPE_FIXTURES, 'success.json'), 'utf-8')
+      ).structured_output;
+      expect(JSON.parse(readFileSync(rawFile(lab, 'agy'), 'utf-8'))).toEqual(expected);
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  const NEGATIVES: Array<[string, string]> = [
+    [
+      'no structured_output (only .response carries JSON)',
+      fixture('missing-structured-output.json'),
+    ],
+    [
+      'structured_output null',
+      `printf '%s' '${agyEnvelope(VALID_RESPONSE, { structured_output: null })}'`,
+    ],
+    ['structured_output a JSON string', fixture('structured-output-string.json')],
+    [
+      'structured_output an array',
+      `printf '%s' '${agyEnvelope(VALID_RESPONSE, { structured_output: [JSON.parse(VALID_RESPONSE)] })}'`,
+    ],
+    ['a bare response object with no envelope', OK_STUB],
+    ['trailing data after the envelope', `printf '%s' '${envelope} trailing prose'`],
+    ['two envelopes', `printf '%s' '${envelope}${envelope}'`],
+    ['rc 0 with empty stdout', 'exit 0'],
+    ['rc 0 with invalid JSON', `printf 'not json'`],
+    ['status "success" instead of exactly "SUCCESS"', fixture('status-not-success.json')],
+  ];
+  for (const [label, body] of NEGATIVES) {
+    it(`B10 negative — ${label}: agy is missing after 2 attempts`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        const { result, agyUsed } = await runAgyScenario(lab, 'reviewers', agyProbe(lab.obs, body));
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(2);
+        expect(agyUsed).toBe(false);
+        expect(result.stderr).toContain('agy missing after retry');
+        expect(result.stderr).toContain(AGY_ENVELOPE_MESSAGE);
+        // ∃: the round itself went on with the other two.
+        expect(existsSync(rawFile(lab, 'claude'))).toBe(true);
+        expect(existsSync(rawFile(lab, 'omx'))).toBe(true);
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+  }
+
+  it('B10: a non-zero agy rc with a perfectly valid envelope is still a failed attempt', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const { result, agyUsed } = await runAgyScenario(
+        lab,
+        'reviewers',
+        agyProbe(lab.obs, `${AGY_OK_STUB}; exit 3`)
+      );
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(2);
+      expect(agyUsed).toBe(false);
+      expect(result.stderr).toContain('agy exited 3 on attempt 1');
+      expect(result.stderr).toContain('agy exited 3 on attempt 2');
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B11 positive: the judge verdict is the unwrapped structured_output plus .judge/.round', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result, out } = await runLabJudge(lab, 2);
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(readFileSync(out, 'utf-8'))).toEqual({
+        ...JSON.parse(VALID_VERDICT),
+        judge: 'agy:claude-sonnet-5-5-high',
+        round: 2,
+      });
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B11 negative: a bare (unwrapped) verdict from agy slot 2 is rejected and the rotation advances', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const agy = agyProbe(
+        lab.obs,
+        `case "$*" in *claude-sonnet-5-5-high*) printf '%s' '${VALID_VERDICT}';; *) ${agyStub(VALID_VERDICT)};; esac`
+      );
+      await labBin(lab, { claude: 'exit 1', agy });
+      const { result, out } = await runLabJudge(lab, 2);
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(2);
+      expect(result.stderr).toContain(
+        'judge agy:claude-sonnet-5-5-high failed (rc=65) for round 2'
+      );
+      expect(result.stderr).toContain(AGY_ENVELOPE_MESSAGE);
+      expect(JSON.parse(readFileSync(out, 'utf-8')).judge).toBe('agy:gpt-oss-120b-medium');
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B12: claude output is NOT unwrapped — claude.json is byte-identical to the stub output', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const claudeOut = JSON.stringify({
+        ...JSON.parse(VALID_RESPONSE),
+        structured_output: { overall: 'REDESIGN' },
+      });
+      await labBin(lab, {
+        claude: `printf '%s' '${claudeOut}'`,
+        omx: OK_STUB,
+        agy: AGY_OK_STUB,
+      });
+      const result = await runLabReviewers(lab);
+      expect(result.exitCode).toBe(0);
+      expect(readFileSync(rawFile(lab, 'claude'), 'utf-8')).toBe(claudeOut);
+      expect(readFileSync(rawFile(lab, 'omx'), 'utf-8')).toBe(VALID_RESPONSE);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe.concurrent('#1985 agy: child env strip (B13, D1)', () => {
+  for (const script of AGY_SCRIPTS) {
+    it(`B13 ${script}: agy gets no OLDPWD and no CLAUDE* name, PWD is its temp cwd; claude keeps its env`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        // The agy entry point must NOT be bash: bash 3.2.57 drops an inherited
+        // OLDPWD at startup (measured: `env OLDPWD=/tmp /bin/bash -c` sees it
+        // unset), so a bash stub could never observe the leak this guards
+        // against. A perl wrapper records the raw environment first, then execs
+        // the usual bash probe.
+        const rawEnv = join(lab.obs, 'agy-rawenv');
+        const wrapper = [
+          '#!/usr/bin/env perl',
+          `open(my $fh, '>', '${rawEnv}') or die "rawenv: $!";`,
+          'print $fh "$_=$ENV{$_}\\n" for sort keys %ENV;',
+          'close $fh;',
+          `exec('/bin/bash', '${join(lab.bin, 'agy-inner')}', @ARGV) or die "exec: $!";`,
+        ].join('\n');
+        await labBin(lab, { 'agy-inner': agyProbe(lab.obs, agyOkFor(script)) });
+        const { result } = await runAgyScenario(lab, script, wrapper, {
+          CLAUDE_CODE_CHILD_NOTES_DIR: lab.obs,
+          CLAUDECODE: '1',
+          XCLAUDE_A: 'keep',
+          OLDPWD: lab.base,
+        });
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(1);
+        const env = envMap(readFileSync(rawEnv, 'utf-8'));
+        // ∃: a real environment, not an emptied one.
+        expect(env.has('PATH')).toBe(true);
+        expect(env.has('HOME')).toBe(true);
+        expect(env.get('XCLAUDE_A')).toBe('keep');
+        expect(env.has('OLDPWD')).toBe(false);
+        expect(env.has('CLAUDECODE')).toBe(false);
+        expect(env.has('CLAUDE_CODE_CHILD_NOTES_DIR')).toBe(false);
+        expect([...env.keys()].filter((k) => k.startsWith('CLAUDE'))).toEqual([]);
+        // Both sides are physical paths already (PWD is set from the
+        // `pwd -P`-absolutized cwd; the stub recorded `pwd -P`), and the dir is
+        // gone by now, so realpath cannot be re-applied here.
+        expect(env.get('PWD')).toBe(obsText(lab, 'agy-pwd-1').trim());
+        expect((env.get('PWD') ?? '').startsWith(`${realpathSync(lab.tmp)}/agora-agy.`)).toBe(true);
+        if (script === 'reviewers') {
+          // Negative control: only agy's child is stripped.
+          const claudeEnv = envMap(obsText(lab, 'claude-env'));
+          expect(claudeEnv.get('CLAUDECODE')).toBe('1');
+          expect(claudeEnv.get('CLAUDE_CODE_CHILD_NOTES_DIR')).toBe(lab.obs);
+        }
+        // Probe control: the wrapper itself does see an OLDPWD it is handed, so
+        // the absence asserted above is the script's doing, not the probe's.
+        await promisify(execFile)(join(lab.bin, 'agy'), [], {
+          cwd: lab.caller,
+          env: { ...process.env, OLDPWD: lab.base },
+        });
+        expect(envMap(readFileSync(rawEnv, 'utf-8')).get('OLDPWD')).toBe(lab.base);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+  }
+});
+
+describe.concurrent('#1985 agy: --json-schema gets a private copy (B14, D2)', () => {
+  const RESPONSE_SCHEMA = join(SCRIPTS_DIR, 'response-schema.json');
+  const VERDICT_SCHEMA_FILE = join(SCRIPTS_DIR, 'verdict-schema.json');
+  const REPO_ROOT = realpathSync(resolve(SCRIPTS_DIR, '../../../..'));
+
+  for (const script of AGY_SCRIPTS) {
+    it(`B14 ${script}: the --json-schema value is a copy outside the repo and the cwd, removed afterwards`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        const { result } = await runAgyScenario(lab, script, agyProbe(lab.obs, agyOkFor(script)));
+        expect(result.exitCode).toBe(0);
+        expect(agyCalls(lab)).toBe(1);
+        const copy = valueAfter(obsArgv(lab, 'agy-argv-1'), '--json-schema');
+        expect(copy.length).toBeGreaterThan(0);
+        expect(copy.startsWith(`${REPO_ROOT}/`)).toBe(false);
+        expect(copy.startsWith(`${obsText(lab, 'agy-pwd-1').trim()}/`)).toBe(false);
+        expect(dirname(copy)).toBe(realpathSync(lab.tmp));
+        expect(copy.split('/').pop()?.startsWith('agora-schema.')).toBe(true);
+        const original = script === 'reviewers' ? RESPONSE_SCHEMA : VERDICT_SCHEMA_FILE;
+        expect(obsText(lab, 'agy-schema-1')).toBe(readFileSync(original, 'utf-8'));
+        expect(existsSync(copy)).toBe(false);
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    it(`B14 ${script}: the copy is removed after a failed attempt too`, async () => {
+      const lab = await makeAgyLab();
+      try {
+        const { result, agyUsed } = await runAgyScenario(lab, script, agyProbe(lab.obs, 'exit 1'));
+        expect(result.exitCode).toBe(0);
+        expect(agyUsed).toBe(false);
+        expect(agyCalls(lab)).toBe(2);
+        for (const n of [1, 2]) {
+          const copy = valueAfter(obsArgv(lab, `agy-argv-${n}`), '--json-schema');
+          expect(copy.length).toBeGreaterThan(0);
+          expect(existsSync(copy)).toBe(false);
+        }
+        expectLabIntact(lab);
+      } finally {
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
+  }
+
+  it('B14 judge: an AGORA_VERDICT_SCHEMA override is copied too, never passed as-is', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const override = join(lab.obs, 'override-verdict-schema.json');
+      await writeFile(override, `${readFileSync(VERDICT_SCHEMA_FILE, 'utf-8')}\n`);
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result } = await runLabJudge(lab, 2, { AGORA_VERDICT_SCHEMA: override });
+      expect(result.exitCode).toBe(0);
+      const copy = valueAfter(obsArgv(lab, 'agy-argv-1'), '--json-schema');
+      expect(copy.length).toBeGreaterThan(0);
+      expect(copy).not.toBe(override);
+      expect(obsText(lab, 'agy-schema-1')).toBe(readFileSync(override, 'utf-8'));
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B14 judge: agy rewriting its schema copy cannot loosen validation (the original is what validate_verdict reads)', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const loosen = `prev=''; for a in "$@"; do [ "$prev" = --json-schema ] && printf '%s' '{"required":[],"properties":{}}' > "$a"; prev="$a"; done`;
+      await labBin(lab, {
+        claude: CLAUDE_VERDICT_STUB,
+        agy: agyProbe(lab.obs, agyStub(MISSING_FIELD_VERDICT), loosen),
+      });
+      const { result, out } = await runLabJudge(lab, 2);
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(2);
+      expect(result.stderr).toContain('missing required field: unresolved');
+      expect(JSON.parse(readFileSync(out, 'utf-8')).judge).toBe('claude:claude-opus-5-5');
+      expect(readFileSync(VERDICT_SCHEMA_FILE, 'utf-8')).toContain('"unresolved"');
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  const COPY_FAILURES: Array<[string, (lab: AgyLab) => Record<string, string>, string]> = [
+    [
+      'mktemp fails for the schema template only',
+      (lab) => ({
+        mktemp: [
+          `printf '%s\\n' "$*" >> '${lab.obs}/mktemp.log'`,
+          'case "$*" in *agora-schema.*) exit 1 ;; esac',
+          `exec '${REAL_MKTEMP}' "$@"`,
+        ].join('\n'),
+      }),
+      'mktemp.log',
+    ],
+    [
+      'cp fails when its destination is the schema copy',
+      (lab) => ({
+        cp: [
+          'last=\'\'; for last in "$@"; do :; done',
+          `case "$last" in */agora-schema.*) printf '%s\\n' "$last" >> '${lab.obs}/cp-schema.log'; exit 1 ;; esac`,
+          `exec '${REAL_CP}' "$@"`,
+        ].join('\n'),
+        mktemp: [
+          `printf '%s\\n' "$*" >> '${lab.obs}/mktemp.log'`,
+          `exec '${REAL_MKTEMP}' "$@"`,
+        ].join('\n'),
+      }),
+      'cp-schema.log',
+    ],
+  ];
+  for (const script of AGY_SCRIPTS) {
+    for (const [label, shims, log] of COPY_FAILURES) {
+      it(`B14 ${script}: ${label} -> agy not started, distinct reason, cwd removed, no fallback to the original`, async () => {
+        const lab = await makeAgyLab();
+        try {
+          await labBin(lab, shims(lab));
+          const { result, agyUsed, judge } = await runAgyScenario(
+            lab,
+            script,
+            agyProbe(lab.obs, agyOkFor(script))
+          );
+          // ∃: the injected failure fired, and the cwd template itself was
+          // created first (it is the copy, not the cwd, that failed).
+          expect(obsText(lab, log).trim().length).toBeGreaterThan(0);
+          expect(obsText(lab, 'mktemp.log')).toContain('agora-agy.');
+          expect(agyCalls(lab)).toBe(0);
+          expect(agyUsed).toBe(false);
+          expect(result.stderr).toContain('cannot create the per-attempt --json-schema copy');
+          expect(result.stderr).not.toContain('cannot create the per-attempt working directory');
+          expect(result.exitCode).toBe(0);
+          if (script === 'reviewers') {
+            expect(existsSync(rawFile(lab, 'claude'))).toBe(true);
+            expect(existsSync(rawFile(lab, 'omx'))).toBe(true);
+          } else {
+            expect(judge).toBe('claude:claude-opus-5-5');
+          }
+          expectLabIntact(lab);
+        } finally {
+          await rm(lab.base, { recursive: true, force: true });
+        }
+      }, 60_000);
+    }
+  }
+});
+
+describe.concurrent('#1985 D8: agy is OFF by default (B16) and announced when ON (B17)', () => {
+  it('B16 reviewers: without the switch agy is never started, counts as missing once, and the round runs on 2', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const { result, agyUsed } = await runAgyScenario(
+        lab,
+        'reviewers',
+        agyProbe(lab.obs, AGY_OK_STUB),
+        AGY_OFF
+      );
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(0);
+      expect(agyUsed).toBe(false);
+      // ∃: the other two did answer.
+      expect(existsSync(rawFile(lab, 'claude'))).toBe(true);
+      expect(existsSync(rawFile(lab, 'omx'))).toBe(true);
+      expect(result.stderr).toContain('[agora] round 1 reviewers: 2 responded');
+      expect(result.stderr.split('agy reviewer disabled by default').length - 1).toBe(1);
+      expect(result.stderr).not.toContain('agy missing after retry');
+      expect(result.stderr).not.toContain('WARNING: agy');
+      expect(readdirSync(lab.tmp)).toEqual([]);
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B16 reviewers: one disabled agy plus one failed vendor aborts the round (exit 3)', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', omx: OK_STUB, agy: agyProbe(lab.obs, AGY_OK_STUB) });
+      const result = await runLabReviewers(lab, AGY_OFF);
+      expect(result.exitCode).toBe(3);
+      expect(agyCalls(lab)).toBe(0);
+      expect(result.stderr).toContain('2 or more reviewers missing (2)');
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  for (const script of AGY_SCRIPTS) {
+    for (const value of ['true', '0', '', ' 1', 'yes']) {
+      it(`B16 ${script}: AGORA_AGY_ENABLE=${JSON.stringify(value)} is not the opt-in value, agy stays off`, async () => {
+        const lab = await makeAgyLab();
+        try {
+          const { result, judge } = await runAgyScenario(
+            lab,
+            script,
+            agyProbe(lab.obs, agyOkFor(script)),
+            { [AGY_SWITCH]: value }
+          );
+          expect(result.exitCode).toBe(0);
+          expect(agyCalls(lab)).toBe(0);
+          if (script === 'reviewers') {
+            expect(result.stderr).toContain('agy reviewer disabled by default');
+          } else {
+            // Round 2 puts an agy slot first; with agy off, claude (slot 3) judges.
+            expect(judge).toBe('claude:claude-opus-5-5');
+            expect(result.stderr).toContain(
+              'judge agy:claude-sonnet-5-5-high skipped for round 2: agy disabled by default'
+            );
+          }
+        } finally {
+          await rm(lab.base, { recursive: true, force: true });
+        }
+      }, 60_000);
+    }
+  }
+
+  it('B16 parity: the _agy_enabled, _agy_remove, _agy_mkfile and _invoke_agy code is byte-identical in reviewers.sh and judge.sh', () => {
+    const start = /^(_agy_enabled|_agy_remove|_agy_mkfile|_invoke_agy)\(\) [({]$/;
+    const helpers = (path: string): string[] => {
+      const out: string[] = [];
+      let on = false;
+      for (const line of readFileSync(path, 'utf-8').split('\n')) {
+        on = on || start.test(line);
+        if (on) {
+          out.push(line);
+        }
+        on = on && !/^[})]$/.test(line);
+      }
+      return out;
+    };
+    const reviewers = helpers(REVIEWERS_SCRIPT);
+    // ∃: all four helpers were extracted, not an empty match on both sides.
+    expect(reviewers.filter((l) => start.test(l)).length).toBe(4);
+    expect(helpers(JUDGE_SCRIPT)).toEqual(reviewers);
+  });
+
+  it('B16 judge: without the switch both agy slots are skipped unstarted and claude judges', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const { result, judge } = await runAgyScenario(
+        lab,
+        'judge',
+        agyProbe(lab.obs, agyStub(VALID_VERDICT)),
+        AGY_OFF
+      );
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(0);
+      expect(judge).toBe('claude:claude-opus-5-5');
+      expect(result.stderr).toContain(
+        'judge agy:claude-sonnet-5-5-high skipped for round 2: agy disabled by default (opt in with AGORA_AGY_ENABLE=1)'
+      );
+      expect(result.stderr).toContain('judge agy:gpt-oss-120b-medium skipped for round 2');
+      expect(result.stderr).toContain('judged by rotation slot 3 (claude:claude-opus-5-5)');
+      expect(result.stderr).not.toContain('WARNING: agy');
+      expect(readdirSync(lab.tmp)).toEqual([]);
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B16 judge: without the switch a failing claude slot exhausts the rotation (exit 4), agy never tried', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, { claude: 'exit 1', agy: agyProbe(lab.obs, agyStub(VALID_VERDICT)) });
+      const { result } = await runLabJudge(lab, 2, AGY_OFF);
+      expect(result.exitCode).toBe(4);
+      expect(agyCalls(lab)).toBe(0);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('B16 agora.sh: a full default-OFF round runs on 2 reviewers and never starts agy', async () => {
+    const lab = await makeAgyLab();
+    try {
+      await labBin(lab, {
+        claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
+        omx: OK_STUB,
+        agy: agyProbe(lab.obs, AGY_OK_STUB),
+      });
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${lab.bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(lab.bin, 'omx'),
+          AGORA_OUTPUT_ROOT: lab.session,
+          AGORA_SESSION_EPOCH: '1755230400',
+          TMPDIR: lab.tmp,
+          ...AGY_OFF,
+        },
+        lab.caller
+      );
+      expect(result.exitCode).toBe(0);
+      expect(agyCalls(lab)).toBe(0);
+      expect(result.stderr).toContain('[agora] round 1 reviewers: 2 responded');
+      const sessionDir = await findSessionDir(lab.session);
+      const bundle = JSON.parse(readFileSync(join(sessionDir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.reviewers.length).toBe(2);
+      expect(readFileSync(join(sessionDir, 'report.md'), 'utf-8')).not.toContain('agy:');
+      expectLabIntact(lab);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 120_000);
+
+  it('B17: with the switch on, both scripts print their warning for the round', async () => {
+    const lab = await makeAgyLab();
+    try {
+      const rv = await runAgyScenario(lab, 'reviewers', agyProbe(lab.obs, AGY_OK_STUB));
+      expect(rv.result.stderr).toContain(
+        '[agora] WARNING: agy reviewer enabled (AGORA_AGY_ENABLE=1) for round 1'
+      );
+      expect(rv.agyUsed).toBe(true);
+      const jd = await runAgyScenario(lab, 'judge', agyStub(VALID_VERDICT));
+      expect(jd.result.stderr).toContain(
+        '[agora] WARNING: agy judge slots enabled (AGORA_AGY_ENABLE=1) for round 2'
+      );
+      expect(jd.agyUsed).toBe(true);
+    } finally {
+      await rm(lab.base, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+// Timing-sensitive (1-second budgets): kept out of the concurrent groups
+// above, sequential within this describe.
+describe('#1985 agy: timeout path cleans up (B15)', () => {
+  for (const script of AGY_SCRIPTS) {
+    it(`B15 ${script}: a hanging agy times out (rc 124 path), its paths are removed and no descendant survives`, async () => {
+      const lab = await makeAgyLab();
+      const marker = String(10_000_000 + Math.floor(Math.random() * 89_999_999));
+      try {
+        const { result } = await runAgyScenario(
+          lab,
+          script,
+          agyProbe(lab.obs, `sleep ${marker} &\nsleep ${marker}`),
+          { AGORA_TIMEOUT_SECS: '1', AGORA_FORCE_TIMEOUT_FALLBACK: '1' }
+        );
+        expect(agyCalls(lab)).toBe(2);
+        if (script === 'reviewers') {
+          expect(result.stderr).toContain('agy timeout on attempt 1');
+          expect(result.stderr).toContain('agy timeout on attempt 2');
+        } else {
+          expect(result.stderr).toContain('judge agy:claude-sonnet-5-5-high timed out for round 2');
+          expect(result.stderr).toContain('judge agy:gpt-oss-120b-medium timed out for round 2');
+        }
+        for (const n of [1, 2]) {
+          expect(existsSync(obsText(lab, `agy-pwd-${n}`).trim())).toBe(false);
+          expect(existsSync(valueAfter(obsArgv(lab, `agy-argv-${n}`), '--json-schema'))).toBe(
+            false
+          );
+        }
+        expect(await pgrepUntilGone(`sleep ${marker}`)).toBe('');
+        expectLabIntact(lab);
+      } finally {
+        await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+        await rm(lab.base, { recursive: true, force: true });
+      }
+    }, 60_000);
   }
 });

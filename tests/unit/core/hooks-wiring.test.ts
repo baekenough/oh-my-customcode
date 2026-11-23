@@ -121,6 +121,21 @@ interface SpawnOutcome {
   stderr: string;
 }
 
+/**
+ * Copy of process.env without any GIT_-prefixed variable (#1983). Hook scripts call git (for
+ * example `git rev-parse --show-toplevel`), so an inherited GIT_DIR or GIT_INDEX_FILE from a
+ * parent git context would redirect them to another repository. Local to this file on purpose.
+ */
+function inheritedEnvWithoutGit(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  return env;
+}
+
 /** Run a script by absolute path with a given cwd/env, bounded by a timeout. */
 function runScript(
   scriptPath: string,
@@ -128,7 +143,7 @@ function runScript(
   cwd: string,
   projectDir: string | null
 ): SpawnOutcome {
-  const env: Record<string, string | undefined> = { ...process.env };
+  const env: Record<string, string | undefined> = { ...inheritedEnvWithoutGit() };
   // Explicitly drop any CLAUDE_PROJECT_DIR inherited from CC / the developer shell.
   delete env.CLAUDE_PROJECT_DIR;
   if (projectDir !== null) {
@@ -497,7 +512,7 @@ describe('hooks wiring: session-autofix / session-env-check / omcustom-auto-upda
     projectDir: string | null,
     extraEnv: Record<string, string> = {}
   ): SpawnOutcome {
-    const env: Record<string, string | undefined> = { ...process.env, ...extraEnv };
+    const env: Record<string, string | undefined> = { ...inheritedEnvWithoutGit(), ...extraEnv };
     delete env.CLAUDE_PROJECT_DIR;
     if (projectDir !== null) {
       env.CLAUDE_PROJECT_DIR = projectDir;
