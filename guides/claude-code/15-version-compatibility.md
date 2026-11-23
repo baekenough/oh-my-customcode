@@ -1,6 +1,6 @@
 # Claude Code Version Compatibility
 
-> Updated: 2026-11-14
+> Updated: 2026-11-23
 > Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716, #1746, #1747)
 >
 > **Note (compat 노트 이관, v1.1.9~v1.1.76)**: v2.1.161~v2.1.276 구간의 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적되어 있으며, 이 구간은 그대로 보존합니다.
@@ -3412,9 +3412,11 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ## v2.1.325 (2026-11-13)
 
-> Issue: 대응 이슈 없음
+> Issue: #1973 — Claude Code v2.1.325 compatibility documentation
 > (325) 이 절의 저장소 측정은 삽입 전(22f30c72, `22f30c72 Merge pull request #1967 from baekenough/release/v2.0.25`) 기준이며 명령은 `git grep <pattern> 22f30c72 -- <pathspec>` 형식입니다. (325)
-> (325) 이 버전은 저장소 이슈가 없으며 v2.1.324는 릴리즈가 없습니다(`gh release view v2.1.324 -R anthropics/claude-code` rc 1). (325)
+> (325) v2.1.324는 릴리즈가 없습니다(`gh release view v2.1.324 -R anthropics/claude-code` rc 1). (325)
+> (325) 이슈 #1973은 이 절을 작성한 뒤인 2026-11-14T14:10:05Z에 생성되었습니다(`gh issue view 1973 --json createdAt --jq .createdAt`; 이 절을 넣은 커밋의 시각은 `git log -1 --format=%cI 0e030500` = 2026-11-14T19:03:02+09:00). (325)
+> (325) 이슈의 `## What's changed` 항목과 릴리즈 항목은 139건 = 139건으로 일치합니다(`.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.325.md`, 릴리즈 측은 `command grep -c '^- ' .claude/outputs/sessions/2026-11-23/cc-release-body-2.1.325.md` 재계수). (325)
 
 ### 예약 실행·/loop와 권한 흐름
 
@@ -3489,6 +3491,541 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - (325) fsd `SKILL.md` `/loop` 주석: 변경 없음. 22f30c72 실측에서 `allowed-tools` 보유 skill은 2개(`diagram-design`, `profile`), `hooks` 보유 skill은 0개이고 `fsd`·`pipeline`·`homework`는 해당하지 않으므로 주석을 추가하지 않습니다.
 
 **Action items**: (325) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙 파일을 고치지 않습니다.
+
+## v2.1.326 (2026-11-16)
+
+> Issue: #1974 — Claude Code v2.1.326 compatibility documentation
+> (326) 이슈 본문 `## What's changed` 불릿과 릴리즈 본문 불릿은 367개로 일치합니다(`.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.326.md`의 비교 결과, 릴리즈 본문 계수 `gh release view v2.1.326 -R anthropics/claude-code --json body --jq .body | grep -c '^- '` = 367). 게시 시각은 `gh release view v2.1.326 -R anthropics/claude-code --json publishedAt --jq .publishedAt` = 2026-11-16T22:11:05Z입니다(비교 결과 파일 기록). (326)
+> (326) 스코프 상한 확인: `gh release view v2.1.327 -R anthropics/claude-code --json tagName`은 rc 0, `{"tagName":"v2.1.327"}`였으므로(비교 결과 파일 기록) v2.1.327 이후 릴리즈는 각자의 절에서 다루며 이 절은 v2.1.326 본문만 다룹니다. (326)
+> (326) 이 절의 저장소 측정은 삽입 전(94328efb) 기준이며 명령은 `git grep <pattern> 94328efb -- <pathspec>` 또는 `git show 94328efb:<path>` 형식입니다. 94328efb는 `git log -1 --format='%h %s' 94328efb` = "94328efb Merge pull request #1971 from baekenough/release/v2.0.26"입니다. `git grep`은 HTML 주석 안도 검색하므로, 자동 주입 텍스트에 관한 주장에는 가시 본문 여부를 따로 적었습니다. (326)
+
+### 권한 모드·auto mode
+
+- CHANGELOG 원문: "Changed some tool calls in bypass permissions mode to ask for approval, or be denied where no one can be asked"
+  (326) bypass permissions mode에서도 일부 도구 호출이 승인을 요구하며, 물어볼 사람이 없는 곳에서는 거부됩니다. 측정: `git grep -h -P '^permissionMode:' 94328efb -- .claude/agents | sort | uniq -c` = "49 permissionMode: bypassPermissions"였습니다. 따라서 이 저장소 에이전트 49개가 bypassPermissions 프론트매터를 선언하지만, 이 릴리즈부터 그 모드가 무프롬프트 실행을 보장하지 않습니다. 무인 실행에서 어떤 호출이 새로 거부되는지는 측정하지 않았습니다 [가설: 판정 기준은 무인 `/fsd` 실행 로그의 거부·승인 대기 발생 여부입니다]. (326)
+- CHANGELOG 원문: "Improved Bash permission checks: some commands now ask first, or are refused where no one can answer"
+  (326) Bash 권한 검사가 개선되어 일부 명령은 먼저 확인을 요구하고, 응답할 사람이 없는 곳에서는 거부됩니다. 무인 위임의 Bash 명령이 새로 거부될 수 있습니다 [가설: 판정 기준은 위와 같습니다]. (326)
+- CHANGELOG 원문: "Changed the Bash permission check to ask about some commands with very long values it can't finish checking, or to refuse them where a deny rule may apply or no one can answer"
+  (326) Bash 권한 검사가 끝까지 검사하지 못하는 매우 긴 값의 명령에 확인을 요구하며, deny 규칙이 적용될 수 있거나 응답할 사람이 없는 곳에서는 거부합니다. 긴 인자를 셸에 직접 넣는 위임은 이 경로에 걸릴 수 있으므로, 긴 데이터는 Write로 파일에 쓰는 기존 관행(R005 rule-deletion-guard 문단)이 같은 방향입니다 [가설: 이 저장소 명령의 인자 길이 분포는 측정하지 않았습니다]. (326)
+- CHANGELOG 원문: "Changed some `cp` and `mv` commands to ask first"
+  (326) 일부 `cp`·`mv` 명령이 먼저 확인을 요구합니다. 측정: `git show 94328efb:.claude/settings.json`을 python JSON 파싱한 `permissions.allow`는 17개 항목이며 그중 `Bash(cp:*)`가 있고 `mv`를 이름으로 가진 항목은 위 17개 열거에 없습니다. allow 규칙이 이 새 확인을 억제하는지는 측정하지 않았습니다 [가설]. (326)
+- CHANGELOG 원문: "Changed auto mode to ignore some wildcard shell allow rules, such as ones that name no program or that start with `$HOME`, so the safety check decides those commands"
+  (326) auto mode가 프로그램을 명시하지 않거나 `$HOME`으로 시작하는 규칙 같은 일부 와일드카드 셸 allow 규칙을 무시하고, 그 명령은 안전 검사가 판정합니다. 측정: 위 python JSON 파싱으로 열거한 17개 allow 항목은 `Bash(bun run:*)`·`Bash(gh:*)`·`Bash(git:*)` 등 14개 `Bash(<program>:*)`와 3개 `Edit(...)`이며(14 + 3 = 17), 예시 두 형태에 한해 프로그램이 없거나 `$HOME`으로 시작하는 항목은 이 17개 열거에 없습니다. (326)
+- CHANGELOG 원문: "Changed terminal and VS Code sessions with no mode set to start in auto mode, not Manual mode, when your organization's policy hasn't loaded"
+  (326) 모드가 설정되지 않은 터미널·VS Code 세션은 조직 정책이 로드되지 않았을 때 Manual mode가 아니라 auto mode로 시작합니다. 측정: 94328efb의 `.claude/settings.json` `permissions.defaultMode`는 `bypassPermissions`(위 python JSON 파싱)이지만, R010 Self-Check 1 가시 본문(`git grep -n -F '무시되어' 94328efb -- .claude/rules/MUST-orchestrator-coordination.md`의 589행; 607행 적중은 597~619행 HTML 주석 안이며 주석 제거 텍스트의 적중은 1줄)은 project 범위의 `bypassPermissions`가 CC 2.1.257+에서 무시된다고 적습니다. 그 결과 이 저장소 세션이 "no mode set"으로 취급되는지는 측정하지 않았습니다 [가설: 판정 기준은 세션 시작 시 표시되는 permission mode입니다]. (326)
+- CHANGELOG 원문: "Improved the message in non-interactive runs and background agents when a permission check fails with an error, so it names the cause"
+  (326) 비대화형 실행과 백그라운드 에이전트에서 권한 검사가 오류로 실패할 때 메시지가 원인을 밝히도록 개선되었습니다. 무인 실행 실패 진단(R020 「Failure/Interrupt Report ≠ Actual Failure」)에 쓸 수 있는 1차 증거가 늘어납니다 [가설]. (326)
+- CHANGELOG 원문: "Changed Claude's file tools to refuse writes to Claude Code's sign-in files, such as `.credentials.json`"
+  (326) Claude의 파일 도구가 `.credentials.json` 같은 Claude Code 로그인 파일 쓰기를 거부합니다. 측정: `git grep -c -i -P 'credentials\.json' 94328efb -- .claude CLAUDE.md`는 `.claude/rules/MUST-safety.md` 2건과 `.claude/skills/docker-best-practices/SKILL.md` 1건이며, 그 줄은 진단 금지 서술과 Docker 예시였습니다. 관측한 범위(위 명령)에서 이 저장소는 그 파일을 쓰는 경로를 두지 않았습니다. (326)
+
+### 훅
+
+- CHANGELOG 원문: "Changed a hook's `"decision": "block"` to hold in more cases, so a hook that always prints one may start blocking calls"
+  (326) 훅의 `"decision": "block"`이 더 많은 경우에 유지되므로, 항상 그 값을 출력하는 훅은 호출을 막기 시작할 수 있습니다. 측정: `git grep -n -i -P 'decision' 94328efb -- .claude/hooks`는 10줄이었고, 그 출력을 python으로 주석 줄(`^\S+:\d+:\s*#`)을 제외해 거른 결과 0줄이었습니다. `git grep -c -i -P 'decision' 94328efb -- .claude/settings.json`은 일치 파일이 없었습니다(rc 1). 주석 중 `decision`과 `block`을 함께 적은 4줄(3개 파일 `fail-axis-cause-advisor.sh`, `r007-r008-drift-advisor.sh`, `user-prompt-preprocessor.sh`; `git grep -n -i -P 'decision.{0,20}block|block.{0,40}decision' 94328efb -- .claude/hooks`)은 `decision: block`을 쓰지 않는 이유를 적은 것입니다. 관측한 범위(위 두 명령)에서 이 저장소 훅은 `decision`을 출력하지 않으므로 이 변경의 직접 영향은 관측하지 않았습니다. (326)
+- CHANGELOG 원문: "Improved how a PreToolUse hook's `updatedInput` is kept when more than one hook answers a tool call; the rewrite now runs in more cases"
+  (326) 여러 훅이 한 도구 호출에 응답할 때 PreToolUse 훅의 `updatedInput`이 유지되는 방식이 개선되어, 재작성이 더 많은 경우에 실행됩니다. 측정: `git grep -c -i -P 'updated[_ -]?input' 94328efb -- .claude/settings.json .claude/hooks`는 일치 파일이 없었습니다(rc 1, 대소문자 무시·구분자 변형 포함). 양성 대조로 `git grep -l -F 'additionalContext' 94328efb -- .claude/hooks | wc -l`은 14였습니다. (326)
+- CHANGELOG 원문: "Improved the error when a PreToolUse hook exits 127, saying its check may not have run"
+  (326) PreToolUse 훅이 127로 종료할 때 그 검사가 실행되지 않았을 수 있다고 알리도록 오류가 개선되었습니다. 측정: `git show 94328efb:.claude/settings.json | command grep -c 'jq '`는 17줄이며, 인라인 훅 명령이 `jq`에 의존합니다. `jq`가 없는 환경에서는 그 훅이 127로 끝나 R021의 advisory·차단이 조용히 빠질 수 있었고, 이제 그 사실이 표시됩니다 [가설: 판정 기준은 `jq`를 PATH에서 뺀 세션의 훅 오류 표시입니다]. (326)
+- CHANGELOG 원문: "Fixed a crashed Node or Python hook showing only the first line of its stack trace; the error is now shown, and Ctrl+O shows up to 10,000 characters of the output"
+  (326) 충돌한 Node·Python 훅이 스택 트레이스 첫 줄만 보여 주던 결함이 수정되었습니다. 측정: `git grep -l -P '^#!.*(node|python)' 94328efb -- .claude/hooks | wc -l`은 0이었고, 양성 대조 `git grep -l -P '^#!.*(bash|sh)' 94328efb -- .claude/hooks | wc -l`은 44였습니다. `bun` 실행 훅 명령 2개(위 python JSON 파싱의 명령 문자열 계수)가 이 수정에 해당하는지는 측정하지 않았습니다 [가설]. (326)
+- CHANGELOG 원문: "Changed HTTP hooks to ignore `Content-Length` and `Transfer-Encoding` in their `headers` setting; the request's length comes from its body"
+  (326) HTTP 훅이 `headers` 설정의 `Content-Length`·`Transfer-Encoding`을 무시하고 요청 길이를 본문에서 정합니다. 측정: `git grep -c -i -P '"type"\s*:\s*"http"' 94328efb -- .claude/settings.json .claude/hooks/hooks.json`은 일치 파일이 없었고(rc 1), 양성 대조 `git grep -c -P '"type"\s*:\s*"command"' 94328efb -- .claude/settings.json .claude/hooks/hooks.json`은 `hooks.json` 67, `settings.json` 68이었습니다. 관측한 범위(위 명령)에서 이 저장소는 HTTP 훅을 배선하지 않았습니다. (326)
+
+### 서브에이전트·백그라운드 에이전트
+
+- CHANGELOG 원문: "Fixed the main conversation of a terminal session waiting in silence for a background subagent that another subagent had messaged: it's now told which agent the subagent reports to"
+  (326) 다른 서브에이전트가 메시지를 보낸 백그라운드 서브에이전트를 메인 대화가 말없이 기다리던 결함이 수정되어, 이제 그 서브에이전트가 어느 에이전트에 보고하는지 알립니다. R010은 서브에이전트의 서브에이전트 생성을 금지하지만 `SendMessage`는 R002 Tier 5에 남아 있으므로, 서브에이전트 간 메시지 경로가 쓰인 세션에서는 이 수정이 R009 「Result Aggregation」의 "완료 알림에 보고 본문이 없음" 상황을 줄일 수 있습니다 [가설]. (326)
+- CHANGELOG 원문: "Fixed background agents being told you refused their tool call when a session ended by Ctrl+C twice at the exit dialog, or after an interface crash"
+  (326) 종료 대화상자에서 Ctrl+C를 두 번 눌러 세션이 끝나거나 인터페이스가 충돌한 뒤, 백그라운드 에이전트가 사용자가 도구 호출을 거부했다고 전달받던 결함이 수정되었습니다. 이전 버전의 백그라운드 에이전트 "사용자 거부" 보고는 실제 거부가 아니었을 수 있습니다 [가설: R020 「Failure/Interrupt Report ≠ Actual Failure」에 따라 ground-truth로 판정합니다]. (326)
+- CHANGELOG 원문: "Improved CPU use when more than 20 subagents are running: token counts of background agents whose transcript isn't open now update every 5 seconds"
+  (326) 서브에이전트 20개 초과 실행 시 CPU 사용이 개선되어, 트랜스크립트가 열리지 않은 백그라운드 에이전트의 토큰 수는 5초마다 갱신됩니다. R009 가시 본문(`git grep -n -F 'hard cap 5' 94328efb -- .claude/rules/MUST-parallel-execution.md` 227행)은 동시 실행 상한을 5로 두므로 이 조건에 이르지 않는다고 판단합니다 [가설: 세션 누적 백그라운드 에이전트 수는 측정하지 않았습니다]. (326)
+- CHANGELOG 원문: "Changed subagents isolated in a worktree to refuse, in any repository, some git commands in Bash that can rewrite branches shared with your checkout; sessions are not affected"
+  (326) worktree로 격리된 서브에이전트는 어느 저장소에서든 체크아웃과 공유하는 브랜치를 다시 쓸 수 있는 일부 git 명령을 Bash에서 거부하며, 세션은 영향을 받지 않습니다. 측정: `git grep -c -i -P 'isolation["\x27]?\s*[:=]\s*["\x27]?worktree' 94328efb -- .claude/skills .claude/agents`는 일치 파일이 없었고(rc 1), 양성 대조 `git grep -c -i -P 'isolation["\x27]?\s*[:=]\s*["\x27]?(worktree|sandbox)' 94328efb -- .claude/agents`는 `sec-codeql-expert.md` 1건(`isolation: sandbox`)이었습니다. 관측한 범위(위 명령)에서 이 저장소 에이전트·스킬은 worktree 격리 서브에이전트를 선언하지 않으며, 원문의 "sessions are not affected"에 따라 `omcustom-auto-improve`의 `EnterWorktree`는 세션 경로라 이 변경의 대상이 아닙니다(`git grep -n -P 'EnterWorktree' 94328efb -- .claude/skills/omcustom-auto-improve/SKILL.md` 59행). 호출 시점에 Agent `isolation: "worktree"`를 넘기는 위임은 이 측정에 포함되지 않았습니다 [가설]. (326)
+- CHANGELOG 원문: "Changed `ExitWorktree` to refuse removing a worktree while a background subagent or shell command may still be running in it, unless Claude passes `discard_changes`"
+  (326) `ExitWorktree`는 백그라운드 서브에이전트나 셸 명령이 그 worktree에서 아직 실행 중일 수 있으면, Claude가 `discard_changes`를 넘기지 않는 한 worktree 제거를 거부합니다. 측정: `git grep -n -F 'ExitWorktree' 94328efb -- .claude/skills/omcustom-auto-improve/SKILL.md`는 84행(`reject` → `ExitWorktree(remove)`)과 93행(`ExitWorktree(action: "keep")`)이었습니다. 따라서 `reject` 경로에서 백그라운드 작업이 남아 있으면 제거가 거부될 수 있고, 같은 스킬 117행에는 `EnterWorktree` 실패 행이 있고(`git grep -n -P 'EnterWorktree' 94328efb -- .claude/skills/omcustom-auto-improve/SKILL.md`), `git grep -n -F 'ExitWorktree' 94328efb -- .claude/skills/omcustom-auto-improve/SKILL.md`의 적중은 위 2줄입니다 [가설: `ExitWorktree` 거부 처리 행의 필요성은 실제 거부 관측으로 판정합니다]. (326)
+- CHANGELOG 원문: "Changed the card for approving a subagent's plan to two choices, "Yes, and switch to default (ask each time) for this session" and "No", chosen with the arrow keys and Enter (typed text moves to No)"
+  (326) 서브에이전트 plan 승인 카드가 "Yes, and switch to default (ask each time) for this session"과 "No" 두 선택지로 바뀌었습니다. 승인하면 세션이 default 모드로 바뀌므로, 승인 뒤 무인 실행은 프롬프트 발생을 전제로 해야 합니다(R010 Self-Check 1). 측정: 위 `permissionMode` 계수에서 `plan` 값은 나오지 않았으므로(출력 1종, bypassPermissions 49) 이 저장소 에이전트 프론트매터는 plan 모드를 선언하지 않습니다. (326)
+- CHANGELOG 원문: "Fixed subagents whose `disallowedTools` lists `Artifact` still being offered artifact tools in some cloud sessions"
+  (326) `disallowedTools`에 `Artifact`를 넣은 서브에이전트가 일부 클라우드 세션에서 artifact 도구를 계속 제공받던 결함이 수정되었습니다. 측정: `git grep -n -P '^disallowedTools:' 94328efb -- .claude/agents`는 6줄이며 값은 `[Bash]` 5개와 `[Bash, Write, Edit]` 1개(5 + 1 = 6)였으므로, 이 6줄에 `Artifact`는 없습니다. (326)
+
+### 스킬·에이전트 로딩
+
+- CHANGELOG 원문: "Fixed a first skill, command or agent created during a session not being found right away"
+  (326) 세션 중 처음 만든 skill·command·agent가 바로 발견되지 않던 결함이 수정되었습니다. 이 저장소의 동적 에이전트 생성 흐름(`git grep -n -F '새 에이전트 생성 후 즉시 사용' 94328efb -- CLAUDE.md` 166행)이 이 경로에 직접 해당하므로, 이전 버전에서 `mgr-creator`가 만든 새 에이전트를 같은 세션에서 바로 쓰지 못한 관측은 이 결함이었을 수 있습니다 [가설: 판정 기준은 v2.1.326+에서 생성 직후 Agent 호출의 `subagent_type` 해석 성공 여부입니다]. (326)
+- CHANGELOG 원문: "Fixed the `/` menu, `/skills` and `/plugin` repeating rows and losing the cursor when two skills or commands in one place share a name"
+  (326) 한 위치의 skill·command 두 개가 이름을 공유할 때 `/` 메뉴·`/skills`·`/plugin`이 행을 반복하고 커서를 잃던 결함이 수정되었습니다. 측정: `git ls-tree -r --name-only 94328efb -- .claude/skills`에서 `.claude/skills/<dir>/SKILL.md` 114개를 골라 `git show`로 프론트매터 `name:`을 python 파싱한 결과, 114개 모두 `name:`이 있고 중복 이름은 0개였습니다(빈 집합). (326)
+
+### 설정 파일
+
+- CHANGELOG 원문: "Fixed a settings file saved with an error mid-session being skipped silently; a warning now names the file"
+  (326) 세션 도중 오류가 있는 채로 저장된 설정 파일이 조용히 건너뛰어지던 결함이 수정되어, 이제 경고가 그 파일을 밝힙니다. R021 가시 본문(`git grep -n -F 'sync:hooks' 94328efb -- .claude/rules/MUST-enforcement-policy.md` 43행)은 `bun run sync:hooks`로 `.claude/settings.json`을 재생성한다고 적으므로, 세션 도중 재생성이 잘못된 JSON을 만들면 이전에는 훅 배선이 조용히 빠졌을 수 있습니다 [가설: 재생성 결과의 JSON 오류 발생은 관측하지 않았습니다]. (326)
+
+### worktree·sandbox
+
+- CHANGELOG 원문: "Changed sandboxed commands on macOS, Linux and WSL to no longer write to some sensitive home folders by default; some can be allowed with `sandbox.filesystem.allowWrite` in user or managed settings"
+  (326) macOS·Linux·WSL의 sandbox 명령이 기본값에서 일부 민감한 홈 폴더에 더 이상 쓰지 않으며, 일부는 user·managed 설정의 `sandbox.filesystem.allowWrite`로 허용할 수 있습니다. 측정: 94328efb의 `.claude/settings.json`(python JSON 파싱)의 `sandbox` 키는 None이었습니다(관측한 범위: 프로젝트 설정, user·managed 설정은 측정하지 않음). 이 저장소의 임시 파일 규칙(위임서의 "`$HOME` 아래 금지")과 같은 방향입니다. (326)
+- CHANGELOG 원문: "Changed the Bash sandbox to ask before some lines that set environment variables when auto-allow is off; unattended runs can refuse them"
+  (326) auto-allow가 꺼져 있으면 Bash sandbox가 환경 변수를 설정하는 일부 줄 앞에서 확인을 요구하며, 무인 실행은 이를 거부할 수 있습니다. 위 측정대로 프로젝트 설정의 `sandbox`는 None이므로 영향은 user·managed 설정에서 sandbox를 켠 환경에 한정됩니다 [가설]. (326)
+- CHANGELOG 원문: "Changed worktree creation, `/teleport` and IDE checkouts to run git with a stricter `PATH`; a git filter or helper may need its full path"
+  (326) worktree 생성·`/teleport`·IDE 체크아웃이 더 엄격한 `PATH`로 git을 실행하므로 git filter·helper는 전체 경로가 필요할 수 있습니다. 측정: `git show 94328efb:.gitattributes`는 "fatal: path '.gitattributes' does not exist in '94328efb'"였으므로 저장소가 추적하는 git filter 설정은 관측하지 않았습니다(사용자 git config의 helper는 측정하지 않음). (326)
+
+### Bash 도구 동작
+
+- CHANGELOG 원문: "Fixed `grep` in the Bash tool silently skipping some text files"
+  (326) Bash 도구의 `grep`이 일부 텍스트 파일을 조용히 건너뛰던 결함이 수정되었습니다. R005 가시 본문(`git grep -n -F '셸 함수' 94328efb -- .claude/rules/MAY-optimization.md` 129행)은 `grep`이 셸 함수이므로 전수조사에 `git grep`을 쓰라고 적고, 이 실행 환경의 `type grep`은 "grep is a shell function from ~/.claude/shell-snapshots/snapshot-zsh-<id>.sh"였습니다(경로는 마스킹했습니다). 이전 버전의 셸 `grep` 계수 0건은 이 결함 때문이었을 수 있으며, `git grep` 표준은 그대로 유지합니다 [가설]. (326)
+- CHANGELOG 원문: "Fixed long command output ending mid-line in the expanded view with no sign it was cut; it now names the saved file"
+  (326) 긴 명령 출력이 펼친 보기에서 잘린 표시 없이 줄 중간에서 끝나던 결함이 수정되어, 이제 저장된 파일을 밝힙니다. R013 가시 본문(`git grep -n -F 'bashOutputMaxChars' 94328efb -- .claude/rules/SHOULD-ecomode.md` 120행)의 "pass/fail 라인이 잘리는 검증" 진단에 절단 위치를 알려 주는 증거가 생깁니다 [가설]. (326)
+
+### 컨텍스트·compaction
+
+- CHANGELOG 원문: "Changed automatic compaction in plan mode to use the model answering you, such as Opus with `opusplan`, so it can cost more"
+  (326) plan mode의 자동 compaction이 응답하는 모델(예: `opusplan`의 Opus)을 쓰므로 비용이 늘 수 있습니다. 측정: `git grep -h -P '^model:' 94328efb -- .claude/agents | sort | uniq -c`는 `claude-opus-5-5` 5, `claude-sonnet-5-5` 42, `haiku` 3(5 + 42 + 3 = 50)이며 `opusplan`은 이 출력에 없었습니다. 메인 세션의 model 설정은 측정하지 않았습니다 [가설]. (326)
+
+### `claude -p`·무인 실행
+
+- CHANGELOG 원문: "Fixed `claude -p` showing nothing in the terminal while it retried an overloaded or failing API request, or when it failed with its text output redirected or captured"
+  (326) `claude -p`가 과부하·실패 API 요청을 재시도하는 동안, 또는 텍스트 출력이 리디렉션·캡처된 채 실패할 때 터미널에 아무것도 보여 주지 않던 결함이 수정되었습니다. 측정: `git grep -l -P 'claude\s+-p\b' 94328efb -- .claude/skills .claude/agents .claude/hooks ':(glob)scripts/**' ':(glob)src/**' | wc -l`은 18이었고, 대소문자 무시·`--print` 변형(`git grep -l -i -P 'claude[\s-]+-p\b|claude --print' 94328efb -- .claude/skills .claude/agents .claude/hooks ':(glob)scripts/**' ':(glob)src/**' | wc -l`)도 18이었습니다. 이전 버전의 무인 실행 "무출력 정지"는 재시도 중이었을 수 있으므로 R004 「Recovery」대로 ground-truth로 판정합니다 [가설]. (326)
+
+### API 요청
+
+- CHANGELOG 원문: "Fixed an error when `max_tokens` exceeded the model's limit: Claude Code now retries the request with the maximum the Anthropic API reports"
+  (326) `max_tokens`가 모델 한도를 넘을 때의 오류가 수정되어, 이제 Anthropic API가 보고한 최대값으로 요청을 재시도합니다. 측정: `git grep -n -F CLAUDE_CODE_MAX_OUTPUT_TOKENS 94328efb -- .claude CLAUDE.md`의 적중은 `.claude/rules/MAY-optimization.md` 178행 1줄이며 그 줄은 RETIRED HTML 주석 안이어서, 주석을 제거한 가시 계수(python `re.sub(r'<!--.*?-->','',t,flags=re.S)` 후 `count`)는 0이었습니다. 관측한 범위(위 명령)에서 이 저장소의 가시 규칙은 출력 토큰 한도를 설정하지 않으므로 직접 영향은 관측하지 않았습니다(제거는 v2.1.329, 되돌림은 v2.1.330 절의 `max_tokens` 항목). (326)
+
+### statusline
+
+- CHANGELOG 원문: "Fixed a custom status line keeping its old width, folder and session name after a terminal resize, `/cd` or `/rename` (anthropics/claude-code#107291)"
+  (326) 사용자 정의 status line이 터미널 크기 변경·`/cd`·`/rename` 뒤에도 이전 너비·폴더·세션 이름을 유지하던 결함이 수정되었습니다. 측정: 94328efb의 `.claude/settings.json` `statusLine`은 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh"`, `refreshInterval` 10이며, `git show 94328efb:.claude/statusline.sh`의 99행은 stdin JSON의 `.workspace.current_dir`를 읽습니다. 따라서 `/cd` 뒤 프로젝트 이름 표시가 이 수정의 영향을 받습니다 [가설: 판정 기준은 `/cd` 후 상태줄 프로젝트 이름입니다]. (326)
+
+### Monitor·/loop
+
+- CHANGELOG 원문: "Improved Monitor: when a watch expires with no events and its command wrote to stderr, Claude is now told so and told which file holds the output"
+  (326) Monitor watch가 이벤트 없이 만료되고 그 명령이 stderr에 썼으면, 이제 Claude에게 그 사실과 출력 파일이 전달됩니다. 측정: `git grep -l -P '\bMonitor\b' 94328efb -- .claude/skills .claude/agents | wc -l`은 7이었습니다. 이 파일들의 Monitor 사용 방식은 측정하지 않았습니다 [가설]. (326)
+- CHANGELOG 원문: "Fixed Esc over typed text cancelling a pending `/loop`"
+  (326) 입력한 텍스트 위의 Esc가 대기 중인 `/loop`을 취소하던 결함이 수정되었습니다. 측정: `git grep -c -F '/loop' 94328efb -- .claude/skills/fsd/SKILL.md`는 7이었으므로 `/fsd`의 `/loop` 경로가 이 수정에 해당합니다. 이전 버전에서 `/loop`이 사라진 관측은 이 결함이었을 수 있습니다 [가설]. (326)
+
+### 기타 항목
+
+- (326) 이 릴리즈 본문의 `- ` 줄 전체는 367건이며(계수 구간: `gh release view v2.1.326 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `grep -c '^- '`), 이 절이 위에서 다룬 항목은 34건(권한 8, 훅 5, 서브에이전트 7, 로딩 2, 설정 1, worktree·sandbox 3, Bash 2, compaction 1, `claude -p` 1, API 요청 1, statusline 1, Monitor·/loop 2; 8 + 5 + 7 + 2 + 1 + 3 + 2 + 1 + 1 + 1 + 1 + 2 = 34)이므로 그 밖의 항목은 333건입니다(367 - 34 = 333). 나머지는 Code Mode·mods, 로그인·인증·개인정보 설정, 로그인 파일에 닿는 Bash 명령 확인, MCP 연결·UI, Remote Control·클라우드·self-hosted runner, 아티팩트, 그 밖의 sandbox·PowerShell 세부, 전체 화면·렌더링·키 입력 UI, `/rewind`·`/resume`·`/plugin`·`/permissions` 화면, OpenTelemetry, VS Code·Desktop 항목 등입니다(범주는 예시이며 전수가 아닙니다) [가설: 직접 영향 경로 미관측]. (326)
+
+### 규칙 반영 판정
+
+- (326) R010 「Universal bypassPermissions」(bypass mode의 일부 호출 확인·거부): v2.0.27에서 R010 「Universal bypassPermissions」 Self-Check 1에 이 항목을 1문장으로 반영했습니다. bypassPermissions에서도 확인·거부가 생기는 현행 동작(위 「권한 모드·auto mode」 첫 두 항목)은 무인 실행 계획을 바꾸므로 R016 버전노트 보존정책의 "현재 행동을 바꾸는 규범" 1줄에 해당합니다. (326)
+- (326) R021 훅 `decision`·`updatedInput`: 규칙 변경 없음. 위 측정에서 이 저장소 훅은 `decision`·`updatedInput`을 출력하지 않았습니다. (326)
+- (326) R005 `grep` 셸 함수 문장: 규칙 변경 없음. `git grep` 표준이 이 수정과 무관하게 유효합니다. (326)
+- (326) `omcustom-auto-improve` `ExitWorktree` 거부: 스킬 변경 없음. 실제 거부를 관측하지 않았으므로 오류 처리 행 추가는 관측 뒤에 판단합니다. (326)
+
+**Action items**: (326) 위 「규칙 반영 판정」대로 이 릴리즈에서는 R010 Self-Check 1의 1문장 외에 규칙·스킬 파일을 고치지 않으며, 다음 무인 `/fsd` 실행에서 bypass mode 확인·거부 발생 여부를 관측합니다.
+
+## v2.1.327 (2026-11-17)
+
+> Issue: #1975 — Claude Code v2.1.327 compatibility documentation
+> (327) 이슈 본문의 `- ` 항목 173개와 릴리즈 본문의 `- ` 항목 173개를 대조한 결과 불일치는 0건이었습니다(대조 결과 파일 `.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.327.md`, 릴리즈 계수 명령 `gh release view v2.1.327 -R anthropics/claude-code --json body --jq .body | grep -c '^- '`의 출력 173). (327) publishedAt은 2026-11-17T23:17:45Z입니다(명령 `gh release view v2.1.327 -R anthropics/claude-code --json publishedAt`).
+> (327) 이 절의 스코프 상한은 v2.1.327이며 v2.1.328 릴리즈가 존재합니다(`gh release view v2.1.328 -R anthropics/claude-code --json tagName`의 출력 `{"tagName":"v2.1.328"}`). (327) 그 이후 릴리즈는 각자의 절에서 다룹니다.
+> (327) 이 절의 저장소 측정은 삽입 전(94328efb, `git log -1 --format='%h %s' 94328efb` = `94328efb Merge pull request #1971 from baekenough/release/v2.0.26`) 기준이며 명령은 `git grep <pattern> 94328efb -- <pathspec>` 또는 `git show 94328efb:<path>` 형식입니다.
+
+### 권한 모드·auto mode
+
+- CHANGELOG 원문: "Changed auto mode to ignore more allow rules that run any package, like `Bash(pnpm dlx *)`, and path or version forms of ones it already ignored (`/usr/bin/npm run:*`); the safety check decides those"
+  (327) auto mode가 `Bash(pnpm dlx *)`처럼 임의의 패키지를 실행하는 allow 규칙과, 이미 무시하던 규칙의 경로·버전 형태(`/usr/bin/npm run:*`)를 더 많이 무시하며 그 명령은 안전 검사가 판정합니다. (327) 측정(`git show 94328efb:.claude/settings.json` 후 python JSON 파싱, `d['permissions']['allow']`): allow 항목은 17개이며 `Bash(bun run:*)`, `Bash(bun test:*)`, `Bash(bun add:*)`, `Bash(gh:*)`, `Bash(git:*)`, `Bash(ls:*)`, `Bash(wc:*)`, `Bash(mkdir:*)`, `Bash(cp:*)`, `Bash(rm:*)`, `Bash(python3:*)`, `Bash(cat:*)`, `Bash(sed:*)`, `Bash(chmod:*)`, `Edit(.claude/**)`, `Edit(templates/.claude/**)`, `Edit(.claude/outputs/**)`입니다(14 + 3 = 17). (327) 관측한 범위(같은 파싱의 `re.search(r'npx|bunx|dlx|pnpm|yarn|uvx|pipx|npm', x, re.I)`)에서 패키지 러너 형태의 항목은 일치하지 않았고, 대조로 `'Bash(gh:*)' in allow`는 True였습니다. (327) `Bash(bun run:*)`와 `Bash(bun add:*)`가 "패키지를 실행하는 규칙"에 해당하는지는 측정하지 않았습니다 [가설: 해당하면 auto mode 세션에서 안전 검사로 넘어가며, 판정 기준은 auto mode 세션에서 `bun run` 호출이 프롬프트를 받는지 여부].
+- CHANGELOG 원문: "Changed `permissions.blockReadsOutsideWorkingDirectories` to ask about more Bash commands in bypass and auto modes, and to deny some in auto mode"
+  (327) `permissions.blockReadsOutsideWorkingDirectories` 설정이 bypass·auto 모드에서 더 많은 Bash 명령에 대해 확인을 요구하고, auto 모드에서는 일부를 거부합니다. (327) 측정: 같은 파싱에서 `permissions` 키는 `allow`, `_comment_defaultMode`, `defaultMode` 세 개이며 `blockReadsOutsideWorkingDirectories`는 키에 없었습니다. (327) 문서 쪽은 `git grep -c -i -P 'block[_ -]?reads[_ -]?outside' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`가 `.claude/rules/MUST-permissions.md` 3건, `.claude/rules/SHOULD-memory-integration.md` 2건, `guides/claude-code/15-version-compatibility.md` 4건과 `templates/` 사본 3개 파일(각각 3건, 2건, 4건)에서 적중했습니다. (327) 주석을 제거한 CLAUDE.md 1개와 `.claude/rules/*.md` 23개(합계 24개 파일, `git ls-tree --name-only 94328efb .claude/rules/ | command grep -c '\.md$'` = 23)의 가시 텍스트(python `re.sub(r'<!--.*?-->','',t,flags=re.S)` 후 `re.I` 계수)에서는 같은 패턴이 0건이었으며(대조: 같은 스크립트의 `SendMessage` 가시 계수는 15건), 규칙 파일의 적중은 자동 주입되지 않는 HTML 주석 안입니다. (327) 따라서 이 설정은 프로젝트 설정에서 켜지 않은 것으로 관측했고, 사용자·managed 설정은 측정하지 않았습니다 [가설: 켠 환경에서 위임 에이전트의 외부 경로 읽기가 새 확인을 받을 수 있음].
+- CHANGELOG 원문: "Changed `permissions.blockReadsOutsideWorkingDirectories` to refuse more Bash commands that name a path under a Read or Edit deny rule, where it used to ask"
+  (327) 같은 설정이 Read 또는 Edit deny 규칙에 걸린 경로를 가리키는 Bash 명령을 이전의 확인 대신 더 많이 거부합니다. (327) 프로젝트 `permissions`에 `deny`와 `ask` 키는 없었으므로(같은 파싱의 `d['permissions'].get('deny')`, `.get('ask')` 출력 None, None) 프로젝트 설정 경로의 영향은 관측하지 않았습니다.
+- CHANGELOG 원문: "Changed path checks to refuse some symbolic links"
+  (327) 경로 검사가 일부 심볼릭 링크를 거부합니다. (327) 이 저장소의 `allow` 중 경로 규칙은 `Edit(.claude/**)`, `Edit(templates/.claude/**)`, `Edit(.claude/outputs/**)` 3개입니다(위 파싱). (327) 측정: `git ls-tree -r 94328efb -- .claude templates/.claude | awk '$1=="120000"' | wc -l`의 출력은 0이었고(대조: 같은 형식에서 `$1=="100644"`는 `.claude`만 226개, 저장소 전체 `git ls-tree -r 94328efb | awk '$1=="120000"' | wc -l`은 1이며 그 항목은 `docs/plans/refs/latest`), 따라서 관측한 범위(위 명령)에서 이 경로 규칙 아래의 심볼릭 링크는 없었습니다.
+- CHANGELOG 원문: "Changed what counts as inside a working directory, so some paths now ask for permission"
+  (327) 작업 디렉토리 안으로 치는 범위가 바뀌어 일부 경로가 이제 권한 확인을 요구합니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: 무인 실행에서 프롬프트가 늘 수 있으며 판정 기준은 위 심볼릭 링크 항목과 같은 경로 집합에서의 프롬프트 발생 여부].
+- CHANGELOG 원문: "Changed Bash commands whose variables expand to very long text to be denied, with a message that says to use shorter values or a file"
+  (327) 변수가 매우 긴 텍스트로 확장되는 Bash 명령이 거부되며 더 짧은 값이나 파일을 쓰라는 메시지가 표시됩니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: 위임서 본문을 셸 변수로 넘기는 스크립트가 있으면 영향을 받으며, 판정 기준은 해당 스크립트의 변수 확장 길이 측정].
+- CHANGELOG 원문: "Changed auto mode's notice about falling back to billed classifier requests to say that an upcoming release removes the fallback; each action it would have checked will be asked about or denied"
+  (327) auto mode의 청구 분류기 요청 대체 안내가, 앞으로의 릴리즈에서 그 대체가 제거되며 분류기가 검사했을 각 작업은 확인을 요구하거나 거부된다고 알리도록 바뀌었습니다. (327) 같은 파싱에서 프로젝트 `permissions.defaultMode`는 `bypassPermissions`였으며, R010은 프로젝트 `bypassPermissions`가 CC 2.1.257+에서 무시된다고 기재하므로 무인 실행의 유효 모드는 R010 Self-Check 1의 실측 절차로 확인해야 합니다. (327) auto mode를 쓰는 세션에서 이 제거가 위임 흐름에 미치는 영향은 측정하지 않았습니다 [가설: 판정 기준은 제거 릴리즈의 CHANGELOG 원문].
+- CHANGELOG 원문: "Changed `ExitWorktree` to ask before removing a worktree that may hold unsaved work; refused in don't-ask mode or with nobody to answer, unless an allow rule, auto or bypass permissions mode allows it"
+  (327) `ExitWorktree`가 저장되지 않은 작업이 있을 수 있는 worktree를 제거하기 전에 확인을 요구하며, don't-ask 모드나 답할 사람이 없는 경우에는 allow 규칙, auto 모드 또는 bypass 모드가 허용하지 않는 한 거부됩니다. (327) 측정: `git grep -c -i -F 'ExitWorktree' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/rules/MUST-permissions.md`, `.claude/skills/omcustom-auto-improve/SKILL.md`, `guides/git-worktree-workflow/README.md`, `guides/worktree-lifecycle/README.md`와 `templates/` 사본 4개를 합쳐 8개 파일에서 각 2건이었습니다. (327) 에이전트 프론트매터는 `git ls-tree --name-only 94328efb .claude/agents/`와 `git show 94328efb:<파일>` 파싱(`^permissionMode:\s*(\S+)`)에서 50개 중 49개가 `permissionMode: bypassPermissions`이고 `.claude/agents/agora-runner.md`는 키가 없었으므로, 49개 에이전트의 위임 실행은 인용문의 "bypass permissions mode allows it" 조건에 해당할 수 있습니다 [가설: 판정 기준은 위임 실행에서 `ExitWorktree` 호출이 프롬프트·거부를 받는지 여부].
+
+### 서브에이전트·백그라운드 에이전트
+
+- CHANGELOG 원문: "Changed a subagent resumed by a sibling's message to follow the session's permission settings; it may now ask, or be refused where nobody can answer"
+  (327) 형제 에이전트의 메시지로 재개된 서브에이전트가 세션의 권한 설정을 따르게 되었으며, 이제 확인을 요구하거나 답할 사람이 없는 곳에서는 거부될 수 있습니다. (327) 측정: 에이전트 50개 중 49개가 `permissionMode: bypassPermissions`이고 `agora-runner`는 키가 없었습니다(위 `git ls-tree`+`git show` 파싱). (327) 재개 시 프론트매터 `permissionMode`와 세션 설정 중 어느 쪽이 적용되는지는 측정하지 않았습니다 [가설: 판정 기준은 `SendMessage`로 재개한 서브에이전트의 프롬프트 발생 여부와 R010 Self-Check 1의 유효 모드 실측값].
+- CHANGELOG 원문: "Changed subagents launched without a model to stay on the model they started on when resumed, including after `/model`"
+  (327) 모델 없이 시작한 서브에이전트는 재개될 때 `/model` 이후에도 처음 시작한 모델을 유지합니다. (327) 측정(위 파싱, `^model:\s*(\S+)`): 에이전트 50개 중 50개가 `model:` 키를 가졌고 값은 `claude-sonnet-5-5` 42개, `claude-opus-5-5` 5개, `haiku` 3개입니다(42 + 5 + 3 = 50). (327) 프론트매터 모델을 가진 에이전트가 "모델 없이 시작한" 경우에 해당하는지는 측정하지 않았습니다 [가설: 해당하지 않으면 영향 경로 없음].
+- CHANGELOG 원문: "Fixed a finished subagent resuming on the model and effort of a sibling subagent that messaged it"
+  (327) 끝난 서브에이전트가 자신에게 메시지를 보낸 형제 서브에이전트의 모델과 effort로 재개되던 결함이 수정되었습니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: `SendMessage`로 완료된 에이전트를 재개하는 경로의 위임이 있을 때만 관련되며, 판정 기준은 위임 기록에서 재개 후 모델 불일치 사례의 유무].
+- CHANGELOG 원문: "Changed the first subagent on a model to wait up to 1.5 seconds (10 in `claude -p`) for that model's settings from Anthropic, instead of starting without them"
+  (327) 한 모델의 첫 서브에이전트가 Anthropic의 그 모델 설정을 최대 1.5초(`claude -p`에서는 10초) 기다린 뒤 시작합니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: 시작 지연은 최대 이 시간으로 한정되며 판정 기준은 첫 위임의 시작 지연 실측].
+- CHANGELOG 원문: "Changed restarted background subagents, and turns that start by themselves, to wait for plugins to load"
+  (327) 재시작된 백그라운드 서브에이전트와 스스로 시작하는 턴이 플러그인 로딩을 기다립니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: 플러그인 제공 스킬·에이전트를 쓰는 경로에서 초기 누락이 줄어듭니다].
+- CHANGELOG 원문: "Fixed the main conversation not being told a background agent had finished when the subagent that started it ended by itself without reading the result, outside auto mode"
+  (327) 백그라운드 에이전트를 시작한 서브에이전트가 결과를 읽지 않고 스스로 끝났을 때 auto mode 밖에서 메인 대화가 그 완료를 통보받지 못하던 결함이 수정되었습니다. (327) 측정: `git grep -c -F 'run_in_background' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/settings.json` 2건, `.claude/hooks/hooks.json` 2건, `.claude/skills/pipeline/workflows/auto-dev.yaml` 1건, `src/core/hooks-settings.ts` 2건을 포함해 10개 파일에서 적중했습니다(`templates/` 사본과 가이드 15번 문서 포함). (327) 서브에이전트가 백그라운드 에이전트를 시작하는 경로는 측정하지 않았습니다 [가설: R010이 서브에이전트의 서브에이전트 생성을 금지하므로 영향 경로가 없으며, 판정 기준은 위 적중 파일에서 `run_in_background`를 쓰는 주체가 서브에이전트인지 여부].
+- CHANGELOG 원문: "Fixed Claude reporting a background agent as still running when it had waited 30 seconds or more on a permission prompt in the desktop app, on the web and in the SDK"
+  (327) 백그라운드 에이전트가 데스크톱 앱·웹·SDK에서 권한 프롬프트를 30초 이상 기다렸을 때 Claude가 여전히 실행 중이라고 보고하던 결함이 수정되었습니다. (327) 이 저장소의 기본 실행 경로는 터미널 CLI이므로 직접 영향은 측정하지 않았습니다 [가설: 직접 영향 경로 미관측].
+- CHANGELOG 원문: "Fixed Claude not being told in auto mode when a background agent's reply to a follow-up message was dropped, and reduced repeat wake-ups there from agents waiting on background commands"
+  (327) auto mode에서 백그라운드 에이전트가 후속 메시지에 한 응답이 버려졌을 때 Claude가 통보받지 못하던 결함이 수정되었고, 백그라운드 명령을 기다리는 에이전트로 인한 반복 깨움이 줄었습니다. (327) auto mode 사용 여부와 무관하게 저장소 측정은 하지 않았습니다 [가설: 판정 기준은 auto mode 세션의 백그라운드 위임 로그].
+- CHANGELOG 원문: "Improved subagent answers that hit the output token limit twice: they now more often come back whole or say up front that they are partial"
+  (327) 출력 토큰 한도에 두 번 걸린 서브에이전트의 답이 이제 더 자주 완전한 형태로 돌아오거나 부분 답임을 앞에서 알립니다. (327) 이는 R020 「maxTurns 절단 실증」이 다루는 절단 판정과 같은 계열입니다. (327) 절단 보고는 계속 ground-truth로 판정해야 하며 이 개선은 판정 의무를 바꾸지 않습니다.
+- CHANGELOG 원문: "Improved long replies on unrecognized models: a reply cut at 32,000 output tokens now continues with a limit of 128,000"
+  (327) 인식되지 않는 모델의 긴 응답이 32,000 출력 토큰에서 잘리면 이제 128,000 한도로 이어집니다. (327) 측정: `git grep -c -F 'CLAUDE_CODE_MAX_OUTPUT_TOKENS' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/rules/MAY-optimization.md`와 `templates/.claude/rules/MAY-optimization.md`에서 각 1건이었습니다(178행 RETIRED HTML 주석 안, 가시 본문 0). (327) 에이전트 프론트매터 모델 값이 위 3종이므로 인식되지 않는 모델 ID의 사용은 관측하지 않았으나 게이트웨이 경유 환경은 측정하지 않았습니다 [가설: 직접 영향 경로 미관측].
+- CHANGELOG 원문: "Improved the reminder about a completed subagent after compaction: if Claude can't read the agent's output file, it is now told to ask the agent with `SendMessage`"
+  (327) 압축 후 완료된 서브에이전트에 대한 알림이 개선되어, Claude가 에이전트의 출력 파일을 읽을 수 없으면 `SendMessage`로 에이전트에게 묻도록 안내받습니다. (327) 측정: 주석을 제거한 CLAUDE.md 1개와 `.claude/rules/*.md` 23개(합계 24개 파일)에서 `SendMessage` 가시 텍스트는 15건이며 `.claude/rules/MUST-agent-teams.md` 9건, `.claude/rules/MUST-permissions.md` 3건, `.claude/rules/MUST-orchestrator-coordination.md` 1건, `.claude/rules/MUST-parallel-execution.md` 1건, CLAUDE.md 1건입니다(9 + 3 + 1 + 1 + 1 = 15). (327) R009 「Result Aggregation」은 이미 `SendMessage`로 재요청하는 결과 회수 절차를 두므로 플랫폼 안내와 방향이 같습니다.
+- CHANGELOG 원문: "Fixed in-process agent teammates on a different model from the lead compacting at the lead's context limit and on the wrong model; they now use their own limit and model, at that model's rate"
+  (327) 리드와 다른 모델을 쓰는 in-process 에이전트 팀원이 리드의 컨텍스트 한도와 잘못된 모델로 압축되던 결함이 수정되어, 이제 자신의 한도와 모델로 그 모델 요율에 맞춰 압축됩니다. (327) 이 저장소에서 R018은 `TeamCreate`가 도구 목록에 없어 비활성이라고 CLAUDE.md에 기재되어 있으며 이 측정은 하지 않았습니다 [가설: 직접 영향 경로 미관측, 판정 기준은 도구 목록의 `TeamCreate` 등록 여부].
+
+### 훅
+
+- CHANGELOG 원문: "Fixed failing hooks showing nothing: SubagentStop in background agents, SessionEnd at `/clear` and `/resume`, and CwdChanged and FileChanged in fullscreen"
+  (327) 실패한 훅이 아무것도 표시하지 않던 결함이 수정되어, 백그라운드 에이전트의 SubagentStop, `/clear`와 `/resume` 시점의 SessionEnd, 전체 화면의 CwdChanged와 FileChanged 실패가 표시됩니다. (327) 측정(`git show 94328efb:.claude/settings.json` 파싱, `d['hooks']`): SubagentStop은 matcher `*` 그룹 1개에 명령 4개(`task-outcome-recorder.sh`, `stall-detection-advisor.sh`, `auto-continue-guard.sh`, `r007-r008-drift-advisor.sh`), CwdChanged는 1개(`cwd-change-detector.sh`), FileChanged는 1개(`file-change-validator.sh`, matcher `CLAUDE.md|bun.lock|yarn.lock|Cargo.lock|poetry.lock|package-lock.json|pnpm-lock.yaml`)였고, `'SessionEnd' in d['hooks']`는 False였습니다(대조: 같은 키 목록에 `SubagentStop` 포함). (327) 따라서 관측한 범위(위 파싱)에서 SessionEnd는 settings.json에 배선되지 않았습니다. (327) SubagentStop의 4개 명령과 CwdChanged·FileChanged 훅은 이 변경으로 실패가 보이게 될 수 있습니다 [가설: 판정 기준은 이 훅들이 실패하는 세션에서 실패 표시가 나타나는지 여부].
+- CHANGELOG 원문: "Fixed a Stop hook that failed to run being shown as having reported a problem"
+  (327) 실행에 실패한 Stop 훅이 문제를 보고한 것처럼 표시되던 결함이 수정되었습니다. (327) 측정(같은 파싱): `Stop`은 matcher `*` 그룹 6개이고 각 그룹에 명령 1개입니다(`stop-console-audit.sh`, `eval-core-batch-save.sh`, `feedback-collector.sh`, `session-reflection.sh`, `skill-extractor-analyzer.sh`, `auto-dev-token-summary.sh`).
+- CHANGELOG 원문: "Fixed Claude getting a long managed PostToolUse hook output twice when a mod added context to the tool call"
+  (327) mod가 도구 호출에 컨텍스트를 더했을 때 Claude가 긴 managed PostToolUse 훅 출력을 두 번 받던 결함이 수정되었습니다. (327) 측정(같은 파싱): 프로젝트 `PostToolUse`는 17개 그룹입니다. (327) managed 설정과 mod 사용은 측정하지 않았습니다 [가설: 직접 영향 경로 미관측].
+- CHANGELOG 원문: "Added a list in `/status` of broken agent, skill, command and output style files, keybinding errors, an unavailable sandbox, ignored permission settings and hook matchers that never match"
+  (327) `/status`에 깨진 에이전트·스킬·명령·output style 파일, 키바인딩 오류, 사용할 수 없는 sandbox, 무시된 권한 설정, 일치하지 않는 훅 matcher의 목록이 추가되었습니다. (327) 측정: 같은 파싱에서 `PostToolUse` matcher 중 `mcp__`를 포함하는 것은 `mcp__playwright__.*|mcp__claude-in-chrome__.*` 1개이고, `git show 94328efb:.mcp.json` 파싱의 `mcpServers` 키는 `eraser` 1개(type `http`)였습니다. (327) 따라서 관측한 범위(위 `.mcp.json` 파싱)에서 그 matcher와 일치하는 서버 이름은 없었습니다 [가설: 플러그인이 제공하는 서버가 있으면 일치하며, 판정 기준은 `/status` 목록에 이 matcher가 나타나는지 여부]. (327) 이 목록은 R023 Tier 1 결정론적 검증에 쓸 수 있는 후보입니다.
+- CHANGELOG 원문: "[VSCode] Fixed the permission prompt not showing the reason that a PreToolUse hook gives when it asks for confirmation (anthropics/claude-code#85950)"
+  (327) VS Code에서 PreToolUse 훅이 확인을 요구할 때 권한 프롬프트가 훅이 준 사유를 표시하지 않던 결함이 수정되었습니다. (327) 측정: `git grep -n -F 'permissionDecision' 94328efb -- ':(glob).claude/hooks/scripts/**'`의 적중은 `.claude/hooks/scripts/bash-cd-advisor.sh` 30행과 `.claude/hooks/scripts/context-pack-injector.sh` 45행의 2건이며 두 줄 모두 해당 필드를 출력하지 않는다는 취지의 주석입니다. (327) `git grep -n -F 'permissionDecision' 94328efb -- .claude/settings.json .claude/hooks/hooks.json src`는 일치가 없었습니다(rc 1). (327) 관측한 범위(위 두 명령)에서 확인을 요구하는 PreToolUse 훅은 없었습니다.
+
+### 스킬·플러그인·`--agents`
+
+- CHANGELOG 원문: "Fixed agents passed with `--agents` being lost once plugins loaded or reloaded"
+  (327) `--agents`로 넘긴 에이전트가 플러그인이 로드되거나 다시 로드되면 사라지던 결함이 수정되었습니다. (327) 측정: `git grep -c -F -e '--agents' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/rules/MUST-agent-design.md` 1건, `.claude/skills/help/SKILL.md` 3건, `guides/claude-code/13-cli-flags.md` 1건, `guides/claude-code/15-version-compatibility.md` 2건, `src/cli/index.ts` 1건과 `templates/` 사본 4개 파일이었습니다. (327) 관측한 범위(위 명령)에서 `.claude/hooks/scripts`의 실행 스크립트에는 적중이 없었고 위 적중은 문서 서술이 주입니다 [가설: `src/cli/index.ts`는 이 CLI 자체의 옵션일 수 있어 CC의 `--agents` 사용으로 보지 않음].
+- CHANGELOG 원문: "Fixed a plugin's agent being dropped when resuming a session from the `--resume` picker"
+  (327) `--resume` 선택기로 세션을 재개할 때 플러그인의 에이전트가 사라지던 결함이 수정되었습니다. (327) 이 저장소의 에이전트는 프로젝트 `.claude/agents/`의 50개 파일(`git ls-tree --name-only 94328efb .claude/agents/`를 파싱한 `.md` 계수)이며 플러그인 제공 에이전트의 사용은 측정하지 않았습니다 [가설: 직접 영향 경로 미관측].
+- CHANGELOG 원문: "Fixed the `/` menu listing a row for each skill of the same name, though every row ran the first"
+  (327) `/` 메뉴가 같은 이름의 스킬마다 행을 나열하지만 모든 행이 첫 번째를 실행하던 결함이 수정되었습니다. (327) 측정(`git ls-tree -r --name-only 94328efb .claude/skills`의 `^\.claude/skills/[^/]+/SKILL\.md$` 필터 후 `git show` 프론트매터 `^name:\s*(\S+)` 파싱): SKILL.md 114개에서 이름 114개가 추출되었고 이름 없음 0개, 중복 이름 목록은 비어 있었습니다. (327) 플러그인 스킬과의 이름 충돌은 측정하지 않았습니다 [가설: 판정 기준은 `/` 메뉴의 같은 이름 행 유무].
+- CHANGELOG 원문: "Changed `claude plugin eval` to keep its deny rules over a plugin's permission hook, and to flag calls the hook let through"
+  (327) `claude plugin eval`이 플러그인의 권한 훅보다 자신의 deny 규칙을 우선하고, 훅이 통과시킨 호출을 표시합니다. (327) 측정: `git grep -c -F 'plugin eval' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/rules/MUST-agent-design.md` 2건, `.claude/rules/SHOULD-verification-ladder.md` 1건, `guides/claude-code/15-version-compatibility.md` 3건과 `templates/` 사본 3개 파일에서 적중했습니다. (327) 이 저장소의 검증 사다리가 이 명령을 참조하므로 R023 Tier 1 판정 결과가 달라질 수 있는지는 측정하지 않았습니다 [가설: 판정 기준은 `claude plugin eval` 실행 결과의 변화].
+
+### worktree·sandbox·Bash
+
+- CHANGELOG 원문: "Improved the speed of a session's first Bash command: shell start-up files may now run before it's approved, even if it's refused; set `CLAUDE_CODE_DISABLE_SHELL_HEAD_START=1` to turn this off"
+  (327) 세션의 첫 Bash 명령이 빨라지는 대신, 셸 시작 파일이 명령이 거부되더라도 승인 전에 실행될 수 있으며 `CLAUDE_CODE_DISABLE_SHELL_HEAD_START=1`로 끌 수 있습니다. (327) 측정: `git grep -l -F 'CLAUDE_CODE_DISABLE_SHELL_HEAD_START' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 일치 파일이 없었고(대조: `git grep -l -F 'run_in_background'`는 같은 pathspec에서 10개 파일), 대소문자 무시와 구분자 변형(`git grep -l -i -P 'shell[_ -]?head[_ -]?start'`)도 같은 결과였습니다. (327) 이 저장소의 `.claude/settings.json` `env` 키는 없었습니다(파싱 `d.get('env')` 출력 None). (327) 셸 시작 파일의 부작용이 PreToolUse 훅 차단과 어떻게 맞물리는지는 측정하지 않았습니다 [가설: 판정 기준은 거부된 첫 Bash 명령에서 `~/.zshrc` 등의 실행 여부].
+- CHANGELOG 원문: "Improved sandboxed shell commands: Claude now sees when a command exempt from the sandbox stayed in it because its permission check relied on the sandbox"
+  (327) sandbox에서 제외된 명령이 권한 검사가 sandbox에 의존했기 때문에 sandbox 안에 남은 경우를 이제 Claude가 알 수 있습니다. (327) 측정: `.claude/settings.json`의 `sandbox` 키는 None이었습니다(파싱 `d.get('sandbox')`). (327) 관측한 범위(프로젝트 설정)에서 sandbox를 켜지 않았으며 사용자·managed 설정은 측정하지 않았습니다.
+- CHANGELOG 원문: "Improved the refusal for shell commands with no `rm` that the dangerous `rm` check can't parse, so Claude can resend harmless ones in plain syntax instead of giving up"
+  (327) `rm`이 없는데도 위험한 `rm` 검사가 파싱하지 못하는 셸 명령에 대한 거부 안내가 개선되어, Claude가 포기하는 대신 무해한 명령을 평이한 문법으로 다시 보낼 수 있습니다. (327) 프로젝트 `allow`에는 `Bash(rm:*)`가 포함되어 있습니다(위 파싱). (327) R005는 분석 불가 구문에서 `rule-deletion-guard`가 차단하는 별도 훅 규칙을 기재하며, 이 CC 플랫폼 검사와 그 훅의 상호작용은 측정하지 않았습니다 [가설: 판정 기준은 `eval`·`$(…)` 포함 명령에서 두 거부 메시지가 겹치는지 여부].
+- CHANGELOG 원문: "Changed `--worktree` with a relative `--add-dir` beside the launch folder to give the Bash sandbox that folder, not one beside the worktree"
+  (327) 시작 폴더 옆의 상대 `--add-dir`와 함께 쓰는 `--worktree`가 worktree 옆 폴더가 아니라 그 폴더를 Bash sandbox에 줍니다. (327) 측정: `git grep -c -F -e '--worktree' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `.claude/hooks/scripts/destructive-git-guard.sh` 1건, `guides/claude-code/13-cli-flags.md` 1건, `guides/claude-code/15-version-compatibility.md` 6건과 `templates/` 사본 3개 파일로 6개 파일이었고 `.claude/skills`와 `src`에는 적중이 없었으며, `--add-dir`는 같은 pathspec에서 `.claude/rules/MUST-agent-design.md` 1건, `guides/claude-code/15-version-compatibility.md` 5건과 `templates/` 사본 2개 파일입니다. (327) 위 sandbox 측정(`sandbox` 키 None)과 함께 이 저장소의 직접 영향은 관측하지 않았습니다.
+- CHANGELOG 원문: "Changed some `--worktree` starts with a relative `--add-dir` above the launch folder, such as `..`, to give the Bash sandbox, and a `--bg` session, only the worktree"
+  (327) 시작 폴더 위를 가리키는 상대 `--add-dir`(예: `..`)와 함께 시작하는 일부 `--worktree`는 Bash sandbox와 `--bg` 세션에 worktree만 줍니다. (327) 측정과 판단은 바로 위 항목과 같습니다(`--worktree` 적중 6개 파일, `sandbox` 키 None).
+
+### `claude -p`·무인 실행
+
+- CHANGELOG 원문: "Fixed `claude -p` hanging before its first request when the fetch of a model's settings stalled, such as at a proxy; it now goes on without them after 10 seconds"
+  (327) 프록시처럼 모델 설정 가져오기가 멈출 때 `claude -p`가 첫 요청 전에 멈추던 결함이 수정되어, 이제 10초 뒤 그 설정 없이 진행합니다. (327) 측정: `git grep -c -F 'claude -p' 94328efb -- ':(glob).claude/skills/**' ':(glob).claude/hooks/scripts/**' src package.json .github`의 적중 파일은 훅 스크립트 13개와 스킬 5개(`agora`, `fsd`, `model-escalation`, `pipeline/workflows`, `playwright-compress`)이며 합계 18개입니다(13 + 5 = 18). (327) 스킬 쪽 적중은 `fsd` SKILL.md의 무인 마커 설명과 `playwright-compress` SKILL.md의 `claude -p --model haiku` 호출 서술을 포함합니다. (327) 훅 스크립트 적중 중 `.claude/hooks/scripts/destructive-git-guard.sh` 5행은 `claude -p` 프로브를 인용한 주석이며, 다른 12개 스크립트의 적중 줄은 열어 보지 않았습니다 [가설: 판정 기준은 해당 줄이 실제 호출인지 주석인지].
+
+### 설정·MCP·CLAUDE.md
+
+- CHANGELOG 원문: "Fixed `claude mcp add` and `claude mcp remove` with project scope deleting other top-level keys from `.mcp.json`, such as `$schema` or another tool's `servers`"
+  (327) project scope의 `claude mcp add`와 `claude mcp remove`가 `.mcp.json`의 `$schema`나 다른 도구의 `servers` 같은 다른 최상위 키를 지우던 결함이 수정되었습니다. (327) 측정: `git ls-tree 94328efb .mcp.json`은 추적 파일 1개를 보였고(대조: `git ls-tree 94328efb package.json`도 출력), `git show 94328efb:.mcp.json` 파싱의 최상위 키는 `['mcpServers']` 하나였습니다. (327) 따라서 현재 삭제될 다른 최상위 키는 관측하지 않았습니다.
+- CHANGELOG 원문: "Changed `claude mcp add --scope project` to stop, instead of overwriting the file, when `.mcp.json` lists its servers at the top level with no `mcpServers` key"
+  (327) `claude mcp add --scope project`가 `.mcp.json`이 `mcpServers` 키 없이 서버를 최상위에 나열한 경우 파일을 덮어쓰지 않고 멈춥니다. (327) 위 파싱에서 이 저장소 `.mcp.json`은 `mcpServers` 키를 가지므로 이 조건에 해당하지 않습니다.
+- CHANGELOG 원문: "Fixed `claudeMdExcludes` patterns on Windows not matching a path whose drive letter is written in the other case"
+  (327) Windows에서 `claudeMdExcludes` 패턴이 드라이브 문자를 다른 대소문자로 쓴 경로와 일치하지 않던 결함이 수정되었습니다. (327) 측정: `git grep -l -i -F 'claudeMdExcludes' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 일치 파일이 없었고 변형 `git grep -l -i -P 'claude[_ -]?md[_ -]?excludes'`도 같았습니다(대조 `git grep -l -F 'SubagentStop'`는 37개 파일). (327) 이 저장소 기본 환경은 Darwin이므로 직접 영향은 관측하지 않았습니다.
+- CHANGELOG 원문: "Fixed `/statusline` writing to `~/.claude/settings.json` when `CLAUDE_CONFIG_DIR` points to another folder"
+  (327) `CLAUDE_CONFIG_DIR`가 다른 폴더를 가리킬 때 `/statusline`이 `~/.claude/settings.json`에 쓰던 결함이 수정되었습니다. (327) 측정: `git grep -l -i -P 'claude[_ -]?config[_ -]?dir' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 일치 파일이 없었으며(대조: `git grep -l -F 'SubagentStop'`는 같은 pathspec에서 37개 파일), 프로젝트 `statusLine`은 `type: command`, `command: bash "${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh"`, `refreshInterval: 10`으로 설정되어 있습니다(파싱 `d['statusLine']`).
+- CHANGELOG 원문: "Fixed `/model` listing the wrong models in some terminal sessions when a project's `.claude/settings.json` sets `ANTHROPIC_BASE_URL` to an LLM gateway"
+  (327) 프로젝트 `.claude/settings.json`이 `ANTHROPIC_BASE_URL`을 LLM 게이트웨이로 설정할 때 일부 터미널 세션에서 `/model`이 잘못된 모델을 나열하던 결함이 수정되었습니다. (327) 측정: 프로젝트 `.claude/settings.json`의 `env` 키는 None이므로 이 저장소는 그 변수를 설정하지 않았습니다(파싱 `d.get('env')`). (327) `git grep -c -F 'ANTHROPIC_BASE_URL' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`의 적중은 규칙 3개 파일(`.claude/rules/MAY-optimization.md` 1건, `.claude/rules/MUST-orchestrator-coordination.md` 2건, `.claude/rules/MUST-safety.md` 1건)과 가이드 15번 문서 10건 및 `templates/` 사본입니다. (327) 적중 줄은 열어 보지 않았습니다 [가설: 서술 텍스트이며, 판정 기준은 적중 줄이 설정 값을 지정하는지 여부].
+
+### 압축·도구 동작
+
+- CHANGELOG 원문: "Fixed a compaction right after a reply cut at the output token limit losing that reply's tool call and its result"
+  (327) 출력 토큰 한도에서 잘린 응답 직후의 압축이 그 응답의 도구 호출과 결과를 잃던 결함이 수정되었습니다. (327) 측정(`d['hooks']` 키): `PreCompact`와 `PostCompact`가 각각 배선되어 있습니다(키 목록에 포함). (327) 압축 후 재주입 경로는 R021이 `SessionStart`(matcher `compact`)로 기재하며 이 결함 수정과의 관계는 측정하지 않았습니다 [가설: 직접 영향 경로 미관측].
+- CHANGELOG 원문: "Fixed Edit refusing with "File has not been read yet" after a compaction on unchanged files outside the project that Claude had already read in full"
+  (327) Claude가 이미 전체를 읽은 프로젝트 밖의 변경되지 않은 파일에 대해 압축 후 Edit이 "File has not been read yet"으로 거부하던 결함이 수정되었습니다. (327) 저장소 영향은 측정하지 않았습니다 [가설: 외부 프로젝트 위임 세션에서만 관련되며 판정 기준은 압축 후 Edit 거부 사례의 유무].
+- CHANGELOG 원문: "Fixed Grep repeating or skipping results when paging with `head_limit` and `offset`; content and count results are now sorted by file path"
+  (327) `head_limit`와 `offset`으로 나눠 가져올 때 Grep이 결과를 반복하거나 건너뛰던 결함이 수정되었고, 내용·개수 결과가 이제 파일 경로 순으로 정렬됩니다. (327) 측정: `git grep -l -F 'head_limit' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 일치 파일이 없었고 변형 `git grep -l -i -P 'head[_ -]?limit'`도 같았습니다(대조: `git grep -l -F 'run_in_background'`는 10개 파일). (327) 관측한 범위(위 명령)에서 이 저장소의 지침은 Grep 페이징 인자를 다루지 않습니다.
+- CHANGELOG 원문: "Changed prompt history to leave out most launch prompts of sessions that another Claude Code session started, such as `claude --bg` run by Claude"
+  (327) 다른 Claude Code 세션이 시작한 세션의 시작 프롬프트(예: Claude가 실행한 `claude --bg`)가 프롬프트 기록에서 대부분 빠집니다. (327) 측정: `git grep -c -F 'claude --bg' 94328efb -- .claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`는 `guides/claude-code/15-version-compatibility.md`와 `templates/guides/claude-code/15-version-compatibility.md`에서 각 9건이었고 실행 경로의 적중은 없었습니다.
+
+### 기타 항목
+
+- (327) 이 릴리즈 본문의 `- ` 줄 전체는 173건이며(계수 구간: `gh release view v2.1.327 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `gh release view v2.1.327 -R anthropics/claude-code --json body --jq .body | grep -c '^- '`의 출력 173), 이 절이 위에서 다룬 항목은 44건이므로 그 밖의 항목은 129건입니다(173 - 44 = 129). (327) 다룬 항목은 이 절의 `- CHANGELOG 원문:` 줄 계수로 자체 확인합니다(권한 모드·auto mode 8, 서브에이전트·백그라운드 에이전트 12, 훅 5, 스킬·플러그인·`--agents` 4, worktree·sandbox·Bash 5, `claude -p`·무인 실행 1, 설정·MCP·CLAUDE.md 5, 압축·도구 동작 4; 8 + 12 + 5 + 4 + 5 + 1 + 5 + 4 = 44). (327) 나머지는 Remote Control·클라우드·자체 호스팅 러너, 아티팩트, 터미널 렌더링·키 입력·UI 수정, VS Code 확장, Windows·PowerShell, 대화·세션 복원 안정화, `/plugin`·`/mcp` 화면, OAuth·로그인·청구 항목 등입니다(범주는 예시이며 전수가 아닙니다) [가설: 직접 영향 경로 미관측].
+
+### 규칙 반영 판정
+
+- (327) auto mode allow 규칙 무시 확대와 `blockReadsOutsideWorkingDirectories` 변경: 규칙 변경 없음. (327) 프로젝트 `allow`에 패키지 러너 형태가 없고 `permissions`에 `blockReadsOutsideWorkingDirectories`가 없으며, R010 Self-Check 1의 유효 모드 실측이 이미 무인 실행의 전제로 규정되어 있고 서사는 이 가이드가 맡습니다(R016 버전노트 보존정책).
+- (327) 서브에이전트 재개 시 권한·모델 변경: 규칙 변경 없음. (327) R010 「Universal bypassPermissions」가 프롬프트를 부모 유효 모드와 frontmatter `permissionMode`로 진단하도록 이미 규정하며, 재개 경로의 동작은 측정하지 않았으므로 [가설] 판정 기준 충족 전에는 행동을 바꾸지 않습니다.
+- (327) 실패한 훅의 표시 개선: 규칙 변경 없음. (327) 행동 변화는 표시 가시성이며 에이전트가 따를 새 규범은 아닙니다.
+- (327) `ExitWorktree` 확인 요구: 규칙 변경 없음. (327) R002는 이미 `ExitWorktree`를 Tier 3로 기재하며, 위임 실행의 프롬프트 발생 여부는 측정하지 않았습니다 [가설].
+- (327) `SendMessage`로 완료 에이전트에 묻도록 한 안내: 규칙 변경 없음. (327) R009 「Result Aggregation」의 결과 회수 절차와 방향이 같습니다.
+
+**Action items**: (327) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙 파일을 고치지 않으며, [가설]로 남긴 항목은 해당 판정 기준을 충족하는 실측이 생길 때 다음 절에서 다룹니다.
+
+## v2.1.328 (2026-11-19)
+
+> Issue: #1976 — Claude Code v2.1.328 compatibility documentation
+> (328) 이슈 본문의 `- ` 항목 수와 릴리즈 본문의 `- ` 항목 수는 각각 144건으로 일치하며 불일치는 0건입니다(출처: `.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.328.md`, 이슈 측 수치는 그 파일의 기록을 인용했고 재계수하지 않았습니다). (328) 릴리즈 측은 `gh release view v2.1.328 -R anthropics/claude-code --json body --jq .body | grep -c '^- '`가 144였고, 게시 시각은 `gh release view v2.1.328 -R anthropics/claude-code --json publishedAt --jq .publishedAt`의 `2026-11-19T01:14:04Z`입니다. (328)
+> (328) 이 절의 범위 상한은 v2.1.328입니다. (328) v2.1.329 릴리즈가 존재하므로(비교 파일의 `gh release view v2.1.329 -R anthropics/claude-code --json tagName` 기록) 그 이후 변경은 각 버전의 자체 절이 다룹니다. (328)
+> (328) 이 절의 저장소 측정은 삽입 전(94328efb, `git log -1 --format='%h %s' 94328efb` 출력 `94328efb Merge pull request #1971 from baekenough/release/v2.0.26`) 기준이며 명령은 `git grep <pattern> 94328efb -- <pathspec>` 또는 `git show 94328efb:<path>` 형식입니다. (328) 이 절에서 표준 pathspec은 `.claude CLAUDE.md guides ':(glob)src/**' ':(glob)templates/**'`이며 이하 `<PS>`로 적습니다. (328)
+
+### 권한·permission mode·auto mode
+
+- CHANGELOG 원문: "Added auto mode for Claude Opus 4.6 and Sonnet 4.6 on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry and Claude apps gateway; interactive sessions with no permission mode start in it"
+  (328) Amazon Bedrock, Google Cloud Agent Platform, Microsoft Foundry, Claude apps gateway에서 Opus 4.6·Sonnet 4.6용 auto mode가 추가되었고, 권한 모드가 지정되지 않은 대화형 세션은 auto mode로 시작합니다. (328) 측정: `git show 94328efb:.claude/settings.json`을 python JSON으로 파싱하면 최상위 키는 `enableAllProjectMcpServers`, `hooks`, `outputStyle`, `permissions`, `skillOverrides`, `statusLine`이며 `permissions.defaultMode`는 `bypassPermissions`입니다. (328) 이 값은 CC 2.1.257+에서 프로젝트 범위에서는 무시되므로(R010 「Universal bypassPermissions」 Self-Check 1) 실제 시작 모드는 사용자·managed 설정과 실행 플래그가 정합니다. (328) 이 저장소의 실행 환경이 위 제공자인지는 측정하지 않았습니다 [가설: Anthropic API 환경이면 해당 없음; 판정 기준: R010 Self-Check 1의 `jq` 실측과 제공자 환경 변수 확인]. (328)
+- CHANGELOG 원문: "Changed plan mode and Bash prompts for Opus 4.6 and Sonnet 4.6 on third-party providers to use and offer auto mode, as on newer models; `disableAutoMode` turns both off"
+  (328) Opus 4.6·Sonnet 4.6의 제3자 제공자용 plan mode와 Bash 프롬프트가 더 새로운 모델처럼 auto mode를 사용·제안하도록 바뀌었으며 `disableAutoMode`가 둘 다 끕니다. (328) 측정: `git grep -n -i -F 'disableAutoMode' 94328efb -- .claude wiki`는 `.claude/rules/MUST-permissions.md` 172행과 `wiki/rules/r002.md` 87행의 2줄에서 적중했습니다. (328) 앞 파일의 적중은 HTML 주석 안이어서 주석 제거 텍스트(python `re.sub(r'<!--.*?-->','',t,flags=re.S)` 적용 후 `re.findall`)의 가시 일치는 0건이었으므로, 자동 주입되는 `MUST-permissions.md` 본문은 이 설정을 담고 있지 않습니다. (328) 영향은 위 항목과 같은 판정 기준으로 둡니다 [가설: 제3자 제공자 환경에 한정]. (328)
+- CHANGELOG 원문: "Fixed auto mode failing every turn outside Claude Desktop with `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` set behind a gateway rejecting betas, on Bedrock, Agent Platform, Foundry or Claude apps gateway"
+  (328) `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`가 설정된 채 베타를 거부하는 게이트웨이 뒤에서, Claude Desktop 밖의 auto mode가 매 턴 실패하던 결함이 수정되었습니다. (328) 측정: `git grep -c -F 'DISABLE_EXPERIMENTAL_BETAS' 94328efb -- <PS>`는 `guides/claude-code/15-version-compatibility.md`와 `templates/guides/claude-code/15-version-compatibility.md`에서 각 2건이며, 관측한 범위(위 명령)에서 `.claude/`와 `src/`의 실행 경로에는 일치가 없었습니다. (328)
+
+### 훅
+
+- CHANGELOG 원문: "Added `"onFailure": "block"` for `mcp_tool` hooks, as for command and HTTP hooks: a hook whose call fails blocks the action"
+  (328) `mcp_tool` 훅에도 command·HTTP 훅처럼 `"onFailure": "block"`을 쓸 수 있게 되어, 호출이 실패한 훅이 해당 동작을 차단합니다. (328) 측정: `git show 94328efb:.claude/settings.json` python 파싱에서 `hooks.*[].hooks[].type` 집합은 `['command', 'prompt']`이므로 `mcp_tool` 유형 훅은 배선되지 않았습니다. (328) `.claude/hooks/hooks.json` 576행의 `mcp_tool` 일치는 훅 유형이 아니라 matcher 식(`mcp_tool_name matches "mcp__playwright__.*" || …`)입니다. (328) `git grep -c -F 'onFailure' 94328efb -- <PS>`는 가이드 15번 문서와 그 템플릿 사본에서 각 4건이었고(대조: `-i -F`는 6개 파일, 추가 4개는 `.claude/skills/java-best-practices/SKILL.md`, `guides/java/modern-java.md`와 각 템플릿 사본), 실행 경로에는 일치가 없었습니다. (328) 명령 형태 대조: `git grep -c -F '"type": "command"' 94328efb -- .claude/settings.json .claude/hooks/hooks.json`은 hooks.json 67건, settings.json 68건이었습니다. (328)
+- CHANGELOG 원문: "Added `CLAUDE_CODE_DISABLE_DEFERRED_TOOL_RESUME`, which lets a host stop `claude -p --resume` and `--continue` from running a tool call that a hook deferred"
+  (328) `CLAUDE_CODE_DISABLE_DEFERRED_TOOL_RESUME`으로 호스트가 `claude -p --resume`과 `--continue`가 훅이 보류(defer)한 도구 호출을 실행하지 못하게 막을 수 있습니다. (328) 측정: `git grep -c -F 'CLAUDE_CODE_DISABLE_DEFERRED_TOOL_RESUME' 94328efb -- <PS>`는 0개 파일이며 `-i -F`와 `-i -P 'disable[ _-]?deferred[ _-]?tool[ _-]?resume'`도 0개 파일이었습니다. (328) `git grep -c -F -e '--resume' 94328efb -- .claude/hooks .claude/skills ':(glob)src/**'`도 0개 파일이고 `--continue`도 같았으며(대조: 같은 pathspec의 `git grep -c -F 'claude -p'`는 18개 파일), 훅 결정값 보류의 사용은 `git grep -n -i -F 'defer' 94328efb -- .claude/hooks .claude/settings.json`이 `.claude/hooks/scripts/stuck-detector.sh` 68행 주석(영문 "defers", 다른 의미) 1줄만 적중시킨 관측 범위에서 없었습니다. (328) [가설: 보류 훅이 없으므로 영향 없음; 판정 기준: 훅이 `defer` 결정을 반환하는 경로가 생기는 시점에 재측정]. (328)
+- CHANGELOG 원문: "Changed managed `PostToolUse` hooks to no longer fire for calls refused before they ran: no log entry, rewrite, block or stop there; `PostToolBatch` gets most, not marked as refused"
+  (328) managed `PostToolUse` 훅이 실행되기 전에 거부된 호출에는 더 이상 발화하지 않아 로그 기록·재작성·차단·중지가 일어나지 않으며, `PostToolBatch`는 대부분을 받되 거부 표시 없이 받습니다. (328) 측정: `git show 94328efb:.claude/settings.json` python 파싱에서 `PostToolUse` matcher 항목은 17개, 그 안의 훅은 17개이고 모두 프로젝트 설정입니다. (328) managed 설정에서 `PostToolUse`를 배선한 환경은 측정하지 않았습니다 [가설: 이 변경의 직접 대상은 managed 설정이므로 프로젝트 훅 17개는 해당 없음; 판정 기준: managed 설정의 `PostToolUse` 배선 실측]. (328)
+- CHANGELOG 원문: "Changed a shell command rewritten by a PermissionRequest hook to a sandbox-excluded command to run outside the sandbox"
+  (328) PermissionRequest 훅이 셸 명령을 sandbox 제외 명령으로 다시 쓰면 그 명령이 sandbox 밖에서 실행되도록 바뀌었습니다. (328) 측정: python 파싱에서 `'PermissionRequest' in d['hooks']`는 False, `'PostToolUse' in d['hooks']`(대조)는 True이며, `git grep -c -i -F -e 'PermissionRequest' 94328efb -- .claude/settings.json .claude/hooks ':(glob)src/**'`는 0개 파일이었습니다(대조: 같은 pathspec의 `git grep -c -F PostToolUse`는 19개 파일). (328) 따라서 관측한 범위(위 명령)에서 이 저장소는 PermissionRequest 훅을 배선하지 않았습니다. (328)
+- CHANGELOG 원문: "Fixed agent hooks running past their timeout while compacting after a request was refused as too large"
+  (328) 요청이 너무 크다고 거부된 뒤 compaction 중에 agent 훅이 타임아웃을 넘겨 실행되던 결함이 수정되었습니다. (328) 측정: 위 python 파싱의 `settings.json` 훅 유형 집합이 `['command', 'prompt']`이고 `git grep -c -F '"type": "agent"' 94328efb -- .claude/settings.json .claude/hooks/hooks.json ':(glob)src/**'`가 0개 파일(rc 1)이었으므로, 관측한 범위(위 두 측정)에서 agent 유형 훅은 배선되지 않았습니다. (328) 공백 없는 `"type":"agent"` 표기는 grep으로 측정하지 않았고 python 파싱이 이를 대신합니다. (328)
+- CHANGELOG 원문: "Fixed `/goal` removing a skill's Stop hook, or ending early on another hook's result, when both had the same wording"
+  (328) 두 훅의 문구가 같을 때 `/goal`이 skill의 Stop 훅을 제거하거나 다른 훅의 결과에 일찍 끝나던 결함이 수정되었습니다. (328) 측정: `git ls-tree -r --name-only 94328efb -- .claude/skills`의 `/SKILL.md` 114개를 python으로 프론트매터 파싱한 결과 `^hooks:` 보유는 0개였습니다(대조: 같은 파싱의 `allowed-tools` 변형 정규식은 2개 적중). (328) `.claude/skills/fsd/SKILL.md` 16행은 `/goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"` 형태로 `/goal`을 씁니다. (328) 따라서 skill 정의의 Stop 훅이 제거되는 경로는 관측한 범위(위 파싱)에 없으나, 프로젝트 `settings.json`의 Stop 훅(python 파싱 6개)이 서로 같은 문구일 때의 조기 종료는 측정하지 않았습니다 [가설: 훅 결과 문구가 동일한 경우만 해당; 판정 기준: `/goal` 사용 세션에서 Stop 훅 출력 문구 중복 여부 실측]. (328)
+- CHANGELOG 원문: "Changed Code Mode to no longer run UserPromptSubmit hooks, managed ones included, on scripts' output; to redact that output, use a PostToolUse hook with `updatedToolOutput`"
+  (328) Code Mode가 스크립트 출력에 대해 UserPromptSubmit 훅(managed 포함)을 더 이상 실행하지 않으며, 그 출력을 가리려면 `updatedToolOutput`을 쓰는 PostToolUse 훅을 써야 합니다. (328) 측정: `git grep -c -i -P 'code[ _-]?mode' 94328efb -- <PS>`는 0개 파일이고 `-F 'Code Mode'`와 `-i -F 'Code Mode'`도 0개 파일이었으며 `updatedToolOutput`(`-F`, `-i -F`, `-i -P 'updated[ _-]?tool[ _-]?output'`)도 모두 0개 파일이었습니다. (328) 프로젝트 `UserPromptSubmit` 훅은 python 파싱으로 4개이며 `user-prompt-preprocessor.sh`, `r007-r008-drift-advisor.sh`, `session-autofix-prompt.sh`, `fail-axis-cause-advisor.sh`입니다. (328) [가설: Code Mode를 쓰지 않으므로 영향 없음; 판정 기준: Code Mode 사용 세션에서 R007/R008 advisor 계수 확인]. (328)
+
+### 서브에이전트·Agent·백그라운드
+
+- CHANGELOG 원문: "Fixed effort being turned off for a subagent's model for the session if Bedrock, Google Cloud's Agent Platform or Foundry refused its progress summary's effort setting (regression in 2.1.327)"
+  (328) 2.1.327에서 생긴 회귀가 수정되어, Bedrock·Google Cloud Agent Platform·Foundry가 서브에이전트 진행 요약의 effort 설정을 거부해도 그 서브에이전트 모델의 effort가 세션 동안 꺼지지 않습니다. (328) 측정: `git ls-tree -r --name-only 94328efb -- .claude/agents` 중 `.md` 파일 51개(에이전트 50 + `souls/lang-golang-expert.soul.md` 1)를 python으로 프론트매터 파싱한 결과 `effort:` 보유는 49개였습니다. (328) 해당 제공자 환경인지는 측정하지 않았습니다 [가설: Anthropic API 환경이면 해당 없음; 판정 기준: 위 auto mode 항목과 같은 제공자 확인]. (328)
+- CHANGELOG 원문: "Fixed the model saying background agents were still running after an SDK interrupt had stopped them"
+  (328) SDK 인터럽트가 백그라운드 에이전트를 멈춘 뒤에도 모델이 그것들이 아직 실행 중이라고 말하던 결함이 수정되었습니다. (328) 측정: 위 51개 `.md` 프론트매터 파싱에서 `background:` 키 보유는 0개였습니다(파싱한 키는 `effort`, `hooks`, `isolation`, `background`, `permissionMode`, `memory`, `maxTurns`이며 `effort` 49, `permissionMode` 49, `memory` 48, `isolation` 1이 적중했습니다). (328) [가설: 이 저장소의 SDK 인터럽트 경로는 사용하지 않으므로 영향 없음; 판정 기준: SDK 호스트 경유 세션 존재 여부 확인]. (328)
+- CHANGELOG 원문: "Changed subagents in `claude -p`, the Agent SDK, desktop and VS Code to wait for their own subagents by default when `CLAUDE_CODE_FORK_SUBAGENT=0` is set"
+  (328) `CLAUDE_CODE_FORK_SUBAGENT=0`이 설정되면 `claude -p`, Agent SDK, 데스크톱, VS Code의 서브에이전트가 기본적으로 자신의 서브에이전트를 기다리도록 바뀌었습니다. (328) 측정: `git grep -c -F 'CLAUDE_CODE_FORK_SUBAGENT' 94328efb -- <PS>`는 가이드 15번 문서와 그 템플릿 사본에서 각 3건(2개 파일)이며 `-i -F`와 `-i -P 'fork[ _-]?subagent'`도 2개 파일로 같았습니다. (328) 관측한 범위(위 명령)에서 `.claude/`와 `src/`의 실행 경로는 이 변수를 쓰지 않습니다. (328) 사용자 환경의 이 변수 값은 측정하지 않았습니다 [가설: 미설정이면 영향 없음; 판정 기준: 무인 실행 환경의 `env` 실측]. (328)
+- CHANGELOG 원문: "Changed `claude -p` with `CLAUDE_CODE_FORK_SUBAGENT=0` to count a background subagent and those it waits for against one 10-minute wait; raise `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` for longer chains"
+  (328) `CLAUDE_CODE_FORK_SUBAGENT=0`인 `claude -p`는 백그라운드 서브에이전트와 그것이 기다리는 서브에이전트를 하나의 10분 대기에 함께 세며, 더 긴 체인에는 `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`를 올려야 합니다. (328) 측정: `git grep -c -F 'CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS' 94328efb -- <PS>`는 0개 파일이며 `-i -F`와 `-i -P 'print[ _-]?bg[ _-]?wait'`도 0개 파일이었습니다(대조: 위 `CLAUDE_CODE_FORK_SUBAGENT` 명령은 같은 pathspec에서 2개 파일 적중). (328) [가설: 이 변수가 미설정인 환경이면 영향 없음; 판정 기준: `/fsd` 무인 `claude -p` 실행 환경의 `env` 실측]. (328)
+- CHANGELOG 원문: "Improved starting several in-process teammates at once: far fewer now fail with "Lock file is already being held""
+  (328) 여러 in-process 팀원을 동시에 시작할 때 "Lock file is already being held" 오류로 실패하는 경우가 크게 줄었습니다. (328) 측정: `git grep -c -F 'in-process' 94328efb -- .claude/rules/MUST-agent-teams.md`는 3건이고 `git grep -c -F 'Lock file is already' 94328efb -- <PS>`는 0개 파일이었습니다(`-i -F`와 `-i -P 'lock[ _-]?file[ _-]?is[ _-]?already'`도 0개 파일). (328) CLAUDE.md 「Agent Teams」 서술상 `TeamCreate`는 현행 환경에서 도구 목록에 미등록이어서 R018은 비활성입니다(이 절에서 재측정하지 않았습니다). (328) [가설: 팀원 스폰 경로가 비활성이므로 영향 없음; 판정 기준: `TeamCreate`가 도구 목록에 등록되는 시점의 실측]. (328)
+- CHANGELOG 원문: "Changed `/list-agents` to show its list to you alone; Claude lists sessions itself when needed"
+  (328) `/list-agents`가 목록을 사용자에게만 보여주도록 바뀌었으며, 필요할 때 Claude는 스스로 세션을 나열합니다. (328) 측정: `git grep -c -F '/list-agents' 94328efb -- <PS>`는 0개 파일이었고 `-i -F`와 `-i -P '/list[ _-]?agents'`도 0개 파일이었습니다(대조: `git grep -c -F '/loop' 94328efb -- <PS>`는 6개 파일). (328) 따라서 관측한 범위(위 명령)에서 이 저장소는 이 명령에 의존하지 않습니다. (328)
+
+### 컨텍스트 창·compaction
+
+- CHANGELOG 원문: "Fixed automatic compaction reusing the session's earlier system prompt instead of rebuilding it the way `/compact` does"
+  (328) 자동 compaction이 `/compact`처럼 시스템 프롬프트를 다시 만들지 않고 세션의 이전 시스템 프롬프트를 재사용하던 결함이 수정되었습니다. (328) 측정: python 파싱에서 `.claude/settings.json`의 `PreCompact` 훅은 command 1개(`task-state-precompact.sh`), `PostCompact` 훅은 prompt 1개(`Context compacted. RULES ACTIVE.`로 시작)입니다. (328) R021은 압축 후 재주입의 보장 경로를 `SessionStart`(matcher `compact`)로 두고 PostCompact를 효과 미보장으로 서술합니다. (328) 자동 compaction 직후의 규칙·CLAUDE.md 로드가 이 수정으로 달라지는지는 측정하지 않았습니다 [가설: 시스템 프롬프트 재구성이 압축 후 지시 유지에 유리할 수 있음; 판정 기준: 자동 compaction 직후 첫 응답의 R007 헤더 유지 여부를 transcript에서 실측]. (328)
+
+### 예약 실행·/loop
+
+- CHANGELOG 원문: "Fixed saving a scheduled task erasing the project's other saved tasks when the scheduled tasks file can't be read, on third-party providers or with telemetry or feature flags turned off"
+  (328) 예약 작업 파일을 읽을 수 없을 때, 제3자 제공자이거나 telemetry·feature flag를 끈 환경에서 예약 작업 하나를 저장하면 프로젝트의 다른 저장된 작업이 지워지던 결함이 수정되었습니다. (328) 측정: `git ls-tree --name-only 94328efb .claude/scheduled_tasks.json | wc -l`은 0이고 `git ls-tree -r --name-only 94328efb | grep -c -i -E 'scheduled_tasks'`도 0이었습니다(대조: 같은 `git ls-tree -r --name-only 94328efb | grep -c -F '.claude/settings.json'`는 2). (328) `git show 94328efb:.gitignore | grep -n -i 'scheduled'`는 일치가 없었습니다. (328) `/loop`는 `git grep -c -F '/loop' 94328efb -- .claude/skills/fsd/SKILL.md`가 7건입니다. (328) 로컬에 미추적 상태로 존재하는 예약 작업 파일은 측정하지 않았습니다 [가설: `/fsd`의 `/loop`는 세션 범위여서 파일 영향이 작음; 판정 기준: 로컬 `.claude/scheduled_tasks.json` 존재 여부 `command ls -la` 확인]. (328)
+- CHANGELOG 원문: "Fixed a scheduled task with a typo in the project's scheduled tasks file being deleted the next time that file was saved"
+  (328) 프로젝트 예약 작업 파일에 오타가 있는 예약 작업이 그 파일의 다음 저장 때 삭제되던 결함이 수정되었습니다. (328) 위 항목과 같은 측정(`git ls-tree` 결과 추적 파일 0개)을 따르며 영향 판정도 위 [가설]과 같은 기준으로 둡니다. (328)
+
+### Bash·sandbox
+
+- CHANGELOG 원문: "Fixed Bash commands in zsh stopping with a "not found" error at a word that starts with `=`, such as `echo ====` or `[ a == b ]`; `=cmd` no longer expands to a command's path"
+  (328) zsh의 Bash 명령이 `echo ====`나 `[ a == b ]`처럼 `=`로 시작하는 단어에서 "not found" 오류로 멈추던 결함이 수정되었고, `=cmd`가 더 이상 명령 경로로 확장되지 않습니다. (328) 측정: `git grep -c -F '=cmd' 94328efb -- .claude/rules CLAUDE.md`는 `.claude/rules/MAY-optimization.md` 1건뿐이며(관측한 범위: 그 명령) 주석 제거 텍스트의 가시 일치도 1건입니다. (328) 이 줄이 R005의 zsh `=` 시작 단어 서술입니다. (328) 프로브: 이 도구 셸(`ZSH_VERSION`=5.9)에서 `echo ====; [ a == b ]`를 실행하자 `====`가 출력되고 `[ a == b ]`는 오류 없이 종료 코드 1(거짓)이었으며 `claude --version`은 `2.1.330 (Claude Code)`였습니다. (328) 실행 중인 세션의 CC 버전이 이 출력과 같다는 점은 확인하지 않았습니다 [가설: 현재 세션이 2.1.328 이상이어서 수정이 반영됨; 판정 기준: 세션 시작 로그의 버전 확인]. (328)
+- CHANGELOG 원문: "Fixed the Bash sandbox on Linux renaming `.git/HEAD` after each command when the branch name is not valid UTF-8"
+  (328) 브랜치 이름이 유효한 UTF-8이 아닐 때 Linux의 Bash sandbox가 명령마다 `.git/HEAD`의 이름을 바꾸던 결함이 수정되었습니다. (328) 측정: python 파싱에서 `'sandbox' in d`(`.claude/settings.json`)는 False였고 `git grep -c -i -F -e 'sandbox' 94328efb -- .claude/settings.json .claude/hooks ':(glob)src/**'`는 0개 파일이었습니다. (328) [가설: Linux에서 sandbox를 켠 환경에 한정되며 이 저장소의 브랜치명은 ASCII이므로 영향 없음; 판정 기준: 그 환경에서 `git branch --list`의 이름 인코딩 확인]. (328)
+- CHANGELOG 원문: "Changed how a sandbox that can't start is reported, unless `sandbox.failIfUnavailable` is set: the next sandboxed Bash command is refused and says that the sandbox is off for the session"
+  (328) `sandbox.failIfUnavailable`이 설정되지 않은 경우, 시작할 수 없는 sandbox의 보고 방식이 바뀌어 다음 sandbox Bash 명령이 거부되며 그 세션에서 sandbox가 꺼져 있음을 알려줍니다. (328) 측정: `git grep -c -F 'failIfUnavailable' 94328efb -- <PS>`는 0개 파일이고 `-i -F`는 6개 파일(`.claude/rules/MUST-agent-design.md`, `guides/harness-engineering/README.md`, `guides/middleware-patterns/README.md`와 각 템플릿 사본)이었습니다. (328) 그중 확인한 3줄(`.claude/rules/MUST-agent-design.md` 205행, `guides/harness-engineering/README.md` 105·333행)은 `sandboxFailIfUnavailable` 철자이며 변경 문구의 `sandbox.failIfUnavailable`과 다릅니다. (328) 두 이름이 같은 설정인지는 확인하지 않았습니다 [가설: 별개의 에이전트 프론트매터 필드 표기일 수 있음; 판정 기준: 공식 설정 문서의 키 이름 대조]. (328)
+
+### MCP
+
+- CHANGELOG 원문: "Fixed MCP tools whose input schema starts with `anyOf`, `oneOf` or `allOf` going missing on third-party providers or with telemetry or feature flags turned off"
+  (328) 제3자 제공자이거나 telemetry·feature flag를 끈 환경에서 입력 스키마가 `anyOf`, `oneOf`, `allOf`로 시작하는 MCP 도구가 사라지던 결함이 수정되었습니다. (328) 측정: `git show 94328efb:.mcp.json`의 `mcpServers`는 `eraser` 1개(type `http`)이고 `.claude/settings.json`에는 `enableAllProjectMcpServers`가 1건입니다(`git grep -c -F 'enableAllProjectMcpServers' 94328efb -- .claude/settings.json`). (328) `eraser` 서버 도구의 입력 스키마 형태는 측정하지 않았습니다 [가설: 해당 환경에서만 영향; 판정 기준: 해당 환경에서 `eraser` 도구 목록 실측]. (328)
+- CHANGELOG 원문: "Fixed an MCP tool with an invalid input schema failing requests on third-party providers or with telemetry or feature flags turned off; the tool is now left out and Claude is told why"
+  (328) 제3자 제공자이거나 telemetry·feature flag를 끈 환경에서 입력 스키마가 잘못된 MCP 도구가 요청을 실패시키던 결함이 수정되어, 그 도구는 제외되고 Claude가 이유를 전달받습니다. (328) 측정은 위 항목의 `.mcp.json` 서버 1개(`eraser`)와 같으며 스키마 유효성은 측정하지 않았습니다 [가설: 위 항목과 같은 판정 기준]. (328)
+- CHANGELOG 원문: "Changed `deniedMcpServers` entries of the form `claude.ai <name>` to apply to that connector in cloud and self-hosted runner sessions too"
+  (328) `claude.ai <name>` 형식의 `deniedMcpServers` 항목이 클라우드와 self-hosted runner 세션에서도 그 커넥터에 적용되도록 바뀌었습니다. (328) 측정: `git grep -c -i -P 'denied[_ -]?mcp[_ -]?servers' 94328efb -- <PS>`는 가이드 15번 문서와 그 템플릿 사본에서 각 1건(2개 파일)이며, `git grep -c -i -F 'deniedMcpServers' 94328efb -- .claude/settings.json .mcp.json`은 일치가 없었습니다(rc 1). (328) 관측한 범위(위 명령)에서 프로젝트 설정은 이 키를 쓰지 않습니다. (328)
+
+### claude -p·SDK·무인 실행
+
+- CHANGELOG 원문: "Improved `claude -p` text output to say on stderr when a message from another session is held or dropped, and how to allow it"
+  (328) `claude -p` 텍스트 출력이 다른 세션의 메시지가 보류되거나 버려질 때 stderr로 그 사실과 허용 방법을 알려줍니다. (328) 측정: `git grep -c -F 'claude -p' 94328efb -- .claude/hooks .claude/skills ':(glob)src/**'`는 18개 파일에서 적중했고, `.claude/skills/fsd/SKILL.md` 134행은 마커를 미리 만들 수 없는 `claude -p`·예약 실행 경로에 `OMCUSTOM_UNATTENDED=1`을 대체로 둡니다. (328) 교차 세션 메시지 사용은 측정하지 않았습니다 [가설: 이 저장소의 무인 실행은 다른 세션 메시지에 의존하지 않음; 판정 기준: `SendMessage` 사용 경로 실측]. (328)
+- CHANGELOG 원문: "Improved `claude -p` and SDK sessions to fetch managed-settings plugins that have their own git repository, in the background, for a later session"
+  (328) `claude -p`와 SDK 세션이 자체 git 저장소를 가진 managed-settings 플러그인을 백그라운드에서 가져와 이후 세션에 쓰도록 개선되었습니다. (328) 측정: `git grep -c -i -P 'enabled[ _-]?plugins|known[ _-]?marketplaces' 94328efb -- .claude/settings.json .claude/hooks/hooks.json`은 일치가 없었습니다(rc 1). (328) 관측한 범위(위 명령)에서 프로젝트 설정은 플러그인을 선언하지 않으며 managed 설정은 측정하지 않았습니다. (328)
+- CHANGELOG 원문: "Improved how soon managed-settings plugins from a git marketplace load on a fresh machine in `claude -p`, SDK and Claude Desktop sessions; a short run may exit up to 30 seconds later"
+  (328) 새 머신의 `claude -p`, SDK, Claude Desktop 세션에서 git 마켓플레이스의 managed-settings 플러그인이 더 빨리 로드되도록 개선되었으며, 짧은 실행은 최대 30초 늦게 종료될 수 있습니다. (328) 위 항목과 같은 측정을 따릅니다. (328) `claude -p` 호출부(위 18개 파일)의 타임아웃 값은 측정하지 않았습니다 [가설: 30초 이내 타임아웃을 두는 호출부만 영향; 판정 기준: 18개 파일의 `claude -p` 호출 timeout 실측]. (328)
+- CHANGELOG 원문: "Fixed `CLAUDE_STREAM_IDLE_TIMEOUT_MS` not lengthening the 5-minute connection limit on gateways, custom base URLs and cloud providers"
+  (328) 게이트웨이, 사용자 지정 base URL, 클라우드 제공자에서 `CLAUDE_STREAM_IDLE_TIMEOUT_MS`가 5분 연결 제한을 늘리지 못하던 결함이 수정되었습니다. (328) 측정: `git grep -c -F 'CLAUDE_STREAM_IDLE_TIMEOUT_MS' 94328efb -- <PS>`는 0개 파일이며 `-i -F`와 `-i -P 'stream[ _-]?idle[ _-]?timeout'`도 0개 파일이었습니다(대조: `CLAUDE_CODE_FORK_SUBAGENT` 명령은 같은 pathspec에서 2개 파일 적중). (328) 따라서 관측한 범위(위 명령)에서 이 저장소는 이 변수를 쓰지 않습니다. (328)
+
+### 스킬·슬래시 명령
+
+- CHANGELOG 원문: "Changed `/code-review` on most models to report only bugs and CLAUDE.md violations; run `/simplify` for reuse, simplification and efficiency cleanups"
+  (328) 대부분의 모델에서 `/code-review`가 버그와 CLAUDE.md 위반만 보고하도록 바뀌었으며, 재사용·단순화·효율 정리는 `/simplify`로 실행해야 합니다. (328) 측정: `git grep -n -F '/code-review' 94328efb -- .claude CLAUDE.md ':(glob)src/**'`는 2줄이며 `.claude/rules/SHOULD-verification-ladder.md` 55행(v2.1.232+ 노트)과 `.claude/skills/crg-integration/SKILL.md` 154행입니다. (328) 뒤의 줄은 `tirth8205/code-review-graph` URL이어서 CC 명령이 아닙니다. (328) 앞 줄은 HTML 주석 안이어서 주석 제거 텍스트의 가시 일치는 `/code-review` 0건, `/simplify` 0건이었으므로(같은 python 방법), 자동 주입되는 R023 본문은 `/code-review`의 보고 범위에 의존하지 않습니다. (328) 다만 `git grep -c -F '/simplify' 94328efb -- <PS>`는 가이드 15번 문서와 그 템플릿 사본의 12건씩뿐이어서 `.claude/skills`에는 `/simplify` 호출 경로가 없습니다(관측한 범위: 그 명령). (328)
+- CHANGELOG 원문: "Changed `/code-review` to mark each finding Important, Pre-existing or Nit on most models, and to end each summary with a suggested fix; a clean review's list now reads "Code review found no issues.""
+  (328) 대부분의 모델에서 `/code-review`가 각 발견을 Important, Pre-existing, Nit로 표시하고 요약을 제안된 수정으로 끝내며, 문제가 없는 리뷰의 목록은 "Code review found no issues."로 표시됩니다. (328) 위 항목의 측정과 같으며, 이 표기를 파싱하는 저장소 코드는 `git grep -c -F 'Code review found' 94328efb -- .claude/hooks ':(glob)src/**'`가 0개 파일이어서 관측한 범위(그 명령)에서 없습니다. (328)
+
+### 기타 항목
+
+- (328) 이 릴리즈 본문의 `- ` 줄 전체는 144건이며(계수 구간: `gh release view v2.1.328 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `grep -c '^- '`; 로컬 본문 파일 `.claude/outputs/sessions/2026-11-23/cc-release-body-2.1.328.md`에 같은 명령을 적용해도 144건), 이 절이 위에서 다룬 항목은 31건(권한 3 + 훅 7 + 서브에이전트 6 + compaction 1 + 예약 2 + Bash·sandbox 3 + MCP 3 + `claude -p`·SDK 4 + 스킬·명령 2 = 31; 인용 31줄이 릴리즈 본문의 서로 다른 31개 `- ` 줄과 전체 줄 일치함을 `grep -n -x -F -f`로 확인)이므로 그 밖의 항목은 113건입니다(144 - 31 = 113). (328) 나머지는 self-hosted runner, Code Mode 개별 수정, Remote Control·클라우드 세션, 터미널 입력·렌더링·키 처리, `/plugin`·`/usage` 등 TUI 수정, VS Code·Desktop, OpenTelemetry, Windows·Linux 플랫폼, 크래시 수정, `/bug`·`/export` 등 보조 명령 항목이며 이 저장소 측정 대상이 아닙니다 [가설: 직접 영향 경로 미관측]. (328)
+
+### 규칙 반영 판정
+
+- (328) R005 zsh `=` 시작 단어(`MAY-optimization.md`): v2.0.27에서 그 문장을 같은 자리에서 좁혔습니다. (328) 94328efb의 그 문장은 조건 없는 현재형 사실 진술인데, CC 2.1.330 Bash 도구에서 `echo ====`는 `====`를 출력하고 rc=0이었고 `zsh -c 'echo ===='`는 `zsh:1: === not found`를 출력했으므로(2026-11-23 오케스트레이터 측정) CC ≥ 2.1.328 Bash 도구에서는 거짓입니다.
+- (328) R002/R010 auto mode·`disableAutoMode`: 규칙 변경 없음. (328) 가시 규칙 본문에 `disableAutoMode` 서술이 없고(주석 제거 텍스트 0건) 영향이 제3자 제공자 환경 한정 [가설]이며, R010 Self-Check 1의 유효 모드 실측 절차가 이미 일반형입니다.
+- (328) R023 `/code-review` 변경: 규칙 변경 없음. (328) 가시 본문이 `/code-review`와 `/simplify`를 담고 있지 않습니다(주석 제거 텍스트 0건).
+- (328) R021 압축 후 재주입: 규칙 변경 없음. (328) 보장 경로가 `SessionStart`(compact)라는 현행 서술은 자동 compaction 수정으로 바뀌지 않으며, 효과는 미측정 [가설]입니다.
+- (328) `/fsd`의 `/loop`·예약 작업 저장 수정: 스킬 변경 없음. (328) 추적 파일 0개이며 영향 경로는 미측정 [가설]입니다.
+- (328) CLAUDE.md: 변경 없음. (328) 위 R005 항목 외에 이 릴리즈로 에이전트가 지금 행동을 바꿔야 하는 항목은 관측하지 못했습니다(관측한 범위: 위 측정).
+
+**Action items**: (328) 위 「규칙 반영 판정」대로 이 릴리즈에서는 R005의 1문장 외에 규칙·스킬·CLAUDE.md를 고치지 않으며, [가설]로 둔 항목은 판정 기준을 실측한 뒤 후속 이슈에서 다룹니다.
+
+## v2.1.329 (2026-11-19)
+
+> Issue: #1977 — Claude Code v2.1.329 compatibility documentation
+> (329) 이슈 본문 `## What's changed` 불릿과 릴리즈 본문 불릿은 130개로 완전히 일치합니다(`.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.329.md`의 비교 결과, 릴리즈 본문 계수 `gh release view v2.1.329 -R anthropics/claude-code --json body --jq .body | grep -c '^- '` = 130). (329) 게시 시각은 `gh release view v2.1.329 -R anthropics/claude-code --json publishedAt --jq .publishedAt` = 2026-11-19T22:14:41Z입니다. (329)
+> (329) 스코프 상한 확인: `gh release view v2.1.330 -R anthropics/claude-code --json tagName`은 `{"tagName":"v2.1.330"}`를 반환했으므로 v2.1.330이 존재합니다. (329) 그보다 늦은 릴리즈는 각자의 절에서 다룹니다. (329)
+> (329) 이 절의 저장소 측정은 삽입 전(94328efb) 기준이며 명령은 `git grep <pattern> 94328efb -- <pathspec>` 또는 `git show 94328efb:<path>` 형식입니다. (329) 94328efb는 `git log -1 --format='%h %s' 94328efb` = "94328efb Merge pull request #1971 from baekenough/release/v2.0.26"입니다. (329) `git grep`은 HTML 주석 안도 검색하므로, 자동 주입 텍스트에 관한 주장은 주석을 제거한 텍스트(`re.sub(r'<!--.*?-->','',t,flags=re.S)`)로 계수했다고 따로 적었습니다. (329)
+
+### 훅과 trust
+
+- CHANGELOG 원문: "Added a trust dialog warning that says where a folder's hooks are declared"
+  (329) 폴더의 훅이 어디에 선언되어 있는지 알려 주는 경고가 trust 대화상자에 추가되었습니다. (329) 94328efb의 추적 `.claude/settings.json`에는 훅이 68개 선언되어 있습니다(`git show 94328efb:.claude/settings.json | jq '[.hooks[][]?.hooks[]?] | length'` = 68, 유형별 `jq -c '[.hooks[][]?.hooks[]?|.type]|group_by(.)|map({(.[0]):length})|add'` = `{"command":67,"prompt":1}`, 67 + 1 = 68). (329) 이 저장소를 새로 열면 이 경고가 훅 선언 위치로 `.claude/settings.json`을 가리킬 것입니다 [가설 — 대화형 첫 실행에서 관측하지 않았습니다. 판정 기준: 새 클론에서 `claude`를 처음 열 때의 trust 대화상자 문구]. (329)
+- CHANGELOG 원문: "Added a warning in the conversation, in Claude Desktop and other non-interactive hosts, when hooks in managed settings fail to load"
+  (329) Claude Desktop과 다른 비대화형 호스트에서, managed settings의 훅이 로드에 실패하면 대화 안에 경고가 표시되도록 추가되었습니다. (329) 이 저장소의 managed settings는 측정하지 않았습니다 [가설 — 영향이 없습니다. 판정 기준: managed settings 파일의 존재 여부(메타데이터 `command ls -la` 확인)와 그 안의 `hooks` 키]. (329)
+- CHANGELOG 원문: "Changed Code Mode so a PreToolUse hook that errors no longer refuses a script's tool call, as outside Code Mode; set `"onFailure": "block"` on a command, HTTP or MCP tool hook that must refuse"
+  (329) Code Mode에서 오류를 낸 PreToolUse 훅이 더 이상 스크립트의 도구 호출을 거부하지 않으며(Code Mode 밖과 같은 동작), 반드시 거부해야 하는 훅에는 `"onFailure": "block"`을 설정해야 합니다. (329) 94328efb의 추적 settings에는 PreToolUse 훅이 17개 있고(`git show 94328efb:.claude/settings.json | jq '[.hooks.PreToolUse[]?.hooks[]?]|length'` = 17), `onFailure` 문자열은 이 파일에 없습니다(`git grep -c -F onFailure 94328efb -- .claude/settings.json` 일치 0개, 대소문자·구분자 변형 `git grep -c -i -P 'on[ _-]?failure' 94328efb -- .claude/settings.json`도 0개, 대조 `git grep -c -F SubagentStop 94328efb -- .claude/settings.json` = 2줄). (329) `Code Mode` 언급은 관측한 범위(`git grep -c -i -P 'code[ _-]?mode' 94328efb -- .`)에서 일치 파일이 0개이므로 이 저장소가 Code Mode를 다루는 경로는 관측하지 않았습니다(`git grep -c -i -P 'claude[ _-]?code' 94328efb -- CLAUDE.md` = 6줄로 같은 형태의 명령이 일치함을 대조). (329)
+- CHANGELOG 원문: "Changed Stop and SubagentStop hooks to list a Monitor's script as `monitor`, not `shell`, in `background_tasks`"
+  (329) Stop과 SubagentStop 훅이 받는 `background_tasks`에서 Monitor의 스크립트가 `shell`이 아니라 `monitor`로 표기됩니다. (329) 94328efb의 settings에는 Stop 훅 6개와 SubagentStop 훅 4개가 있습니다(`jq '[.hooks.Stop[]?.hooks[]?]|length'` = 6, `jq '[.hooks.SubagentStop[]?.hooks[]?]|length'` = 4). (329) `background_tasks`를 포함한 파일은 `.claude/hooks` 아래 3개이며(`git grep -l -F background_tasks 94328efb -- .claude/hooks | wc -l` = 3, 대소문자·구분자 변형 `-i -P 'background[ _-]?tasks'`도 3, 대조 `git grep -l -F SubagentStop 94328efb -- .claude/hooks | wc -l` = 8), 그중 `session-reflection.sh`만 이 값을 처리합니다. (329) 그 처리 구간 두 곳은 `.status`로 running·pending·in_progress 항목을 고르며(`git grep -c -P 'select\(\.status\??\s*==\s*"running"' 94328efb -- .claude/hooks/scripts/session-reflection.sh` = 2줄), 구간 안의 `.type`·`.kind` 참조는 0개입니다(구간 문자열을 python `re.findall(r'\.(type|kind)\b',…)`로 계수, `.status` 참조는 같은 구간에서 3개와 4개로 대조). (329) 나머지 두 파일(`subagent-failure-advisor.sh`, `task-outcome-recorder.sh`)의 일치는 `#`로 시작하는 주석 줄입니다. (329) 세 파일에서 `monitor`를 대소문자 무시로 찾은 결과는 0건이었으므로(`git grep -c -i -P 'monitor' 94328efb -- <세 파일>` rc=1) 표기 변경이 이 훅들의 판정을 바꿀 경로는 관측하지 않았습니다. (329) 다만 Monitor 항목의 `status` 값이 어떻게 표기되는지는 측정하지 않았습니다 [가설 — dangling 계수에 변화가 없습니다. 판정 기준: Monitor 실행 중 SubagentStop 페이로드의 `background_tasks[].status`]. (329)
+
+### 예약 실행·/loop·/tasks
+
+- CHANGELOG 원문: "Added this session's scheduled tasks, `/loop` wakeups, the goal and this conversation's forks to `/tasks`; x stops one after asking"
+  (329) 이 세션의 예약 작업, `/loop` 깨움, goal, 이 대화의 fork가 `/tasks`에 추가되었고 x 키는 확인 후 하나를 중지합니다. (329) `/tasks`는 94328efb에서 `.claude`·`CLAUDE.md`·`src`를 합쳐 한 파일에서만 일치하며(`git grep -c -i -P '/tasks\b' 94328efb -- .claude CLAUDE.md ':(glob)src/**'` = `.claude/rules/SHOULD-hud-statusline.md` 1줄), 주석을 제거하면 가시 본문 일치는 0입니다(python 계수: 원문 1, 가시 0). (329) 따라서 이 변경이 규칙의 가시 지시를 바꾸지는 않습니다. (329)
+- CHANGELOG 원문: "Changed saved scheduled tasks: in new signed-in sessions, most saved by earlier versions need scheduling again, though `--resume` of their own session still runs them"
+  (329) 새로 로그인한 세션에서는 이전 버전이 저장한 예약 작업 대부분을 다시 예약해야 하고, 그 작업을 만든 세션을 `--resume`하면 계속 실행됩니다. (329) `/fsd`의 루프 경로는 `/loop`·`CronCreate`·`ScheduleWakeup`을 쓰는 줄이 7개입니다(`git grep -n -P '/loop|CronCreate|ScheduleWakeup' 94328efb -- .claude/skills/fsd/SKILL.md | wc -l` = 7, 대조 `git grep -c -i -F loop 94328efb -- .claude/skills/fsd/SKILL.md` = 20줄). (329) 그 SKILL.md에는 무인(`claude -p`, 예약 실행) 세션에서 `/goal`·`/loop`를 권장하는 문장이 있고(`git grep -c -F -e 'claude -p' 94328efb -- .claude/skills/fsd/SKILL.md` = 2줄), 추적 settings의 allow 규칙 17개에 `Cron`·`Schedule` 규칙은 없습니다(`jq -r '.permissions.allow[]' | command grep -c -i -E 'Cron|Schedule'` = 0, 대조 같은 목록의 `command grep -c -F 'Bash('` = 14, 목록 길이 `jq '.permissions.allow|length'` = 17). (329) 무인 세션이 저장된 예약 작업(`CronCreate`)에 의존하는지는 관측하지 않았습니다 [가설 — `/fsd`의 반복은 `ScheduleWakeup` 기반이라 영향이 없습니다. 판정 기준: 새 로그인 세션에서 `/tasks`에 이전 예약 작업이 보이는지]. (329)
+- CHANGELOG 원문: "Changed 'Exit and stop tasks' to end this session's scheduled tasks so they don't run again on resume, unless you exit while Claude is responding"
+  (329) "Exit and stop tasks"가 이 세션의 예약 작업을 종료해 재개 시 다시 실행되지 않게 하며, Claude가 응답하는 중에 종료하면 예외입니다. (329) 이 문구는 94328efb에서 관측한 범위(`git grep -c -i -P 'exit[ _-]?(and|&)[ _-]?stop' 94328efb -- .claude CLAUDE.md` rc=1, 일치 0개)에 없습니다. (329) 무인 `/fsd` 세션을 응답 중에 종료한 뒤 `--resume`하면 예약 작업이 남아 있을 수 있습니다 [가설 — 관측하지 않았습니다. 판정 기준: 응답 중 종료 후 `--resume`한 세션의 `/tasks` 목록]. (329)
+- CHANGELOG 원문: "Changed the `/tasks` header and the footer's background count to one number covering shells, monitors, MCP calls, agents, workflows and scheduled tasks"
+  (329) `/tasks` 머리글과 푸터의 백그라운드 개수가 shell, monitor, MCP 호출, 에이전트, 워크플로, 예약 작업을 합친 하나의 숫자로 바뀌었습니다. (329) 이 저장소의 상태줄은 `.claude/statusline.sh`를 `refreshInterval` 10으로 실행하며(`git show 94328efb:.claude/settings.json | jq -c '.statusLine'`), 그 스크립트 본문에서 `background`·`tasks` 문자열은 0건입니다(`git show 94328efb:.claude/statusline.sh | command grep -c -i -E 'background|tasks'` = 0). (329) 상태줄이 CC의 백그라운드 개수 필드를 읽는지는 문자열 검색으로만 확인했습니다 [가설 — 읽지 않습니다. 판정 기준: CC가 상태줄 스크립트의 stdin으로 넘기는 JSON에서 이 스크립트가 참조하는 필드 목록]. (329)
+
+### 서브에이전트·백그라운드·teammate
+
+- CHANGELOG 원문: "Fixed a background agent running on when it was stopped while it was being resumed"
+  (329) 재개되는 중에 중지된 백그라운드 에이전트가 계속 실행되던 결함이 수정되었습니다. (329) 94328efb의 SubagentStop 훅 4개(위 계수)가 이 경로에서 종료 이벤트를 몇 번 받는지는 측정하지 않았습니다 [가설 — 영향 경로를 관측하지 않았습니다. 판정 기준: 중지 직후 재개한 에이전트에서 SubagentStop 발화 횟수]. (329)
+- CHANGELOG 원문: "Fixed the Agent tool's `effort` parameter being ignored for named teammates in agent teams"
+  (329) agent teams에서 이름이 있는 teammate에 Agent 도구의 `effort` 매개변수가 무시되던 결함이 수정되었습니다. (329) R018 가시 본문(주석 제거)에서 `effort`는 0개이고 `TeamCreate`는 7개입니다(python `re.findall('effort',v,re.I)`와 `v.count('TeamCreate')`, 대조 `git grep -c -i -P 'team[ _-]?create' 94328efb -- .claude/rules/MUST-agent-teams.md CLAUDE.md` = 35줄과 2줄은 주석 포함 계수). (329) 에이전트 정의의 `effort:` 프론트매터는 `.md` 50개 중 49개에 있습니다(`git grep -l -P '^effort:' 94328efb -- ':(glob).claude/agents/*.md' | wc -l` = 49, `git ls-tree --name-only 94328efb .claude/agents/ | grep -c '\.md$'` = 50). (329) Agent Teams는 `TeamCreate`가 도구 목록에 있을 때만 활성이므로 이 수정의 직접 영향은 활성 판정이 Yes인 세션에 한정됩니다 [가설 — 현행 세션에서는 비활성입니다. 판정 기준: 세션의 도구 목록에서 `TeamCreate` 존재 여부]. (329)
+- CHANGELOG 원문: "Changed some teammate panes to start through /bin/sh, so they may not read shell start-up files"
+  (329) 일부 teammate 창이 `/bin/sh`로 시작되어 셸 시작 파일을 읽지 않을 수 있습니다. (329) R018 가시 본문(주석 제거)에서 `teammateMode`와 `tmux`는 각각 0개입니다(python `v.count('teammateMode')`, `re.findall('tmux',v,re.I)`; 주석 포함 계수는 `git grep -c -F teammateMode 94328efb -- .claude/rules` = 1줄, `-i -P 'teammate[ _-]?mode'` = 2줄). (329) Stop·SubagentStop 훅 10개의 명령은 모두 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/` 로 시작합니다(`jq -r '(.hooks.Stop[]?.hooks[]?, .hooks.SubagentStop[]?.hooks[]?)|.command // .type' | grep -c -F 'bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/'` = 10). (329) 나머지 훅 58개의 시작 파일 의존은 측정하지 않았습니다(68 - 10 = 58) [가설 — 판정 기준: 훅 명령 68개 중 셸 별칭·함수를 쓰는 명령의 유무]. (329)
+
+### 컨텍스트 창·compaction
+
+- CHANGELOG 원문: "Fixed sessions started from a pre-warmed process ignoring the `autoCompactWindow` setting in the project's `.claude/settings.json`"
+  (329) 미리 데워 둔 프로세스에서 시작한 세션이 프로젝트 `.claude/settings.json`의 `autoCompactWindow` 설정을 무시하던 결함이 수정되었습니다. (329) 94328efb의 추적 settings 최상위 키는 6개이며(`jq -c 'keys'` = `["enableAllProjectMcpServers","hooks","outputStyle","permissions","skillOverrides","statusLine"]`) `autoCompactWindow`는 없습니다(`git grep -c -F autoCompactWindow 94328efb -- .claude/settings.json templates/.claude/settings.json` rc=1). (329) 이 문자열은 전체 트리에서 가이드·위키 문서 3개에만 있습니다(관측한 범위: `git grep -c -F autoCompactWindow 94328efb -- .` = `guides/claude-code/15-version-compatibility.md` 6줄, `templates/guides/claude-code/15-version-compatibility.md` 6줄, `wiki/guides/claude-code.md` 2줄). (329) 따라서 관측한 범위(추적 `.claude/settings.json`, `templates/.claude/settings.json`)에서 이 저장소의 프로젝트 설정은 영향을 받지 않습니다. (329)
+- CHANGELOG 원문: "Fixed `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` staying in effect in a running session after it is removed from settings.json"
+  (329) settings.json에서 `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`를 제거해도 실행 중인 세션에서 계속 적용되던 결함이 수정되었습니다. (329) 이 변수는 94328efb 전체 트리에서 일치 0개이고(`git grep -c -F CLAUDE_AUTOCOMPACT_PCT_OVERRIDE 94328efb -- .` rc=1, 변형 `git grep -c -i -P 'AUTOCOMPACT[ _-]?PCT' 94328efb -- .` rc=1), 추적 settings에는 `env` 키가 없습니다(`jq -c 'has("env")'` = false). (329) R013의 임계값 서술은 가시 본문에서 "창 대비" 1회이며(`SHOULD-ecomode.md`를 python으로 주석 제거 후 `v.count('창 대비')` = 1) 이 변수를 전제하지 않습니다. (329) 사용자 settings는 측정하지 않았습니다 [가설 — 이 변수를 쓰지 않습니다. 판정 기준: `jq '.env' ~/.claude/settings.json`]. (329)
+- CHANGELOG 원문: "Removed 2.1.326's automatic retry at the limit named in a `max_tokens` error; behind a gateway whose model takes fewer output tokens, set `CLAUDE_CODE_MAX_OUTPUT_TOKENS` to that limit"
+  (329) 2.1.326이 도입한 `max_tokens` 오류의 한도에 맞춘 자동 재시도(v2.1.326 절의 `max_tokens` 항목)가 제거되었으며, 출력 토큰이 더 적은 모델을 쓰는 게이트웨이 뒤에서는 `CLAUDE_CODE_MAX_OUTPUT_TOKENS`를 그 한도로 설정해야 합니다. (329) 이 제거는 v2.1.330에서 되돌려졌습니다(v2.1.330 절의 `max_tokens` 항목). (329) 2.1.330 이상에서 이 설정이 여전히 필요한지는 원문이 말하지 않습니다 [가설: 자동 재시도 복원으로 불요; 판정 기준: 게이트웨이 뒤 `max_tokens` 초과 시 재시도 관측]. (329) 94328efb에서 이 변수는 `.claude/rules/MAY-optimization.md`의 은퇴(RETIRED) HTML 주석 1줄에만 있고 가시 본문 일치는 0입니다(`git grep -c -F CLAUDE_CODE_MAX_OUTPUT_TOKENS 94328efb -- .claude CLAUDE.md` = 그 1줄, python 주석 제거 가시 0). (329) `.claude/skills/token-efficiency-audit/SKILL.md`의 `CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS`는 다른 변수입니다(`git grep -c -F CLAUDE_CODE_MAX_OUTPUT_TOKENS 94328efb -- .claude/skills/token-efficiency-audit/SKILL.md` rc=1). (329) 이 저장소가 출력 토큰이 더 적은 모델의 게이트웨이를 쓰는지는 측정하지 않았습니다 [가설 — 쓰지 않습니다. 판정 기준: `ANTHROPIC_BASE_URL` 설정 유무]. (329)
+
+### 스킬·슬래시 명령
+
+- CHANGELOG 원문: "Fixed a new skills, commands or agents folder being missed when `--add-dir` names the working directory or Claude Code starts in the home folder"
+  (329) `--add-dir`가 작업 디렉토리를 가리키거나 홈 폴더에서 시작할 때 새로 생긴 skills·commands·agents 폴더를 놓치던 결함이 수정되었습니다. (329) 94328efb에서 `--add-dir`는 `.claude/skills` 아래 파일에 없고(`git grep -c -F -e '--add-dir' 94328efb -- ':(glob).claude/skills/**' | wc -l` = 0) `.claude/rules/MUST-agent-design.md`에 1줄 있으나 주석 제거 후 가시 0입니다(python 원문 1, 가시 0). (329) 따라서 이 저장소의 지시는 이 로딩 경로에 의존하지 않습니다. (329)
+- CHANGELOG 원문: "Changed `/code-review` with no target on most models to review the whole branch against the default branch, and fixed it losing the diff on multi-commit branches"
+  (329) 대상 없는 `/code-review`가 대부분의 모델에서 기본 브랜치 대비 브랜치 전체를 리뷰하도록 바뀌었고, 다중 커밋 브랜치에서 diff를 잃던 결함이 수정되었습니다. (329) 이 저장소에는 `code-review`라는 이름의 skill이 없고(`git ls-tree --name-only 94328efb .claude/skills/ | grep -i -c 'code-review'` = 0, skill 디렉토리 114개 `git ls-tree -d --name-only 94328efb .claude/skills/ | wc -l`), `/code-review`는 `.claude/rules/SHOULD-verification-ladder.md`의 HTML 주석 1줄(v2.1.232+ 노트)과 `crg-integration/SKILL.md`의 저장소 URL 1줄에만 있습니다(`git grep -c -F -e '/code-review' 94328efb -- .claude CLAUDE.md` = 2개 파일 각 1줄, 주석 제거 후 규칙 파일 가시 0). (329) 가시 지시가 대상 없는 `/code-review`의 범위를 전제하지 않으므로 규칙 변경이 필요한 경로는 관측하지 않았습니다. (329)
+
+### permission mode·auto mode
+
+- CHANGELOG 원문: "Fixed auto mode asking for manual approval to `rm` a symlink that points outside the working directory or at itself"
+  (329) 작업 디렉토리 밖이나 자기 자신을 가리키는 symlink를 `rm`할 때 auto mode가 수동 승인을 요구하던 결함이 수정되었습니다. (329) R001 가시 본문에서 `symlink`는 0개입니다(python 주석 제거 계수 원문 5, 가시 0). (329) R001의 삭제 규범(래퍼 사용, 대상 열거)은 symlink 처리와 무관하므로 이 수정과 충돌하지 않습니다 [가설 — 판정 기준: R001 가시 본문의 삭제 관련 문장이 symlink를 따로 규정하는지]. (329)
+- CHANGELOG 원문: "Fixed `/auto-mode-setup` ignoring recent auto mode denials when it scans a project for rules to suggest; it may now offer allow rules from them, and you review each before it's saved"
+  (329) `/auto-mode-setup`이 규칙을 제안하려고 프로젝트를 훑을 때 최근 auto mode 거부를 무시하던 결함이 수정되어, 이제 그 거부에서 allow 규칙을 제안할 수 있으며 저장 전에 하나씩 검토합니다. (329) `/auto-mode-setup`은 94328efb에서 일치 0개입니다(`git grep -c -i -P 'auto[ _-]?mode[ _-]?setup' 94328efb -- .claude CLAUDE.md ':(glob)src/**'` rc=1, 대조 `git grep -l -i -F 'auto mode' 94328efb -- .claude | wc -l` = 9개 파일). (329) R015의 allow 규칙과 safety classifier 차단의 구분(allow 규칙은 classifier 차단을 해소하지 않습니다)은 이 기능이 제안하는 allow 규칙에도 같은 방향으로 적용됩니다 [가설 — 판정 기준: 제안된 규칙이 classifier 차단 사례에 효력을 갖는지 사용자가 확인]. (329)
+- CHANGELOG 원문: "Changed auto mode to run `git status` less often so most requests wait less in large repositories; a git command that discards changes may be blocked until the working tree is checked"
+  (329) auto mode가 `git status`를 덜 자주 실행해 큰 저장소에서 대부분의 요청이 덜 기다리며, 변경을 버리는 git 명령은 작업 트리를 확인하기 전까지 차단될 수 있습니다. (329) R001 가시 본문에서 `git status`가 나오는 줄은 2줄이며(python 원문 4, 가시 2) 모두 파괴적 git 명령 전 확인 지시입니다(`git reset --hard <ref>` 행과 Blast-Radius 열거 문단). (329) 이 규범은 변경과 같은 방향이며, 위임서가 `git status` 출력을 먼저 싣는 현행 관행이 차단을 줄일 것입니다 [가설 — 판정 기준: 변경을 버리는 git 명령 위임이 classifier에 걸리는 빈도]. (329)
+- CHANGELOG 원문: "Fixed a false "Couldn't save this change" warning after adding a permission rule or directory in a subfolder or worktree whose own `.claude/settings.local.json` is unreadable or malformed"
+  (329) 하위 폴더나 worktree에서 권한 규칙·디렉토리를 추가한 뒤, 그곳의 `.claude/settings.local.json`이 읽을 수 없거나 형식이 깨졌을 때 나오던 거짓 "저장 실패" 경고가 수정되었습니다. (329) 이 저장소의 `.claude/settings.local.json`은 추적되지 않고(`git ls-tree 94328efb .claude/settings.local.json | wc -l` = 0) `.gitignore` 40행의 `.claude/*` 패턴으로 무시됩니다(`git show 94328efb:.gitignore | sed -n 40p` = `.claude/*`). (329) worktree 위임에서 이 경고를 본 사례는 관측하지 않았습니다 [가설 — 판정 기준: worktree에서 권한 규칙 추가 직후 경고 문구]. (329)
+
+### sandbox·상태줄·MCP
+
+- CHANGELOG 원문: "Fixed `/sandbox` on Linux listing `allowUnixSockets` entries as allowed: they don't open those sockets there, and `/sandbox` now says so"
+  (329) Linux의 `/sandbox`가 `allowUnixSockets` 항목을 허용된 것으로 나열하던 결함이 수정되었으며, 그 항목은 Linux에서 소켓을 열지 않고 `/sandbox`가 이제 그렇게 표시합니다. (329) 94328efb의 추적 settings에는 `sandbox` 키가 없고(`jq -c '.sandbox // "none"'` = `"none"`) `allowUnixSockets`는 전체 트리에서 일치 0개입니다(`git grep -c -F allowUnixSockets 94328efb -- .` rc=1, 변형 `git grep -c -i -P 'allow[ _-]?unix[ _-]?sockets' 94328efb -- .` rc=1, 대조 `git grep -c -i -F sandbox 94328efb -- .claude/rules/MUST-safety.md` = 8줄). (329) 사용자·managed settings의 sandbox는 측정하지 않았습니다. (329)
+- CHANGELOG 원문: "Fixed a status line script that prints without end freezing the prompt and using gigabytes of memory"
+  (329) 끝없이 출력하는 상태줄 스크립트가 프롬프트를 멈추고 수 GB 메모리를 쓰던 결함이 수정되었습니다. (329) 94328efb의 상태줄은 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh"`이고(`jq -c '.statusLine'`), 이 스크립트는 509줄이며(`git show 94328efb:.claude/statusline.sh | wc -l`) 줄 시작 `while`은 1개(`command grep -n -E '^[[:space:]]*while([[:space:]]|$)'` = 225번째 줄 `while IFS= read -r line; do`)이고 `until`·`while true`·`while :`는 0개입니다(`command grep -c -E '^[[:space:]]*(until([[:space:]]|$)|while[[:space:]]+(true|:))'` = 0). (329) 입력을 줄 단위로 읽는 반복이어서 끝없는 출력 경로는 관측하지 않았습니다 [가설 — 판정 기준: 그 반복의 입력이 유한한지 스크립트 본문 확인]. (329)
+- CHANGELOG 원문: "Fixed Claude not being told that a connected MCP server's tools could not be loaded, and taking it for a server with no tools, in sessions with tool search"
+  (329) tool search를 쓰는 세션에서 연결된 MCP 서버의 도구를 불러오지 못했을 때 Claude가 그 사실을 전달받지 못하고 도구가 없는 서버로 받아들이던 결함이 수정되었습니다. (329) 94328efb의 `.mcp.json`은 서버 1개(`eraser`)를 선언하며(`git show 94328efb:.mcp.json | jq -c '.mcpServers|keys'` = `["eraser"]`, 서버 키는 `type`·`url`), R002는 `ToolSearch`를 7줄에서 다룹니다(`git grep -c -F ToolSearch 94328efb -- .claude/rules/MUST-permissions.md` = 7). (329) 이 저장소 세션에서 해당 오류가 발생한 사례는 측정하지 않았습니다 [가설 — 판정 기준: `eraser` 서버 연결 실패 시 Claude가 "도구 로드 실패"를 안내하는지]. (329)
+
+### 기타 항목
+
+- 이 릴리즈 본문의 `- ` 줄 전체는 130건이며(계수 구간: `gh release view v2.1.329 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `grep -c '^- '`), 이 절이 위에서 다룬 항목은 23건이므로(훅과 trust 4건, 예약 실행 4건, 서브에이전트 3건, 컨텍스트 창 3건, 스킬 2건, permission·auto mode 4건, sandbox·상태줄·MCP 3건; 4 + 4 + 3 + 3 + 2 + 4 + 3 = 23) 그 밖의 항목은 107건입니다(130 - 23 = 107). (329) 나머지는 Code Mode 세부 수정(메모리·스크립트·MCP 호출 처리), 로그인·Keychain·사용량 크레딧, `/teleport`·Remote Control·클라우드 세션, self-hosted runner, IDE diff·`/terminal-setup`·터미널 표시, VS Code 확장(`[VSCode]` 접두 항목), 게이트웨이·컴퓨터 사용(computer use)·Windows 항목입니다 [가설: 직접 영향 경로 미관측]. (329)
+
+### 규칙 반영 판정
+
+- (329) 훅·trust 경고(trust 대화상자, managed settings 훅 로드 실패, Code Mode PreToolUse 오류, `background_tasks` 표기): 규칙 변경 없음. (329) 이 저장소는 Code Mode를 다루지 않고 Stop·SubagentStop 훅 10개 중 `background_tasks`를 처리하는 `session-reflection.sh`(Stop)는 `.status`만 읽으며, 서사는 이 가이드가 맡습니다(R016 버전노트 보존정책). (329)
+- (329) 예약 작업·`/loop`·`/tasks`·"Exit and stop tasks": 규칙 변경 없음. (329) `/fsd` SKILL.md 163행이 `/loop`를 "`/goal`·`/loop`(ScheduleWakeup)"로 오케스트레이터가 모는 루프의 한 표현으로 서술하고(`` git grep -n -F '`/goal`·`/loop`(ScheduleWakeup)' 94328efb -- .claude/skills/fsd/SKILL.md ``), 40행이 "self-paced loop"로 서술하며(`git grep -n -F 'self-paced loop' 94328efb -- .claude/skills/fsd/SKILL.md`), 가시 규칙이 `/tasks` 표시를 전제하지 않습니다. (329)
+- (329) Agent tool `effort`·teammate 창 `/bin/sh`: 규칙 변경 없음. (329) R018은 Agent Teams가 활성일 때만 적용되며 가시 본문이 `effort`·`teammateMode`를 다루지 않습니다. (329)
+- (329) `autoCompactWindow`·`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`: 규칙 변경 없음. (329) R013 가시 문장이 이미 창 대비 백분율의 일반형입니다. (329)
+- (329) `CLAUDE_CODE_MAX_OUTPUT_TOKENS` 재시도 제거: 규칙 변경 없음. (329) 이 변수의 가시 규칙 문장이 없고 게이트웨이 사용은 이 저장소 범위 밖입니다 [가설]. (329)
+- (329) auto mode 항목(symlink `rm`, `/auto-mode-setup`, `git status`): 규칙 변경 없음. (329) R001의 `git status` 확인 규범이 변경과 같은 방향이며 R015의 allow·classifier 구분은 그대로 유효합니다. (329)
+- (329) `/code-review`·`--add-dir`·sandbox·상태줄·MCP: 규칙 변경 없음. (329) 관련 가시 문장이 없거나(0개) 이 저장소 설정에 해당 키가 없습니다. (329)
+
+**Action items**: (329) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙 파일을 고치지 않으며, 가설 태그가 붙은 항목은 해당 판정 기준을 관측했을 때만 재판정합니다. (329)
+
+## v2.1.330 (2026-11-20)
+
+> Issue: #1978 — Claude Code v2.1.330 compatibility documentation
+> (330) 이슈 #1978의 `- ` 줄 142건과 릴리즈 본문의 `- ` 줄 142건이 일치했으며 불일치는 0건이었습니다(비교 파일 `.claude/outputs/sessions/2026-11-23/cc-note-compare-2.1.330.md`, 2026-11-23 재계수: `gh release view v2.1.330 -R anthropics/claude-code --json body --jq .body | grep -c '^- '` 출력 142). (330)
+> (330) 게시 시각은 `gh release view v2.1.330 -R anthropics/claude-code --json publishedAt --jq .publishedAt` 출력 `2026-11-20T22:32:56Z`입니다. (330)
+> (330) 2026-11-23 측정에서 `gh release view v2.1.331 -R anthropics/claude-code --json tagName`은 rc 1, 출력 `release not found`였고 `npm view @anthropic-ai/claude-code version`은 rc 0, 출력 `2.1.330`이었으므로 이 절은 v2.1.330이 최신인 상태를 기준으로 합니다. (330)
+> (330) 이 절의 저장소 측정은 모두 삽입 전(94328efb, `git log -1 --format='%h %s' 94328efb` 출력 `94328efb Merge pull request #1971 from baekenough/release/v2.0.26`) 기준이며 명령은 `git grep <pattern> 94328efb -- <pathspec>` 또는 `git show 94328efb:<path>` 형식입니다. (330)
+
+### 예약 실행·무인 실행 (`/loop`, `claude -p`, SessionStart)
+
+- CHANGELOG 원문: "Changed recurring scheduled tasks and `/loop` to run up to 30 days instead of 7 while their session keeps running, and say when they end; tasks made before this release still end at 7 days"
+  (330) 반복 예약 작업과 `/loop`가 세션이 유지되는 동안 7일 대신 최대 30일까지 실행되고 종료 시점을 알려 주도록 바뀌었으며, 이 릴리즈 이전에 만든 작업은 계속 7일에 끝납니다. (330) 측정: `git grep -n -P '/loop' 94328efb -- .claude/skills/fsd/SKILL.md`는 7줄(16, 19, 40, 163, 173, 235, 265행)에서 적중했고 40행은 "self-paced loop (model decides cadence)"입니다. (330) `git grep -c -i -P '7[ -]?d(ays?)?\b|7일|30[ -]?d' 94328efb -- .claude/skills/fsd/SKILL.md`와 `git grep -c -i -P '30[ -]?일|30[ -]?days' 94328efb -- .claude/skills/fsd/SKILL.md`는 모두 일치 없음(rc 1)이었으므로, 관측한 범위(위 두 명령)에서 이 스킬 본문은 반복 한도 일수를 서술하지 않습니다. (330) 대조로 같은 파일의 `git grep -c -i -P 'ScheduleWakeup|CronCreate' 94328efb -- .claude/skills/fsd/SKILL.md`는 1줄 적중했습니다. (330) 이 변경이 자기 페이싱(ScheduleWakeup) 루프에도 적용되는지는 측정하지 않았습니다 [가설: 판정 기준 — 7일을 넘기는 /fsd 세션에서 루프 종료 안내가 나타나는지 관측]. (330)
+- CHANGELOG 원문: "Fixed environment variables written by a SessionStart hook being lost with `claude -p --continue`"
+  (330) SessionStart 훅이 기록한 환경 변수가 `claude -p --continue`에서 사라지던 결함이 수정되었습니다. (330) 측정: `git grep -l -i -P 'claude_env_file' 94328efb -- .claude`는 일치 없음(rc 1)이었고, 변형 `git grep -c -i -P 'env[_ -]?file' 94328efb -- .claude CLAUDE.md`는 `.claude/skills/docker-best-practices/SKILL.md`와 `.claude/skills/vercel-deploy/SKILL.md`에서 각 1줄이며 훅 파일이 아닙니다. (330) 양성 대조로 `git grep -c -F '"SessionStart"' 94328efb -- .claude/settings.json`은 1줄 적중했습니다. (330) 따라서 관측한 범위(위 `.claude` pathspec)에서 `CLAUDE_ENV_FILE`로 환경 변수를 쓰는 SessionStart 훅은 확인되지 않았습니다. (330)
+- CHANGELOG 원문: "Fixed `claude -p` exiting 0 with no message when its output went to a file on a full disk: it now prints an error and exits 1, though a full NFS export may go unnoticed"
+  (330) 출력이 가득 찬 디스크의 파일로 가던 `claude -p`가 메시지 없이 종료 코드 0으로 끝나던 결함이 수정되어, 이제 오류를 출력하고 종료 코드 1로 끝나며 가득 찬 NFS 내보내기는 감지되지 않을 수 있습니다. (330) 측정: `git grep -n -F 'claude -p --model haiku' 94328efb -- .claude/hooks/scripts/playwright-compress.sh templates/.claude/hooks/scripts/playwright-compress.sh`는 두 파일 모두 54행 1건이며 `summary=$(echo "$tool_output" | claude -p --model haiku ... 2>/dev/null) || {` 형태입니다. (330) 이 호출은 파일 리다이렉트가 아니라 명령 치환으로 출력을 받으므로 이번 수정이 겨냥한 "파일로 향한 출력"에는 해당하지 않는 것으로 읽었으나 이는 줄 판독에 근거한 판단입니다 [가설: 판정 기준 — 해당 훅이 디스크 가득 참 상태에서 종료 코드를 바꾸는지 재현]. (330) `git grep -n -P 'claude\s+-p\b' 94328efb -- ':(glob).github/**' ':(glob)scripts/**' ':(glob)src/**' ':(glob)templates/.claude/**'`의 출력은 29줄이며(`| wc -l`) 모두 `templates/.claude/**`에서 나왔고, 코드 줄인 `playwright-compress.sh` 54행 1줄 외의 나머지 적중 줄은 주석·문서 서술로 읽었으며 줄별 분류는 눈으로 한 판독입니다. (330) 이 pathspec은 원본 `.claude/**`와 `infra/**`를 포함하지 않았으며, `infra/hada-scout/scout-runner.sh` 109행(`git grep -n -P 'claude\s+-p\b' 94328efb -- infra`)도 명령 치환(`output=$(timeout … claude -p \`)으로 출력을 받습니다. (330) 원본 쪽은 `git grep -n -P 'claude\s+-p\b' 94328efb -- ':(glob).claude/**' | wc -l`이 30줄이며, 같은 명령의 출력과 `':(glob)templates/.claude/**'` 출력을 경로 접두를 떼고 `diff`한 차이는 `.claude/settings.json` 22행의 `_comment_defaultMode` 주석 키 1줄뿐이었습니다. (330)
+
+### 삭제 명령 승인 (R001)
+
+- CHANGELOG 원문: "Changed more `rm` commands aimed at the root, home, a top-level folder or the working folder to ask for approval; where nobody can answer, they're refused"
+  (330) 루트, 홈, 최상위 폴더, 작업 폴더를 겨냥한 `rm` 명령이 더 많이 승인을 요구하도록 바뀌었고, 답할 사람이 없는 곳에서는 거부됩니다. (330) 측정: `git grep -n -F 'broad deletes' 94328efb -- .claude/rules/MUST-safety.md`는 17행(가시)과 27행(20–29행 HTML 주석 안)에서 적중했으며 두 줄 모두 R001 금지 목록 문장입니다(주석 구간은 `git show 94328efb:.claude/rules/MUST-safety.md`에 python `re.finditer(r'<!--.*?-->',t,flags=re.S)`를 적용한 결과). (330) `git grep -l -F 'rule-deletion-guard' 94328efb -- .claude/hooks/scripts`는 `.claude/hooks/scripts/rule-deletion-guard.sh` 1개 파일을 출력했습니다. (330) R001이 이미 광범위 삭제를 금지하므로 규범은 바뀌지 않으며, 무인 루프의 정리 단계가 거부될 가능성은 측정하지 않았습니다 [가설: 판정 기준 — 무인 실행 로그에서 작업 폴더 대상 삭제가 거부된 사례 1건 관측]. (330)
+
+### worktree
+
+- CHANGELOG 원문: "Fixed `ExitWorktree` and the worktree exit dialog deleting a worktree that another running Claude Code session was working in"
+  (330) `ExitWorktree`와 worktree 종료 대화상자가, 다른 Claude Code 세션이 실행 중 작업하던 worktree를 삭제하던 결함이 수정되었습니다. (330) 측정: `git grep -n -F 'ExitWorktree' 94328efb -- .claude/skills/omcustom-auto-improve/SKILL.md`는 84행(`reject` 시 `ExitWorktree(remove)`)과 93행(`ExitWorktree(action: "keep")`)에서 적중했고, 변형 `git grep -c -i -P 'exit[_ -]?worktree' 94328efb -- .claude/rules .claude/skills .claude/agents CLAUDE.md`는 `.claude/rules/MUST-permissions.md` 2줄과 같은 스킬 2줄뿐이었습니다(관측한 범위: 위 pathspec). (330) 같은 worktree를 다른 세션이 쓰는 경우가 이 스킬에 있는지는 측정하지 않았습니다 [가설: 영향 경로 작음, 판정 기준 — auto-improve 병렬 세션이 한 worktree를 공유하는 사례 관측]. (330)
+
+### 백그라운드 에이전트·permission mode
+
+- CHANGELOG 원문: "Fixed a stopped background subagent sometimes not staying stopped"
+  (330) 중지한 백그라운드 서브에이전트가 가끔 중지 상태로 남지 않던 결함이 수정되었습니다. (330) 측정: `git grep -c -i -P 'run[_ -]in[_ -]background|background[_ -]agent' 94328efb -- .claude/rules .claude/skills .claude/agents`는 9개 파일(`MUST-agent-design.md` 3, `MUST-enforcement-policy.md` 2, `MUST-orchestrator-coordination.md` 14, `MUST-parallel-execution.md` 1, `SHOULD-hud-statusline.md` 2, `SHOULD-memory-integration.md` 1, `SHOULD-verification-ladder.md` 4, `omcustom-loop/SKILL.md` 2, `pipeline/workflows/auto-dev.yaml` 1줄)에서 적중했고, 리터럴 `git grep -n -F 'run_in_background' 94328efb -- .claude/rules .claude/skills .claude/agents`는 `auto-dev.yaml` 1934행 1건이었습니다. (330) 중지한 에이전트가 재가동된 사례는 측정하지 않았습니다 [가설: 판정 기준 — 중지한 에이전트의 재가동 로그 1건]. (330)
+- CHANGELOG 원문: "Fixed Claude still waiting for a background agent that was stopped just as it finished, in sessions run by an app or the SDK"
+  (330) 앱 또는 SDK가 실행하는 세션에서 끝나는 순간 중지된 백그라운드 에이전트를 Claude가 계속 기다리던 결함이 수정되었습니다. (330) 이 저장소의 실행 경로가 앱·SDK 세션인지는 측정하지 않았습니다 [가설: 직접 영향 경로 미관측, 판정 기준 — 앱·SDK 세션에서 서브에이전트 완료 대기 정체가 관측되는지]. (330)
+- CHANGELOG 원문: "Fixed background sessions sometimes waking in their previous permission mode after approving a plan"
+  (330) 플랜 승인 뒤 백그라운드 세션이 가끔 이전 permission mode로 깨어나던 결함이 수정되었습니다. (330) 측정: `git grep -c -i -F 'bypassPermissions' 94328efb -- .claude/rules/MUST-orchestrator-coordination.md`는 40줄 적중이므로 R010 「Universal bypassPermissions」의 유효 모드 실측 절차는 문서에 존재하며, 이 수정은 그 절차(무인 실행 전 유효 모드 실측)를 대체하지 않습니다. (330)
+
+### 서브에이전트·모델·MCP
+
+- CHANGELOG 원문: "Fixed an MCP server that subagents declare being shut down when one of them finished, while other subagents or the session were still using it"
+  (330) 서브에이전트가 선언한 MCP 서버가, 그중 하나가 끝났을 때 다른 서브에이전트나 세션이 아직 쓰는 중인데도 종료되던 결함이 수정되었습니다. (330) 측정: 삽입 전(94328efb) `.claude/agents/*.md` 50개(`git ls-tree --name-only 94328efb .claude/agents/ | grep -c '\.md$'` 출력 50)를 `git show` + python 정규식 `^mcpServers\s*:`(대소문자 무시)로 파싱했을 때 프론트매터에 `mcpServers`를 선언한 에이전트는 0개였습니다. (330) 대조: `git grep -c -F 'mcpServers' 94328efb -- .claude/agents .claude/skills`는 `infra-aws-expert.md`(86행 본문 안내문), `crg-integration/SKILL.md`, `semble-integration/SKILL.md` 각 1줄이며 `infra-aws-expert.md` 프론트매터에는 해당 키가 없었습니다. (330) 따라서 관측한 범위(위 두 측정)에서 서브에이전트 선언 MCP 서버 경로는 쓰이지 않습니다. (330)
+- CHANGELOG 원문: "Fixed a subagent's own subagents and forks running on the plan-mode model in plan mode under `opusplan` or `haiku`"
+  (330) `opusplan` 또는 `haiku` 설정의 plan mode에서 서브에이전트가 시작한 자체 서브에이전트와 포크가 plan-mode 모델로 실행되던 결함이 수정되었습니다. (330) 측정: `git grep -n -F 'Subagents MUST NOT spawn other subagents' 94328efb -- .claude/rules/MUST-orchestrator-coordination.md`는 7, 97, 1089행 3건이므로 프로젝트 정책상 서브에이전트가 서브에이전트를 시작하는 경로는 쓰지 않습니다(R018 Agent Teams 예외의 활성 여부는 이 절에서 측정하지 않았습니다). (330) `git grep -c -P '^model:\s*haiku\s*$' 94328efb -- .claude/agents/mgr-supplier.md .claude/agents/sys-naggy.md .claude/agents/tracker-checkpoint.md`는 3개 파일 각 1줄이었습니다. (330) 영향은 정책상 작을 것으로 봅니다 [가설: 판정 기준 — Agent Teams 활성 환경에서 멤버가 서브에이전트를 시작하는 사례 관측]. (330)
+- CHANGELOG 원문: "Changed skills that Claude runs with a `model` setting, other than `context: fork` skills, to leave subagents, forks, compaction and `/recap` on the session's model"
+  (330) Claude가 `model` 설정이 있는 스킬을 실행할 때 `context: fork` 스킬을 제외하고는 서브에이전트, 포크, 압축, `/recap`이 세션의 모델을 유지하도록 바뀌었습니다. (330) 측정: 삽입 전(94328efb) SKILL.md는 114개(`git ls-tree --name-only 94328efb .claude/skills/ | wc -l` 출력 114)이며 `git grep -c -P '^model:' 94328efb -- ':(glob).claude/skills/*/SKILL.md'`와 대소문자·공백 변형 `git grep -c -i -P '^model\s*:' 94328efb -- ':(glob).claude/skills/*/SKILL.md'`는 모두 일치 없음(변형은 `| wc -l` 출력 0)이었습니다. (330) 양성 대조로 `git grep -c -P '^context:\s*fork' 94328efb -- ':(glob).claude/skills/*/SKILL.md'`는 10개 파일에서 적중했습니다. (330) 따라서 관측한 범위(위 pathspec의 프론트매터 줄)에서 `model:`을 선언한 스킬이 없어 이 변경의 대상이 없습니다. (330)
+- CHANGELOG 원문: "Changed a subagent's model fallback to carry over: agents with no model and forks it then starts run on the fallback, and the agents they start use its Bedrock region"
+  (330) 서브에이전트의 모델 폴백이 이어지도록 바뀌어, 그 서브에이전트가 이후 시작하는 모델 미지정 에이전트와 포크가 폴백 모델로 실행되고 그들이 시작하는 에이전트는 그 Bedrock 리전을 쓰게 됩니다. (330) 측정: `git grep -c -P '^model:' 94328efb -- ':(glob).claude/agents/*.md'`의 출력 줄 수는 `| wc -l`로 50이었고 에이전트 파일은 50개이므로, 관측한 범위(위 pathspec 프론트매터 줄)에서 모델을 지정하지 않은 에이전트는 0개입니다. (330) 모델 미지정 에이전트가 없으므로 이 변경의 직접 영향은 관측하지 않았습니다. (330)
+
+### 훅·설정·지시 파일 로딩
+
+- CHANGELOG 원문: "Changed prompt hooks to accept model aliases such as `haiku` or `sonnet` in their `model` field"
+  (330) prompt 훅의 `model` 필드가 `haiku`나 `sonnet` 같은 모델 별칭을 받도록 바뀌었습니다. (330) 측정: `git show 94328efb:.claude/settings.json | jq -c '[.hooks[][]?.hooks[]?|.type]|group_by(.)|map({(.[0]):length})|add'` 출력은 `{"command":67,"prompt":1}`, 같은 입력의 `jq -c '[.hooks[][]?.hooks[]?|select(.type=="prompt")|.model]'` 출력은 `[null]`이어서 hooks 핸들러 중 prompt 훅은 1개이고 그 `model` 필드는 지정되지 않았습니다. (330) 대조: `git grep -c -P '"type":\s*"prompt"' 94328efb -- .claude/settings.json`은 1줄, `"type":\s*"command"`는 68줄이며 jq 계수 값 67과의 차이 1은 `statusLine`의 `type: command`입니다(같은 입력의 `jq -r '.statusLine.type'` 출력 `command`). (330) 이 저장소에는 별칭을 쓰는 prompt 훅이 아직 없습니다 [가설: 판정 기준 — 해당 prompt 훅의 현재 실행 모델과 비용을 실측한 뒤 별칭 지정 여부 결정]. (330)
+- CHANGELOG 원문: "Fixed the choice between two user or project agent files declaring the same name depending on the order the file search listed them"
+  (330) 같은 name을 선언한 사용자 또는 프로젝트 에이전트 파일 두 개 중 어느 쪽이 선택되는지가 파일 검색이 나열한 순서에 좌우되던 결함이 수정되었습니다. (330) 측정: `git grep -h -P '^name:' 94328efb -- ':(glob).claude/agents/*.md' | wc -l`는 50, 같은 출력에 `| sort | uniq -d | wc -l`를 붙이면 0이므로 관측한 범위(`.claude/agents/*.md` 프론트매터 `^name:`)에서 중복 name은 없습니다. (330) 사용자 수준 `~/.claude/agents`와의 중복은 측정하지 않았습니다 [가설: 판정 기준 — 사용자 에이전트 디렉토리의 name 목록 대조]. (330)
+- CHANGELOG 원문: "Fixed link reference definitions being dropped from CLAUDE.md and memory files that contain an HTML comment"
+  (330) HTML 주석을 포함한 CLAUDE.md와 메모리 파일에서 링크 참조 정의가 사라지던 결함이 수정되었습니다. (330) 측정: `git grep -c -P '^\[[^\]]+\]:\s' 94328efb -- CLAUDE.md`와 들여쓰기 변형 `git grep -c -P '^\s*\[[^\]]+\]:\s*\S' 94328efb -- CLAUDE.md`는 모두 일치 없음(rc 1)이었습니다. (330) 양성 대조로 `git grep -c -P '^\|' 94328efb -- CLAUDE.md`는 113줄, `git grep -c -F '<!--' 94328efb -- CLAUDE.md`는 7줄 적중이었고, `git grep`은 HTML 주석 안도 검색하므로 0건은 주석 밖 정의도 없다는 뜻입니다. (330) 따라서 관측한 범위(CLAUDE.md)에서 링크 참조 정의를 쓰는 곳은 없습니다. (330) `git grep -n -P '^\[[^\]]+\]:\s' 94328efb -- .claude/rules/MUST-enforcement-policy.md`는 12, 14, 18행 3건이며 모두 각주 정의 `[^postcompact]:`이고 링크 참조 정의가 아닙니다. (330) 각주 정의가 같은 결함의 영향을 받는지와 메모리 파일은 측정하지 않았습니다 [가설: 판정 기준 — HTML 주석이 있는 파일에서 각주 정의가 컨텍스트에 남는지 확인]. (330)
+- CHANGELOG 원문: "Changed `deniedMcpServers` name entries to hide only the named claude.ai connector, not others at its URL; to block them all, deny its exact URL"
+  (330) `deniedMcpServers`의 이름 항목이 같은 URL의 다른 커넥터가 아니라 이름이 지정된 claude.ai 커넥터만 숨기도록 바뀌었으며, 모두 막으려면 정확한 URL을 거부해야 합니다. (330) 측정: `git grep -c -i -P 'denied[_ -]?mcp' 94328efb -- .claude CLAUDE.md`는 일치 없음(rc 1)이었고, 양성 대조 `git grep -c -F 'mcpServers' 94328efb -- .claude/rules CLAUDE.md`는 `MUST-agent-design.md` 3줄, `MUST-orchestrator-coordination.md` 2줄 적중이었습니다. (330) 관측한 범위(위 pathspec)에서 프로젝트 설정·문서는 이 설정을 쓰지 않으며 사용자·managed 설정은 측정하지 않았습니다. (330)
+
+### API 요청
+
+- CHANGELOG 원문: "Reverted 2.1.329's removal of the automatic retry when `max_tokens` exceeds a model's or gateway's limit"
+  (330) `max_tokens`가 모델이나 게이트웨이의 한도를 넘을 때의 자동 재시도를 2.1.329가 제거했던 변경이 되돌려졌습니다(도입은 v2.1.326, 제거는 v2.1.329 절의 `max_tokens` 항목). (330) 관측한 범위(`git grep -n -F CLAUDE_CODE_MAX_OUTPUT_TOKENS 94328efb -- .claude CLAUDE.md`, 적중은 `.claude/rules/MAY-optimization.md` 178행 RETIRED HTML 주석 1줄이며 python `re.sub(r'<!--.*?-->','',t,flags=re.S)` 후 가시 계수 0)에서 이 저장소의 가시 규칙은 출력 토큰 한도를 설정하지 않으므로 직접 영향은 관측하지 않았습니다. (330)
+
+### 기타 항목
+
+- (330) 이 릴리즈 본문의 `- ` 줄 전체는 142건이며(계수 구간: `gh release view v2.1.330 -R anthropics/claude-code --json body --jq .body`의 `- ` 줄 전체, 계수 명령 `grep -c '^- '`), 이 절이 위에서 다룬 항목은 17건(`/loop` 30일, SessionStart 환경 변수, `claude -p` 종료 코드, `rm` 승인, `ExitWorktree`, 중지된 백그라운드 서브에이전트, 앱·SDK 백그라운드 대기, 플랜 승인 후 permission mode, 서브에이전트 선언 MCP 서버, `opusplan`·`haiku` plan-mode 모델, 스킬 `model` 설정, 서브에이전트 모델 폴백, prompt 훅 모델 별칭, 동일 name 에이전트 선택, 링크 참조 정의, `deniedMcpServers`, `max_tokens` 자동 재시도 복원)이므로 그 밖의 항목은 125건입니다(142 - 17 = 125). (330) 나머지는 Enterprise 로그인·인증 흐름, easel 차트 mod, self-hosted runner, VS Code 확장, Code Mode, Remote Control, 플러그인 CLI·마켓플레이스, LSP·Grep·Read 도구 수정, `/config`·`/resume`·`/stats` 등 UI·표시, Windows·Linux 성능, Bedrock·Google Cloud 모델 처리 항목이며 이 저장소 측정 대상이 아닙니다 [가설: 직접 영향 경로 미관측]. (330)
+
+### 규칙 반영 판정
+
+- (330) R001 `rm` 승인 확대: 규칙 변경 없음. R001 금지 목록이 이미 광범위 삭제를 금지하고(`git grep -n -F 'broad deletes' 94328efb -- .claude/rules/MUST-safety.md` 17행), 플랫폼 승인 층이 추가된 것이며 서사는 이 가이드가 맡습니다(R016 버전노트 보존정책).
+- (330) fsd `SKILL.md` `/loop` 한도: 변경 없음. 위 측정대로 스킬 본문이 일수 한도를 서술하지 않으므로 고칠 문구가 없습니다.
+- (330) R006 모델·스킬 `model` 설정: 규칙 변경 없음. 위 측정대로 `model:`을 선언한 스킬이 없고 모델 미지정 에이전트도 없으므로 규범을 바꿀 사유가 없습니다.
+- (330) R010 permission mode 실측 절차: 규칙 변경 없음. 플랜 승인 후 mode 복귀 수정은 기존 Self-Check 1의 유효 모드 실측을 대체하지 않습니다.
+- (330) CLAUDE.md 및 skill: 변경 없음. 링크 참조 정의·`deniedMcpServers`·prompt 훅 별칭 모두 관측한 범위에서 사용처가 없습니다.
+
+**Action items**: (330) 위 「규칙 반영 판정」대로 이 릴리즈에서는 규칙·스킬·CLAUDE.md를 고치지 않으며, [가설]로 남긴 항목은 판정 기준 관측 시에만 재검토합니다. (330)
 
 ## 규칙 본문에서 이전한 버전 서사 (v2.0.26)
 
@@ -3860,6 +4397,13 @@ R023: DETAIL: Workflow Script Sanity Check version notes (v2.1.223~274), origina
 - #1918 — Claude Code v2.1.319 compatibility documentation
 - #1953 — Claude Code v2.1.321 compatibility documentation
 - #1952 — Claude Code v2.1.322 compatibility documentation
+- #1969 — Claude Code v2.1.323 compatibility documentation
+- #1973 — Claude Code v2.1.325 compatibility documentation
+- #1974 — Claude Code v2.1.326 compatibility documentation
+- #1975 — Claude Code v2.1.327 compatibility documentation
+- #1976 — Claude Code v2.1.328 compatibility documentation
+- #1977 — Claude Code v2.1.329 compatibility documentation
+- #1978 — Claude Code v2.1.330 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
