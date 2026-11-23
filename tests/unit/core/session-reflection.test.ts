@@ -24,7 +24,8 @@
  * - Use OMCUSTOM_TRANSCRIPT_BASE + OMCUSTOM_PROJECT_ROOT env-overrides to
  *   isolate every test in a temporary directory (no global state).
  * - Run the script directly against the templates/ canonical copy.
- * - Poll the reflection log after a short delay to verify background output.
+ * - Poll the reflection log until the owned worker has exited, so every assertion reads a
+ *   complete entry (waitForLog, #1981).
  *
  * Fixtures
  * ─────────
@@ -165,8 +166,32 @@ function toolResultLine(toolUseId: string): string[] {
 }
 
 /**
- * Poll the reflection log until it contains expectedText, or timeout.
+ * Poll a file until it contains expectedText, or timeout. No worker semantics: use it for
+ * single-write marker files only, never for the reflection log (see waitForLog).
  * Returns the file content (or '' on timeout/absent).
+ */
+async function waitForText(path: string, expectedText: string, timeoutMs = 8000): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (existsSync(path)) {
+      const text = await readFile(path, 'utf-8');
+      if (text.includes(expectedText)) return text;
+    }
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  return existsSync(path) ? readFile(path, 'utf-8') : '';
+}
+
+/**
+ * Poll the reflection log until it holds a COMPLETE entry containing expectedText (#1981).
+ *
+ * The worker appends its entry through one `{ echo …; printf …; } >> LOG_FILE` group, i.e. one
+ * write per line, so a reader can observe a partial entry (CI saw only the header and the R007
+ * line). The entry's last line also varies (crons line, last sample, dangling or cron lists), so
+ * no fixed final-line marker exists. The hook's subshell runs `rm -f "$WORKER_SCRIPT"` only after
+ * the worker process has exited, so a missing owned worker script means the group write is done.
+ * The worker check therefore happens BEFORE the read that is returned.
+ * Returns the file content (or the current content / '' on timeout).
  */
 async function waitForLog(
   logPath: string,
@@ -175,7 +200,8 @@ async function waitForLog(
 ): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (existsSync(logPath)) {
+    const workersDone = !spawnedPids.some((pid) => existsSync(workerScriptPath(pid)));
+    if (workersDone && existsSync(logPath)) {
       const text = await readFile(logPath, 'utf-8');
       if (text.includes(expectedText)) return text;
     }
@@ -370,7 +396,8 @@ describe('session-reflection.sh — detached worker lifecycle (#1800)', () => {
       expect(result.stderr).toBe('');
       expect(spawnedPids.some((pid) => existsSync(workerScriptPath(pid)))).toBe(true);
       expect(existsSync(logPath)).toBe(false);
-      expect(await waitForLog(env.OMCC_WORKER_ENTERED as string, 'entered')).toContain('entered');
+      // The worker is still held here, so the worker-aware waitForLog would never return.
+      expect(await waitForText(env.OMCC_WORKER_ENTERED as string, 'entered')).toContain('entered');
       await writeFile(releasePath, 'release');
       const log = await waitForLog(logPath, 'Total assistant turns analyzed: 1');
       expect(log).toContain('**R007 violations**: 0');

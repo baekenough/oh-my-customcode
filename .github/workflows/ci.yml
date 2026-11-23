@@ -197,16 +197,11 @@ jobs:
 
           COVERAGE_OUTPUT=$(cat /tmp/coverage-output.txt)
 
-          # Workaround: bun test --coverage may exit non-zero even when tests pass
-          # This heuristic checks actual test results in output (fragile if bun changes output format)
-          # TODO(bun-update): Re-evaluate after bun stable release (currently using latest)
+          # Any non-zero bun exit code fails the job (no pass-output heuristic: a leaked
+          # process.exitCode or an unhandled error can exit non-zero with " 0 fail")
           if [ $TEST_EXIT -ne 0 ]; then
-            if echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ pass" && ! echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ fail"; then
-              echo "::warning::bun test exited with $TEST_EXIT but tests passed (known bun coverage quirk). Continuing..."
-            else
-              echo "::error::Tests failed with exit code $TEST_EXIT"
-              exit 1
-            fi
+            echo "::error::Tests failed with exit code $TEST_EXIT"
+            exit 1
           fi
 
           # Extract coverage percentages from "All files" line
