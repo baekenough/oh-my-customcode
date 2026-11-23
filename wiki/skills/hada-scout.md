@@ -1,70 +1,55 @@
 ---
 title: Hada Scout
 type: skill
-updated: 2026-10-25
+updated: 2026-11-23
 sources:
   - .claude/skills/hada-scout/SKILL.md
 related:
   - [[scout]]
-  - [[infra-docker-expert]]
   - [[R009]]
   - [[R010]]
+  - [[R015]]
 ---
 
 # Hada Scout
 
-Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harness, benchmark, and eval-related articles, then runs `/scout` analysis on each match.
+In-session pipeline that monitors the hada.io feedburner RSS feed, pre-scores article titles with a single haiku batch call, and dispatches full `/scout` analysis only for high-scoring candidates.
 
 ## Overview
 
-hada-scout provides harness/eval-focused coverage from hada.io, narrowing to benchmark and evaluation framework content — the domain most relevant to oh-my-customcode's harness and agent-eval subsystems. It replaced the removed geeknews-scout predecessor as the active RSS-based scout. Tracked in GitHub Issue #841.
+hada-scout replaces the v1.0 keyword-regex filter with context-aware LLM pre-scoring. The source SKILL.md states that scoring all feed titles in one haiku call lowers the false-positive rate from about 30-40% to about 5-10%. It is user-invoked inside a session, so no external scheduler is involved. Tracked in GitHub Issue #841.
 
 ## Key Details
 
-- **Scope**: package
-- **Version**: 1.0.0
-- **User-invocable**: no
-- **Infrastructure**: `infra/hada-scout/`
+- **Scope**: core
+- **Version**: 2.0.0
+- **User-invocable**: yes (`/hada-scout`)
+- **Arguments**: `[--limit N] [--threshold N]`
 
-## Architecture: 2-Layer Hybrid
+## Pipeline: 3 Phases
 
-### Layer 1 — check-feed.sh (feed → issues)
-
-Fetches hada.io feedburner RSS, filters entries by keyword regex, deduplicates against existing `hada-scout` issues, and creates a GitHub issue per match with labels `hada-scout` + `pending-scout`.
-
-### Layer 2 — scout-runner.sh (issues → /scout)
-
-Finds open issues with `pending-scout` label, extracts source URL from issue body, runs `claude -p "/scout {url}"` (max 5 per run), parses verdict, applies verdict label, and removes `pending-scout`.
-
-## Keyword Strategy
-
-hada-scout uses harness/benchmark/eval focused keywords to capture content relevant to the project's evaluation and harness subsystems:
-
-```
-harness|benchmark|eval|evaluation framework|agent framework|코드 리뷰 자동화|하네스|벤치마크|평가
-```
+1. **Fetch and parse** - WebFetch the feed (`https://feeds.feedburner.com/geeknews-feed`), parse title, URL and date, default to the latest 50 items (`--limit` or `HADA_SCOUT_LIMIT`).
+2. **Pre-scout (haiku batch)** - one haiku agent receives all titles, judges each against the project's domains (agent orchestration, harness/eval, Claude Code and MCP, workflow automation), and returns a 0-100 score with a one-line reason. Items scoring 60 or more pass (`--threshold` or `HADA_SCOUT_THRESHOLD`).
+3. **Scout dispatch** - deduplicate against existing `hada-scout` issues, then run `/scout` on each passing item (max 5 per run, `MAX_SCOUT_PER_RUN`), up to 4 in parallel ([[R009]]). Scores and reasons are shown before dispatch ([[R015]]).
 
 ## Label Scheme
 
 | Label | Purpose |
 |-------|---------|
-| `hada-scout` | Source identification — all hada-scout created issues |
-| `pending-scout` | Awaiting /scout analysis (Layer 1 sets, Layer 2 clears) |
-| `scout:internalize` | /scout verdict: adopt into project |
-| `scout:integrate` | /scout verdict: use as external dependency |
-| `scout:skip` | /scout verdict: not relevant |
+| `hada-scout` | Source identification for all created issues |
+| `scout:internalize` | Verdict: adopt into project |
+| `scout:integrate` | Verdict: use as external dependency |
+| `scout:skip` | Verdict: not relevant |
 
 ## Cost Controls
 
-Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout call costs ~USD 0.5–1.5 (sonnet). Remaining `pending-scout` issues are processed in the next scheduled run.
+Pre-scout costs about USD 0.01-0.05 per run (50 items, haiku). Each full `/scout` costs about USD 0.5-1.5 (sonnet), capped at 5 per run, for a stated maximum of about USD 8 per invocation. The orchestrator manages phases and delegates analysis to haiku/sonnet agents ([[R010]]).
 
-## Deployment
+## History
 
-K8s CronJob hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/hada-scout/`: `check-feed.sh`, `scout-runner.sh`, `Dockerfile`, `cronjob.template.yaml`, `deploy.sh`, `.env.example`.
+The v1.0 design ran as an external K8s CronJob with a keyword-regex layer. That deployment under `infra/hada-scout/` was removed in v2.0.27 (#1982); the skill is now invoked only by the user.
 
 ## Sources
 
-- `.claude/skills/hada-scout/SKILL.md` — skill definition
-- `infra/hada-scout/` — K8s deployment manifests
-- Content-drift resync 2026-10-25: source relevance-filter prompt now states "50 agents, 114 skills" (was 115); no other change.
-- Content-drift resync 2026-10-25 (v2.0.6, #1879): source cost figures now written as USD n; no wiki-stated claim changed.
+- `.claude/skills/hada-scout/SKILL.md` - skill definition
+- Related: [[scout]] performs the per-article analysis in phase 3.

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.27",
-  "generatedAt": "2026-11-23T03:11:18.913Z",
+  "generatedAt": "2026-11-23T05:25:22.215Z",
   "templateVersion": "2.0.27",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -845,8 +845,8 @@
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
-      "templateHash": "c20f2f97d79e7327ae7f05d8720aa505d2445d8502dd34827e1bf86ac7dd6413",
-      "size": 5468,
+      "templateHash": "c21bf1597b3166cfb1316f14729ce500dbe856e813d50baafafccbac0fecc5ae",
+      "size": 5641,
       "component": "skills"
     },
     ".claude/skills/harness-eval/SKILL.md": {
@@ -1500,8 +1500,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "edfa95321b47d79817dddb74929b6193e95979e1e8b8fa1860b4e51895e778f6",
-      "size": 1011342,
+      "templateHash": "c5d98cbb22ee48b6e797079eca2d06511c0fc72fd8da672b6514a1a2d3898655",
+      "size": 1011633,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

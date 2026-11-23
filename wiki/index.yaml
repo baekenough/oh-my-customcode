@@ -302,7 +302,7 @@ pages:
       summary: "Idiomatic Go patterns from Effective Go and the Uber style guide."
     - file: skills/hada-scout.md
       title: "Hada Scout"
-      summary: "2-layer pipeline monitoring hada.io RSS for harness/benchmark/eval articles with automated /scout analysis."
+      summary: "In-session pipeline monitoring hada.io RSS with haiku LLM pre-scoring and /scout analysis of high-scoring articles."
     - file: skills/harness-eval.md
       title: "Harness Eval"
       summary: "Structured SE task evaluation using 15-task benchmark for agent quality assessment"
