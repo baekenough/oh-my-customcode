@@ -1,8 +1,8 @@
 <script lang="ts">
 	import '../app.css';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 
-	export let data; // From +layout.server.ts: { projects, selectedProject, root }
+	let { data, children } = $props(); // data from +layout.server.ts: { projects, selectedProject, root }
 
 	const navItems = [
 		{ href: '/', label: 'Dashboard', icon: '▣' }
@@ -17,22 +17,27 @@
 		{ href: '/graph', label: 'Graph', icon: '◎' }
 	];
 
-	let coreOpen = true;
+	let coreOpen = $state(true);
 
 	function isActive(href: string, pathname: string): boolean {
 		if (href === '/') return pathname === '/';
 		return pathname.startsWith(href);
 	}
 
-	$: currentProjectName = data.selectedProject
-		? data.projects.find((p: any) => p.slug === data.selectedProject)?.name ?? 'Unknown'
-		: data.root?.split('/').pop() ?? 'Default';
+	const currentProjectName = $derived(
+		data.selectedProject
+			? data.projects.find((p: any) => p.slug === data.selectedProject)?.name ?? 'Unknown'
+			: data.root?.split('/').pop() ?? 'Default'
+	);
 
-	$: projectParam = data.selectedProject ? `?project=${data.selectedProject}` : '';
+	const projectParam = $derived(data.selectedProject ? `?project=${data.selectedProject}` : '');
 
-	$: if (coreItems.some(item => isActive(item.href, $page.url.pathname))) {
-		coreOpen = true;
-	}
+	// A legacy `$:` statement does not track `$app/state` (template reads do); use `$effect.pre` to re-open Core on navigation.
+	$effect.pre(() => {
+		if (coreItems.some(item => isActive(item.href, page.url.pathname))) {
+			coreOpen = true;
+		}
+	});
 </script>
 
 <div class="flex min-h-screen">
@@ -49,7 +54,7 @@
 			{#each navItems as item}
 				<a
 					href="{item.href}{projectParam}"
-					class="flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors {isActive(item.href, $page.url.pathname)
+					class="flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors {isActive(item.href, page.url.pathname)
 						? 'bg-zinc-800 text-zinc-50'
 						: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'}"
 				>
@@ -72,7 +77,7 @@
 					{#each coreItems as item}
 						<a
 							href="{item.href}{projectParam}"
-							class="flex items-center gap-2.5 px-3 py-2 pl-6 rounded text-sm transition-colors {isActive(item.href, $page.url.pathname)
+							class="flex items-center gap-2.5 px-3 py-2 pl-6 rounded text-sm transition-colors {isActive(item.href, page.url.pathname)
 								? 'bg-zinc-800 text-zinc-50'
 								: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'}"
 						>
@@ -92,6 +97,6 @@
 
 	<!-- Main content -->
 	<main class="flex-1 overflow-auto bg-zinc-950">
-		<slot />
+		{@render children()}
 	</main>
 </div>

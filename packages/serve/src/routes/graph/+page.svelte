@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
 	import type { PageData } from './$types';
-	import type { GraphNode } from '$lib/server/graph-builder.js';
+	import type { GraphNode } from '#lib/server/graph-builder.js';
 
 	let { data }: { data: PageData } = $props();
 

@@ -17,7 +17,8 @@ high-scoring candidates.
 
 Replace the v1.0 keyword-regex approach with context-aware LLM pre-scoring. Haiku evaluates
 all feed titles in a single batch call, reducing false positives from ~30-40% to ~5-10% and
-eliminating the external CronJob dependency for user-invoked runs.
+eliminating the external CronJob dependency: runs are user-invoked in-session (the external
+CronJob deployment under `infra/hada-scout/` was removed in v2.0.27, #1982).
 
 ## Architecture: 3-Phase In-Session Pipeline
 
@@ -133,7 +134,7 @@ Items:
 | Aspect | v1.0 (keyword) | v2.0 (LLM pre-scout) |
 |--------|----------------|----------------------|
 | Filtering | Regex keyword match | LLM relevance scoring (haiku) |
-| Invocation | External CronJob only | User-invocable `/hada-scout` + CronJob |
+| Invocation | External CronJob only | User-invocable `/hada-scout` only (external CronJob deployment `infra/hada-scout/` removed in v2.0.27, #1982) |
 | Precision | Low (keyword false positives) | High (context-aware scoring) |
 | Cost per scan | USD 0 (regex) + USD 2.5–7.5 (/scout) | USD 0.05 (pre-scout) + USD 2.5–7.5 (/scout) |
 | False positive rate | ~30–40% | ~5–10% |

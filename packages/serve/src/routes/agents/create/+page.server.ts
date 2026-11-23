@@ -2,10 +2,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, access } from 'fs/promises';
 import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
-import { getProjectRoot, getSkills } from '$lib/server/data';
-import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
-import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateAgentWithClaude } from '$lib/server/claude-cli';
+import { getProjectRoot, getSkills } from '#lib/server/data.js';
+import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '#lib/server/agent-generator.js';
+import { parseFrontmatter } from '#lib/server/frontmatter.js';
+import { isClaudeAvailable, generateAgentWithClaude } from '#lib/server/claude-cli.js';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();

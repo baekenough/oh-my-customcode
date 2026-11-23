@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.26",
-  "generatedAt": "2026-11-14T10:08:03.119Z",
-  "templateVersion": "2.0.26",
+  "generatorVersion": "2.0.27",
+  "generatedAt": "2026-11-23T05:25:22.215Z",
+  "templateVersion": "2.0.27",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "61b0e8efc09329701cfdf51bcf4641adc8cd32782b8e96f72ec58a6a1b796364",
@@ -490,8 +490,8 @@
       "component": "hooks"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "03dfaf9a7e34b916315a8b9e7c7ffa6eac24e8cb54d03467680195ebd75d38c0",
-      "size": 37488,
+      "templateHash": "3584be0c4fb64a0598fae78c3c1686133c8f0bf798593787c92c48c8b5d63942",
+      "size": 37534,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
@@ -535,8 +535,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "a73b6ac2c93cd43fb4668f54cc5ab30fd801bd954adbccd5da01374eff471684",
-      "size": 119088,
+      "templateHash": "524deae92d16fe8a60eabecbbba774f626f10b8867458dac8ee6db84497bf492",
+      "size": 119300,
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
@@ -845,8 +845,8 @@
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
-      "templateHash": "c20f2f97d79e7327ae7f05d8720aa505d2445d8502dd34827e1bf86ac7dd6413",
-      "size": 5468,
+      "templateHash": "c21bf1597b3166cfb1316f14729ce500dbe856e813d50baafafccbac0fecc5ae",
+      "size": 5641,
       "component": "skills"
     },
     ".claude/skills/harness-eval/SKILL.md": {
@@ -1500,8 +1500,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "34e88b73c4321ae025b8ff695d302d80a7877b798ceb1e96e0d7a9afd68258dc",
-      "size": 862532,
+      "templateHash": "c5d98cbb22ee48b6e797079eca2d06511c0fc72fd8da672b6514a1a2d3898655",
+      "size": 1011633,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

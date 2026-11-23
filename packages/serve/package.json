@@ -2,6 +2,13 @@
   "name": "@omcustom/serve",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.17"
+  },
+  "imports": {
+    "#lib": "./src/lib",
+    "#lib/*": "./src/lib/*"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -17,14 +24,14 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.58.2",
-    "@sveltejs/adapter-node": "^5.0.0",
-    "@sveltejs/kit": "^2.70.4",
+    "@sveltejs/adapter-node": "^6.0.5",
+    "@sveltejs/kit": "^3.1.1",
     "@tailwindcss/vite": "^4.3.5",
     "@types/d3": "^7.4.3",
     "svelte": "^5.57.3",
     "svelte-check": "^4.0.0",
     "tailwindcss": "^4.3.5",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vite": "^8.3.8"
   }
 }

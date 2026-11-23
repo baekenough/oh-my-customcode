@@ -586,7 +586,7 @@ Keep passing `mode` on every Agent call for compatibility (harmless on 2.1.212+)
 -->
 ### Self-Check (MUST)
 
-1. 무인 실행 전 **유효 permission mode 실측** — `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json`(user·project·local 순)과 managed·실행 플래그를 확인합니다. 우선순위는 local > project > user이고 project/local `bypassPermissions`는 (CC 2.1.257+) 무시되어 그 범위가 `default`로 귀결되고 bypass가 아닌 user 값을 덮습니다(user가 `bypassPermissions`이면 결과도 `bypassPermissions`, 키가 없으면 user 값 유지; #1828). 유효 모드가 bypassPermissions가 아니면 프롬프트 발생을 전제로 계획합니다.
+1. 무인 실행 전 **유효 permission mode 실측** — `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json`(user·project·local 순)과 managed·실행 플래그를 확인합니다. 우선순위는 local > project > user이고 project/local `bypassPermissions`는 (CC 2.1.257+) 무시되어 그 범위가 `default`로 귀결되고 bypass가 아닌 user 값을 덮습니다(user가 `bypassPermissions`이면 결과도 `bypassPermissions`, 키가 없으면 user 값 유지; #1828). 유효 모드가 bypassPermissions가 아니면 프롬프트 발생을 전제로 계획하며, CC 2.1.326+에서는 bypassPermissions에서도 일부 호출이 승인을 묻거나 응답할 사람이 없으면 거부되므로 무인 실행의 거부는 다른 경로로 재시도하지 않고 보고합니다.
 <!-- DETAIL: defaultMode ignored measurement evidence
    실측(2026-09-03, `claude -p --debug-file`): `[WARN] settings defaultMode "bypassPermissions"
    ignored — only policy/user/flag settings may grant bypass mode (projectSettings and
