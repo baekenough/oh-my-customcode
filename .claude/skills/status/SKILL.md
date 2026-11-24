@@ -17,29 +17,43 @@ Show comprehensive system status including agents, skills, guides, and health ch
 --health, -h     Health checks only
 ```
 
+## Measurement
+
+Every count in the output is measured at run time from the files present in the project. Never copy a number from the examples below, and never hardcode a count or an ID range: projects add their own rules, agents, skills and guides.
+
+```bash
+find .claude/rules -maxdepth 1 -name '*.md' | wc -l                  # Rules
+find .claude/agents -maxdepth 1 -name '*.md' | wc -l                 # Agents (Total)
+command ls -1d .claude/skills/*/ | wc -l                            # Skills (Total)
+find guides -mindepth 1 -maxdepth 1 -type d | wc -l                  # Guides
+```
+
+The rules count covers only `.claude/rules/*.md`. Non-rule files such as `index.yaml` are not rules and are not counted. The rules line shows the measured count only, with no ID range. Rules are grouped by the `MUST-`/`SHOULD-`/`MAY-` file-name prefix. The rule ID is read from the `**ID**:` header line of each rule file.
+
 ## Output Format
+
+The blocks below are examples of the layout only. `{N}` is replaced with the measured value.
 
 ### Default Status
 ```
 AI Agent System - Status
 
 System:
-  Rules: 23 loaded (R000-R023)
+  Rules: {N} loaded
 
 Agents:
-  Manager:          6 (mgr-creator, mgr-updater, mgr-supplier, ...)
-  SW Engineer:     21
-  DE Engineer:      6
-  Database:         4
-  Infra Engineer:   2
-  Other:           10 (security, architect, QA, system)
-  Total:           50 agents
+  Manager:        {N} (mgr-creator, mgr-updater, mgr-supplier, ...)
+  SW Engineer:    {N}
+  DE Engineer:    {N}
+  Database:       {N}
+  Infra Engineer: {N}
+  Other:          {N} (security, architect, QA, system)
+  Total:          {N} agents
 
 Skills:
-  Total:          114 skills
+  Total:          {N} skills
 
-Guides:            56 loaded
-Commands:          60+ available
+Guides:            {N} loaded
 
 Health: ✓ OK
 ```
@@ -52,20 +66,13 @@ AI Agent System - Detailed Status
 
 Rules:
   MUST:
-    ✓ R000 language-policy
-    ✓ R001 safety
-    ✓ R002 permissions
-    ✓ R006 agent-design
+    ✓ R{NNN} {name}
 
   SHOULD:
-    ✓ R003 interaction
-    ✓ R004 error-handling
-    ✓ R007 agent-identification
-    ✓ R008 tool-identification
+    ✓ R{NNN} {name}
 
   MAY:
-    ✓ R005 optimization
-    ✓ R009 parallel-execution
+    ✓ R{NNN} {name}
 
 Agents:
   manager/
@@ -131,7 +138,7 @@ status --health
 Health Checks:
 
 Agents:
-  ✓ 50/50 agents valid
+  ✓ {N}/{N} agents valid
   ✓ All agent files exist in .claude/agents/
 
 Dependencies:

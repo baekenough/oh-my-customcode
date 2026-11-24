@@ -1,7 +1,7 @@
 ---
 title: "Compound AI Workflow"
 type: guide
-updated: 2026-05-18
+updated: 2026-11-24
 sources:
   - guides/compound-ai-workflow/README.md
 related:
@@ -29,7 +29,7 @@ Eugene Yan의 "How to Work and Compound with AI" 5원칙을 oh-my-customcode 인
 | Yan 원칙 | oh-my-customcode 자산 |
 |---------|----------------------|
 | **Context Infrastructure** | `.claude/agent-memory/`, MEMORY.md, [[r011]], `wiki/` |
-| **Taste as Configuration** | `CLAUDE.md`, `.claude/rules/` (R000-R023), `.claude/output-styles/` |
+| **Taste as Configuration** | `CLAUDE.md`, `.claude/rules/`, `.claude/output-styles/` |
 | **Verification Ladders** | [[r023]], [[deep-verify]], [[adversarial-review]], `mgr-sauron` |
 | **Scaled Delegation** | [[structured-dev-cycle]], `dev-lead-routing`, `/pipeline auto-dev` |
 | **Loop Closure** | [[skill-extractor]] (`--mode failure`), [[r016]], `omcustom-loop` |
@@ -68,3 +68,4 @@ CLAUDE.md → 본 가이드 → .claude/rules/ → .claude/skills/ → .claude/a
 
 - `guides/compound-ai-workflow/README.md` — 원본 (5원칙 상세, 스펙트럼, entry point)
 - 관련 이슈: #1172 (scout:internalize compound-ai-workflow)
+- Content-drift resync 2026-11-24 (#1987): source no longer states a fixed rule range ("R000-R023") in the Taste as Configuration row or the learning path; it now refers to the rule files in `.claude/rules/`.

@@ -156,7 +156,7 @@ project/
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (50 files)
 |   +-- skills/                  # Skills (114 directories)
-|   +-- rules/                   # Global rules (R000-R023)
+|   +-- rules/                   # Global rules (including project rules)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode, delegation/commit packs)
 +-- guides/                      # Reference docs (56 topics)

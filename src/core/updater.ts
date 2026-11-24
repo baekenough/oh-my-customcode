@@ -44,6 +44,7 @@ import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
+import { injectGitWorkflowSection } from './git-workflow.js';
 import { migrateHookCommands } from './hook-command-migration.js';
 import { findRtkInterceptMentions, stripRtkInterceptHooks } from './hook-group-merge.js';
 import { getProviderLayout } from './layout.js';
@@ -1646,17 +1647,18 @@ async function updateEntryDoc(
     return;
   }
 
-  // The template states the shipped skill count; state the deployed one (#1937).
+  // Render the git workflow placeholder exactly as init does (#1991), then state the deployed
+  // skill count instead of the shipped one (#1937), in init's order.
   const templateContent = withDeployedSkillCount(
-    await readTextFile(templatePath),
+    injectGitWorkflowSection(await readTextFile(templatePath), targetDir, config.language),
     await countSkillDirectories(join(targetDir, layout.rootDir, 'skills'))
   );
 
   if (await fileExists(entryPath)) {
     if (options.force) {
-      // Force: overwrite with backup
+      // Force: overwrite with backup, inside the markers so the next update merges (#1991)
       await backupFile(entryPath);
-      await writeTextFile(entryPath, templateContent);
+      await writeTextFile(entryPath, wrapInManagedMarkers(templateContent));
       info('update.entry_doc_force_updated', { path: layout.entryFile });
     } else {
       // Merge: preserve custom sections

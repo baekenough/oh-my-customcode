@@ -304,6 +304,136 @@ Run \`npm install\` to get started.`);
       expect(result.warnings[0]).toContain('preserved below');
     });
 
+    describe('marker-less existing content (#1991)', () => {
+      const templateContent = '# AI Agent System\n\nTemplate body\n\n## Rules\nTemplate rules';
+
+      it('warns about duplication and how to clean up when the template H1 is already present', () => {
+        const existingContent =
+          '# AI Agent System\n\nOld template body\n\n## Project Notes\nKeep this note';
+
+        const result = mergeEntryDoc(existingContent, templateContent);
+
+        // Nothing of the existing file is lost: it is kept verbatim below the managed block
+        expect(result.content).toBe(
+          `${wrapInManagedMarkers(templateContent)}\n\n${existingContent.trim()}`
+        );
+        expect(result.managedSections).toBe(1);
+        expect(result.customSections).toBe(1);
+        expect(result.warnings.length).toBe(1);
+        const [warning] = result.warnings;
+        expect(warning).toContain('No managed sections found');
+        expect(warning).toContain('preserved below');
+        expect(warning).toContain('"# AI Agent System"');
+        expect(warning).toContain('appears to be duplicated');
+        expect(warning).toContain('<!-- omcustom:start -->');
+        expect(warning).toContain('<!-- omcustom:end -->');
+        expect(warning).toContain('keep only project-specific sections outside it');
+      });
+
+      it('matches the H1 with trailing whitespace on the existing line', () => {
+        const result = mergeEntryDoc('# AI Agent System   \nOld body', templateContent);
+
+        expect(result.warnings[0]).toContain('appears to be duplicated');
+      });
+
+      it('matches the H1 after a leading BOM and when indented by 1-3 spaces', () => {
+        for (const existing of ['\uFEFF# AI Agent System\nOld body', '   # AI Agent System\nOld']) {
+          const result = mergeEntryDoc(existing, templateContent);
+
+          expect(result.warnings[0]).toContain('"# AI Agent System"');
+          expect(result.warnings[0]).toContain('appears to be duplicated');
+        }
+      });
+
+      it('does not match an H1 indented by 4 spaces or a tab (an indented code line)', () => {
+        for (const existing of ['    # AI Agent System\nOld', '\t# AI Agent System\nOld']) {
+          const result = mergeEntryDoc(existing, templateContent);
+
+          expect(result.warnings[0]).not.toContain('appears to be duplicated');
+        }
+      });
+
+      it('does not let a fence marker indented by 4+ spaces hide a later H1', () => {
+        const result = mergeEntryDoc('intro\n\n    ```\n# AI Agent System\nold', templateContent);
+
+        expect(result.warnings[0]).toContain('appears to be duplicated');
+      });
+
+      it('still treats a fence indented by up to 3 spaces as a fence', () => {
+        const result = mergeEntryDoc('intro\n   ```\n# AI Agent System\n   ```\n', templateContent);
+
+        expect(result.warnings[0]).not.toContain('appears to be duplicated');
+      });
+
+      it('warns on every update when a custom section still holds the template H1 (managed markers present)', () => {
+        const fence = '```';
+        const existing = `${wrapInManagedMarkers('old template')}\n\n# AI Agent System\nold copy\n${fence}md\n# ignored\n${fence}\n`;
+
+        const result = mergeEntryDoc(existing, templateContent);
+
+        expect(result.content.startsWith(wrapInManagedMarkers(templateContent))).toBe(true);
+        expect(result.content).toContain('# AI Agent System\nold copy');
+        expect(result.warnings).toEqual([
+          `The preserved content contains the template heading "# AI Agent System", so the template appears to be duplicated. To clean up, keep the <!-- omcustom:start --> ... <!-- omcustom:end --> block and keep only project-specific sections outside it.`,
+        ]);
+        expect(mergeEntryDoc(result.content, templateContent).warnings).toEqual(result.warnings);
+      });
+
+      it('does not warn when the custom sections next to managed markers hold no template H1', () => {
+        const fence = '```';
+        // The managed block itself holds the H1: only custom sections count
+        const existing = `# My Project\n\n${wrapInManagedMarkers('# AI Agent System\nold')}\n\n## Notes\n${fence}md\n# AI Agent System\n${fence}\n`;
+
+        expect(mergeEntryDoc(existing, templateContent).warnings).toEqual([]);
+      });
+
+      it('gives one duplication warning when several custom sections hold the template H1', () => {
+        const existing = `# AI Agent System\nabove\n${wrapInManagedMarkers('old')}\n# AI Agent System\nbelow`;
+
+        const warnings = mergeEntryDoc(existing, templateContent).warnings;
+
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain('appears to be duplicated');
+      });
+
+      it('keeps the plain preserve-below warning when the template H1 is not present', () => {
+        const existingContent = '# My Project\n\nProject notes only';
+
+        const result = mergeEntryDoc(existingContent, templateContent);
+
+        expect(result.content).toBe(
+          `${wrapInManagedMarkers(templateContent)}\n\n${existingContent}`
+        );
+        expect(result.warnings).toEqual([
+          'No managed sections found in existing content. Template inserted as managed section, existing content preserved below.',
+        ]);
+      });
+
+      it('does not treat a template H1 that only appears inside an existing code block as duplication', () => {
+        const existingContent = '# My Project\n\n```md\n# AI Agent System\n```\n';
+
+        const result = mergeEntryDoc(existingContent, templateContent);
+
+        expect(result.warnings[0]).not.toContain('appears to be duplicated');
+      });
+
+      it('ignores "#" lines inside template code blocks when finding the template H1', () => {
+        const fencedTemplate = '```bash\n# install\n```\n\n# Real Title\nBody';
+
+        const onlyFencedLine = mergeEntryDoc('# install\nnotes', fencedTemplate);
+        const realTitle = mergeEntryDoc('# Real Title\nold body', fencedTemplate);
+
+        expect(onlyFencedLine.warnings[0]).not.toContain('appears to be duplicated');
+        expect(realTitle.warnings[0]).toContain('"# Real Title"');
+      });
+
+      it('keeps the plain warning when the template has no H1 at all', () => {
+        const result = mergeEntryDoc('## Template body', '## Template body\nmore');
+
+        expect(result.warnings[0]).not.toContain('appears to be duplicated');
+      });
+    });
+
     it('should replace managed section with new template', () => {
       const existingContent = `<!-- omcustom:start -->
 Old template content

@@ -131,6 +131,64 @@ export function parseEntryDoc(content: string): { sections: Section[] } {
 }
 
 /**
+ * Lines outside fenced code blocks, without a leading BOM, up to 3 leading spaces and trailing
+ * whitespace; a fence line may also be indented by at most 3 spaces
+ */
+function linesOutsideCodeBlocks(content: string): string[] {
+  const lines: string[] = [];
+  let insideCodeBlock = false;
+  for (const line of content.split('\n')) {
+    const normalized = line
+      .replace(/^\uFEFF/, '')
+      .replace(/^ {0,3}/, '')
+      .trimEnd();
+    if (normalized.startsWith('```') || normalized.startsWith('~~~')) {
+      insideCodeBlock = !insideCodeBlock;
+      continue;
+    }
+    if (!insideCodeBlock) lines.push(normalized);
+  }
+  return lines;
+}
+
+/** The first `# ` heading of the content outside fenced code blocks, or null */
+function firstH1Line(content: string): string | null {
+  return linesOutsideCodeBlocks(content).find((line) => /^# \S/.test(line)) ?? null;
+}
+
+/**
+ * When preserved content contains the template's first H1 it most likely is a copy of an earlier
+ * template (#1991). Nothing records whether it is unmodified (the lockfile does not cover the
+ * entry doc), so it is never removed; this note says so and how to clean up. Null otherwise.
+ */
+function duplicationNote(preserved: string, templateContent: string): string | null {
+  const h1 = firstH1Line(templateContent);
+  if (h1 === null || !linesOutsideCodeBlocks(preserved).includes(h1)) return null;
+  return `The preserved content contains the template heading "${h1}", so the template appears to be duplicated. To clean up, keep the ${MANAGED_START} ... ${MANAGED_END} block and keep only project-specific sections outside it.`;
+}
+
+/**
+ * {@link duplicationNote} (at most one) for the first custom section holding the template's first
+ * H1: a file duplicated by an earlier update keeps the old template copy outside the managed block
+ */
+function customSectionDuplicationNotes(sections: Section[], templateContent: string): string[] {
+  for (const section of sections) {
+    const note =
+      section.type === 'custom' ? duplicationNote(section.content, templateContent) : null;
+    if (note !== null) return [note];
+  }
+  return [];
+}
+
+/** Warning for a marker-less existing entry doc, which is kept whole below the new managed block */
+function markerlessMergeWarning(existingContent: string, templateContent: string): string {
+  const base =
+    'No managed sections found in existing content. Template inserted as managed section, existing content preserved below.';
+  const note = duplicationNote(existingContent, templateContent);
+  return note === null ? base : `${base} ${note}`;
+}
+
+/**
  * Merge template content into existing entry doc
  * - Replace managed sections with template content
  * - Preserve custom sections
@@ -151,9 +209,7 @@ export function mergeEntryDoc(existingContent: string, templateContent: string):
       managedSections: 1,
       customSections: existingTrimmed ? 1 : 0,
       warnings: existingTrimmed
-        ? [
-            'No managed sections found in existing content. Template inserted as managed section, existing content preserved below.',
-          ]
+        ? [markerlessMergeWarning(existingContent, templateContent)]
         : ['No managed sections found in existing content, wrapping template entirely'],
     };
   }
@@ -183,6 +239,8 @@ export function mergeEntryDoc(existingContent: string, templateContent: string):
       customCount++;
     }
   }
+
+  warnings.push(...customSectionDuplicationNotes(sections, templateContent));
 
   return {
     content: mergedSections.join('\n'),
