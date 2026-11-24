@@ -16,6 +16,7 @@
 - 분기 전 `git pull origin develop`로 최신화합니다(stale이면 PR CONFLICTING, ≥3회 재발). PR 생성 후 mergeStateStatus를 확인하고 CONFLICTING이면 재해결합니다. (R017 「Pre-Branch Freshness Gate」)
 - target 버전은 `git tag`+`npm view`의 max+patch로 확정하며 메모리 스냅샷은 참고용입니다. (R017 「릴리즈 착수 전 실측 게이트」)
 - NPM_TOKEN 만료 가능성을 `gh secret list` 갱신일 90일 경과 여부로 확인합니다(메타데이터만, R001). npm publish 인증 실패가 404로 위장될 수 있으므로 `npm view` 확정 → 비파괴 재실행 → 재현 시 토큰 검증 순서로 진단합니다. (R017 「릴리즈 착수 전 실측 게이트」)
+- CI 시크릿은 잡이 시작될 때 주입되므로, "같은 자격 증명이 성공했다"고 주장하기 전에 `gh secret list`의 updatedAt과 성공한 게시 잡의 startedAt(`gh run view <id> --json jobs`)을 대조합니다. 게시 시각은 npm `time`이 아니라 잡 로그의 `+ <pkg>@<ver>` 줄 시각으로 판정합니다. (R020 「CI Publish-Step Error vs Published-Artifact Ground Truth」, #1998)
 - 자율 모드 진입 시 첫 동작 전에 워크플로우·최근 run·외부 publish 대상·수동 개입 지점·작업이 트리거할 워크플로우를 인벤토리합니다(미수행은 R020 위반). (R020 「Self-Check (Before Declaring Done)」)
 
 ## 3. 커밋 스테이징과 버전 범프
