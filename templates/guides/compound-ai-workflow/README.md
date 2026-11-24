@@ -48,7 +48,7 @@ AI와의 대화 기록(transcript)은 단순 로그가 아니라 패턴 마이�
 | Yan 원칙 | 대응 자산 | 비고 |
 |---------|----------|------|
 | **Context Infrastructure** | `.claude/agent-memory/`, MEMORY.md, R011 (`SHOULD-memory-integration`), `wiki/` | 에이전트별 project-scoped 메모리 + wiki 색인 |
-| **Taste as Configuration** | `CLAUDE.md`, `.claude/rules/` (R000-R023), `.claude/output-styles/` | 규칙 cascade: global → project → agent frontmatter |
+| **Taste as Configuration** | `CLAUDE.md`, `.claude/rules/`, `.claude/output-styles/` | 규칙 cascade: global → project → agent frontmatter |
 | **Verification Ladders** | R023 `SHOULD-verification-ladder`, `deep-verify`, `multi-model-verification`, `adversarial-review`, `mgr-sauron` | Tier 1-4 shift-left ladder |
 | **Scaled Delegation** | `structured-dev-cycle`, `dev-lead-routing`, `/pipeline auto-dev` | pair → stage-gated → full delegation 스펙트럼 |
 | **Loop Closure** | `skill-extractor` (`--mode failure`), R016 (`MUST-continuous-improvement`), `omcustom-loop` | 패턴 채굴 → skill 승격 자동화 |
@@ -157,7 +157,7 @@ wiki-curator: 문서 동기화 (R022)
 ```
 1. CLAUDE.md          → 시스템 전체 철학, 강제 규칙 요약
 2. 본 가이드           → compound effect 이해, 5원칙 매핑
-3. .claude/rules/      → 개별 규칙 상세 (R000-R023)
+3. .claude/rules/      → 개별 규칙 상세 (`.claude/rules/`의 규칙 파일)
 4. .claude/skills/     → 재사용 가능한 워크플로우 목록
 5. .claude/agents/     → 전문 에이전트 역할과 도구 목록
 6. guides/             → 도메인별 레퍼런스 문서

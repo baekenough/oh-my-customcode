@@ -373,3 +373,32 @@ export function getDefaultWorkflow(): GitWorkflowResult {
     branchPatterns: ['feature/*'],
   };
 }
+
+/** Placeholder in entry doc templates replaced with the detected git workflow section */
+export const GIT_WORKFLOW_PLACEHOLDER = '<!-- omcustom:git-workflow -->';
+
+/**
+ * Render the git workflow section for the workflow detected in `targetDir` (the default
+ * workflow when none is detected) in the given language.
+ */
+export function renderGitWorkflowSection(targetDir: string, language: 'en' | 'ko'): string {
+  const result = detectGitWorkflow(targetDir) ?? getDefaultWorkflow();
+  return language === 'ko' ? renderGitWorkflowKO(result) : renderGitWorkflowEN(result);
+}
+
+/**
+ * Replace the first {@link GIT_WORKFLOW_PLACEHOLDER} in entry doc template content with the
+ * rendered git workflow section. Shared by init and update so both write the same text (#1991).
+ * Content without the placeholder is returned unchanged (and git is not run).
+ */
+export function injectGitWorkflowSection(
+  content: string,
+  targetDir: string,
+  language: 'en' | 'ko'
+): string {
+  if (!content.includes(GIT_WORKFLOW_PLACEHOLDER)) return content;
+  // A replacer function: `$&`, `$'` and `$$` (legal in git branch names) stay literal
+  return content.replace(GIT_WORKFLOW_PLACEHOLDER, () =>
+    renderGitWorkflowSection(targetDir, language)
+  );
+}

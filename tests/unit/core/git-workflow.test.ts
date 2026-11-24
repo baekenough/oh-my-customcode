@@ -6,11 +6,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   detectGitWorkflow,
+  GIT_WORKFLOW_PLACEHOLDER,
   type GitWorkflowResult,
   getDefaultWorkflow,
+  injectGitWorkflowSection,
   isGitRepo,
   renderGitWorkflowEN,
   renderGitWorkflowKO,
+  renderGitWorkflowSection,
 } from '../../../src/core/git-workflow.js';
 
 /**
@@ -357,6 +360,23 @@ describe('git-workflow', () => {
       } finally {
         await rm(bareDir, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe('injectGitWorkflowSection', () => {
+    it("keeps $&, $' and $$ of a real branch name literal", async () => {
+      const branch = "m$'x$&y$$";
+      git(['init', '-b', branch], tempDir);
+      git(['config', 'user.email', 'test@test.com'], tempDir);
+      git(['config', 'user.name', 'Test'], tempDir);
+      git(['config', 'core.hooksPath', '/dev/null'], tempDir);
+      git(['commit', '--allow-empty', '-m', 'initial'], tempDir);
+      const section = renderGitWorkflowSection(tempDir, 'en');
+      expect(section).toContain(branch);
+
+      const injected = injectGitWorkflowSection(`A\n${GIT_WORKFLOW_PLACEHOLDER}\nB`, tempDir, 'en');
+
+      expect(injected).toBe(`A\n${section}\nB`);
     });
   });
 

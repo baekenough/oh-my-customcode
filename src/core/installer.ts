@@ -35,18 +35,14 @@ import {
 } from './backup-layout.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
+import { wrapInManagedMarkers } from './entry-merger.js';
 import {
   cleanupPreservation,
   extractCriticalFiles,
   type PreservationResult,
   restoreCriticalFiles,
 } from './file-preservation.js';
-import {
-  detectGitWorkflow,
-  getDefaultWorkflow,
-  renderGitWorkflowEN,
-  renderGitWorkflowKO,
-} from './git-workflow.js';
+import { injectGitWorkflowSection } from './git-workflow.js';
 import { migrateHookCommands, NEW_STATUSLINE_COMMAND } from './hook-command-migration.js';
 import { mergeHooksIntoSettings } from './hooks-settings.js';
 import {
@@ -935,17 +931,6 @@ async function installComponent(
   return true;
 }
 
-/** Placeholder in entry doc templates replaced with detected git workflow */
-const GIT_WORKFLOW_PLACEHOLDER = '<!-- omcustom:git-workflow -->';
-
-/**
- * Render the git workflow section for the detected workflow and language
- */
-function renderGitWorkflowSection(targetDir: string, language: 'en' | 'ko'): string {
-  const result = detectGitWorkflow(targetDir) ?? getDefaultWorkflow();
-  return language === 'ko' ? renderGitWorkflowKO(result) : renderGitWorkflowEN(result);
-}
-
 /** Re-state the deployed skill count in the entry doc this run wrote (#1937). */
 async function refreshEntryDocSkillCount(targetDir: string): Promise<void> {
   const layout = getProviderLayout();
@@ -961,7 +946,8 @@ async function refreshEntryDocSkillCount(targetDir: string): Promise<void> {
 /**
  * Install entry doc with the selected language
  *
- * Reads the template, injects dynamic git workflow section, and writes to target.
+ * Reads the template, injects dynamic git workflow section, and writes it to target inside the
+ * managed markers, so the first `omcustom update` replaces only the managed block (#1991).
  */
 async function installEntryDoc(
   targetDir: string,
@@ -987,12 +973,7 @@ async function installEntryDoc(
   }
 
   // Read template, inject git workflow, write to destination
-  let content = await fsReadFile(srcPath, 'utf-8');
-
-  if (content.includes(GIT_WORKFLOW_PLACEHOLDER)) {
-    const workflowSection = renderGitWorkflowSection(targetDir, language);
-    content = content.replace(GIT_WORKFLOW_PLACEHOLDER, workflowSection);
-  }
+  let content = injectGitWorkflowSection(await fsReadFile(srcPath, 'utf-8'), targetDir, language);
 
   // The template states the shipped count; package-scope skills are not installed (#1937).
   content = withDeployedSkillCount(
@@ -1000,7 +981,7 @@ async function installEntryDoc(
     await countSkillDirectories(join(targetDir, layout.rootDir, 'skills'))
   );
 
-  await fsWriteFile(destPath, content, 'utf-8');
+  await fsWriteFile(destPath, wrapInManagedMarkers(content), 'utf-8');
   debug('install.entry_md_installed', { language, entry: layout.entryFile });
   return true;
 }

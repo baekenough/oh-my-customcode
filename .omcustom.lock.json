@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.28",
-  "generatedAt": "2026-11-23T12:07:34.326Z",
+  "generatedAt": "2026-11-24T03:32:03.336Z",
   "templateVersion": "2.0.28",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -1225,8 +1225,8 @@
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
-      "templateHash": "f7d3bed4318d881edcc2075c865d9939d3b70d116170aa8d7506c704f89fc204",
-      "size": 3024,
+      "templateHash": "078d43f87d5edbf21e51dc7885804b0f4af5ee9bfa9903e175c06a162954f826",
+      "size": 3779,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
@@ -1525,8 +1525,8 @@
       "component": "guides"
     },
     "guides/compound-ai-workflow/README.md": {
-      "templateHash": "fe2a5606f6790483decb62dcbfc1b76b8e51e0b871620b4f28a021d3e2228ace",
-      "size": 9632,
+      "templateHash": "827a8ce160ec4ad7003df906f91f863c9ffbf516decd4887f2a58eb9a1d96439",
+      "size": 9644,
       "component": "guides"
     },
     "guides/dbt/README.md": {
