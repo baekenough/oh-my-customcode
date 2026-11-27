@@ -93,7 +93,7 @@ NO EXCEPTIONS. NO EXCUSES.
 
 ## Rule Loading (Lazy-Loading Index)
 
-Always loaded (15 in total): R000–R005, R007–R011, R013, R015, R020, R021. The 8 below are conditional, with a `paths:` frontmatter. In the CC 2.1.325 probe measurement they are not loaded at session start; they are loaded only into the context of the agent that Reads or Writes a file matching their glob. Reloading after compaction has not been measured. If needed, open the rule file directly with Read.
+Always loaded (15 in total): R000–R005, R007–R011, R013, R015, R020, R021. The 8 below are conditional, with a `paths:` frontmatter. These counts cover the rules oh-my-customcode ships; rules a project adds are not counted. In the CC 2.1.325 probe measurement they are not loaded at session start; they are loaded only into the context of the agent that Reads or Writes a file matching their glob. Reloading after compaction has not been measured. If needed, open the rule file directly with Read.
 
 | ID | Core Norm (1 line) | Load Condition |
 |----|--------------------|----------------|

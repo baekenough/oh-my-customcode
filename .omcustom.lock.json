@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.29",
-  "generatedAt": "2026-11-24T03:49:34.442Z",
+  "generatedAt": "2026-11-27T00:19:12.586Z",
   "templateVersion": "2.0.29",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -495,8 +495,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "952711770f7abcd4e4e17ac262d4eec97630a7db382863b92a1833b7bd910144",
-      "size": 66824,
+      "templateHash": "bb4cd5b154287578ccd90f8e0235e210302c679fc05c9ee1962b2fc84ea124e4",
+      "size": 67080,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -1500,8 +1500,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "5a399abe3055084f6540d008609cfa29705074bb79e5c262d6bcc0b3f5e1e787",
-      "size": 1013146,
+      "templateHash": "e731f210b2fc2554a80981331b1e2c1bb4ae20b776a679d3881d5bf957c22eae",
+      "size": 1039778,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

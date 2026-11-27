@@ -194,9 +194,10 @@ async function handleFile(
 }
 
 /**
- * Check if path should be skipped based on skipPaths option
+ * Check if path should be skipped based on skipPaths option. Exported so the updater can tell
+ * whether {@link copyDirectory} would write a file, with the same matcher.
  */
-function shouldSkipPath(destPath: string, destRoot: string, skipPaths?: string[]): boolean {
+export function shouldSkipPath(destPath: string, destRoot: string, skipPaths?: string[]): boolean {
   if (!skipPaths || skipPaths.length === 0) {
     return false;
   }

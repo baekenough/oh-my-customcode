@@ -237,8 +237,10 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 `MessageDisplay`는 표시 전용(`additionalContext` 미지원, 모델 미도달) — advisory 훅은 SessionStart/Setup/SubagentStart/UserPromptSubmit/UserPromptExpansion/PreToolUse/PostToolUse류·Stop·SubagentStop에 배선하세요.
 
-<!-- DETAIL: full 33-event-name enumeration (kept verbatim, see full reference table via Read tool)
-33 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd, PreModelSwitch, PostModelSwitch (v2.1.251+). 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+`PreSkillShellCommand`(v2.1.332+)는 v2.1.331 이하에서 이 이름을 적은 settings 파일이 시작 시 대화상자를 열게 하므로, 배선 전에 설치된 CC 버전(`claude --version`)을 확인하십시오.
+
+<!-- DETAIL: full 34-event-name enumeration (kept verbatim, see full reference table via Read tool)
+34 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd, PreModelSwitch, PostModelSwitch (v2.1.251+), PreSkillShellCommand (v2.1.332+). 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
 -->
 
 <!-- DETAIL: PreModelSwitch/PostModelSwitch CC version note (historical)
