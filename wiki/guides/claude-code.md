@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-11-23
+updated: 2026-11-27
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -136,3 +136,4 @@ See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[a
 - Content-drift resync 2026-11-14 (citation fix): `15-version-compatibility.md` re-pointed two heading-quote citations (R020 「Verification-Delegation Non-Termination」, R021 「Enforcement Tiers」) to real headings; no behaviour change, and this page does not restate them.
 - Content-drift resync 2026-11-23 (v2.0.27, #1973-#1978): `15-version-compatibility.md` gained the `## v2.1.326` through `## v2.1.330` sections (issues #1974-#1978; summarized in the v2.1.326-v2.1.330 paragraph above), linked its v2.1.325 section to #1973, added #1969 and #1973-#1978 to References, and moved its `> Updated:` header to 2026-11-23. Each new section's rule-reflection verdict records two rule edits (R010 Self-Check 1 for 326, R005 zsh `=`-word sentence for 328) and no other rule change.
 - Content-drift resync 2026-11-23 (v2.0.28, #1988): `15-version-compatibility.md` now states that `claude plugin validate` output does not feed the R017 count comparison, replaced several `file:line` anchors with content anchors, and pinned the (295) grep to commit `fb0dbb52`. This page does not restate those sentences, so no body change.
+- Content-drift resync 2026-11-27 (v2.0.30, #2002/#2003): `15-version-compatibility.md` gained two sections. `## v2.1.331 (2026-11-23)` (#2002, 135 release items) covers the `PermissionDenied` hook `retry: true` meaning change, PermissionRequest hooks now saving `Skill(name:*)` allow rules outside local settings, Stop hooks that read the transcript no longer missing the last reply in Claude Desktop (SubagentStop hooks now wait for it too), and `/compact` summary loss on XML tags; it changes no rule. `## v2.1.332 (2026-11-25)` (#2003, 150 release items) covers the new `PreSkillShellCommand` hook event (on 2.1.331 and older a settings file naming it opens a dialog at start), the `computer-use` reserved skill name, the desktop OpenTelemetry `service.name` default, and hook output freeze fixes; it changes R006 only (hook event list 33 to 34 plus one caution sentence).

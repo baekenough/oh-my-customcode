@@ -28,6 +28,7 @@ import {
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
+  shouldSkipPath,
   validatePreserveFilePath,
   writeJsonFile,
   writeTextFile,
@@ -72,6 +73,12 @@ import {
   loadRetiredTemplatePaths,
   type RetiredTemplatePathEntry,
 } from './retired-template-paths.js';
+import {
+  commitRulesIndexPlan,
+  planRulesIndexUpdate,
+  RULES_INDEX_FILE,
+  type RulesIndexPlan,
+} from './rules-index-merge.js';
 import {
   countSkillDirectories,
   listSkippedPackageSkills,
@@ -1432,6 +1439,12 @@ async function handleBackupIfRequested(
   info('update.backup_created', { path: backupPath });
 }
 
+/**
+ * The rules index plan of an update (#1992), registered only after the rules component and its
+ * namespace sync succeeded, and carried out before the lockfile is regenerated.
+ */
+const plannedRulesIndexUpdates = new WeakMap<UpdateResult, RulesIndexPlan>();
+
 /** Process a single component update */
 async function processComponentUpdate(
   targetDir: string,
@@ -1457,7 +1470,7 @@ async function processComponentUpdate(
   }
 
   try {
-    const preserved = await updateComponent(
+    const { preserved, rulesIndexPlan } = await updateComponent(
       targetDir,
       component,
       customizations,
@@ -1472,6 +1485,9 @@ async function processComponentUpdate(
       const synced = await applyNamespaceSync(targetDir, component, lockfile);
       result.namespaceSynced.push(...synced);
     }
+
+    // Last statement of the try: a failed copy or namespace sync leaves no plan to carry out
+    if (rulesIndexPlan !== null) plannedRulesIndexUpdates.set(result, rulesIndexPlan);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.warnings.push(`Failed to update ${component}: ${message}`);
@@ -2019,6 +2035,10 @@ async function retireLeftoversAndRegenerateLockfile(
   );
   await retireOntologyRag(options, result, config, deletionCustomizations);
   if (options.dryRun) return;
+  // Before the lockfile is regenerated, so it records the index bytes left on disk (#1992)
+  const rulesIndexPlan = plannedRulesIndexUpdates.get(result);
+  if (rulesIndexPlan !== undefined) await commitRulesIndexPlan(rulesIndexPlan, result.warnings);
+  // Lockfile ownership carried forward; unrelated to the rules index entries carried above
   const carried = await collectCarriedOwnership(options.targetDir, lockfile, retiredList, result);
   await regenerateLockfile(options, result, retiredPaths, carried.entries);
 }
@@ -2413,7 +2433,33 @@ async function findProtectedFilesInDir(
 }
 
 /**
- * Update a single component
+ * For the rules component, plan the rules index (#1992) when the copy would write
+ * `<destPath>/index.yaml` (same matcher as the copy) and take index.yaml out of the copy; null
+ * for other components and when the copy skips it anyway.
+ */
+async function planRulesIndexForCopy(
+  component: UpdateComponent,
+  paths: { srcPath: string; destPath: string; componentPath: string },
+  lockfile: Lockfile | null,
+  skipPaths: string[]
+): Promise<RulesIndexPlan | null> {
+  const { srcPath, destPath, componentPath } = paths;
+  if (component !== 'rules') return null;
+  if (shouldSkipPath(join(destPath, RULES_INDEX_FILE), destPath, skipPaths)) return null;
+  const plan = await planRulesIndexUpdate({
+    rulesDir: destPath,
+    templateRulesDir: srcPath,
+    componentPath,
+    lockfile,
+  });
+  if (plan.action === 'copy') return null;
+  skipPaths.push(RULES_INDEX_FILE);
+  return plan;
+}
+
+/**
+ * Update a single component. For the rules component, also returns the plan for index.yaml, which
+ * the copy leaves alone (null when the copy writes or skips it as before).
  */
 async function updateComponent(
   targetDir: string,
@@ -2422,7 +2468,7 @@ async function updateComponent(
   options: UpdateOptions,
   config: OmccConfig,
   lockfile: Lockfile | null
-): Promise<string[]> {
+): Promise<{ preserved: string[]; rulesIndexPlan: RulesIndexPlan | null }> {
   const preservedFiles: string[] = [];
   const componentPath = getComponentPath(component);
   const srcPath = resolveTemplatePath(componentPath);
@@ -2507,6 +2553,14 @@ async function updateComponent(
     }
   }
 
+  // Read-only plan for index.yaml, before the copy (#1992)
+  const rulesIndexPlan = await planRulesIndexForCopy(
+    component,
+    { srcPath, destPath, componentPath },
+    lockfile,
+    uniqueSkipPaths
+  );
+
   // Update component with skipPaths
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -2518,7 +2572,7 @@ async function updateComponent(
     skippedPaths: String(uniqueSkipPaths.length),
     protectedSkipped: String(protectedSkipPaths.length),
   });
-  return preservedFiles;
+  return { preserved: preservedFiles, rulesIndexPlan };
 }
 
 /**

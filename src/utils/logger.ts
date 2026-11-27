@@ -190,6 +190,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.entry_doc_force_updated': 'Entry document force-updated: {{path}}',
     'update.entry_merge_warning': 'Entry document merge warning: {{warning}}',
     'update.entry_template_not_found': 'Entry document template not found: {{template}}',
+    'update.rules_index_entries_carried': 'Kept project rule entries in {{path}}: {{files}}',
     'update.protected_file_force_overwrite':
       'Protected file {{file}} in {{component}} selected for overwrite: The --force-overwrite-all option bypasses the protected-file preservation policy.',
     'update.protected_file_skipped':
@@ -345,6 +346,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.entry_doc_force_updated': '진입 문서를 강제로 업데이트했습니다: {{path}}',
     'update.entry_merge_warning': '진입 문서 병합 경고: {{warning}}',
     'update.entry_template_not_found': '진입 문서 템플릿을 찾을 수 없습니다: {{template}}',
+    'update.rules_index_entries_carried': '{{path}}에 프로젝트 규칙 항목을 유지했습니다: {{files}}',
     'update.protected_file_force_overwrite':
       '{{component}}의 보호 파일 {{file}} 덮어쓰기 대상: --force-overwrite-all 옵션에 따라 보호 파일 보존 정책을 적용하지 않습니다.',
     'update.protected_file_skipped':
